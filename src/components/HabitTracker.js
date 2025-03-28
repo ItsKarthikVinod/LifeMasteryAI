@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { db } from "../firebase/firebase";
 import {
   collection,
@@ -12,6 +12,7 @@ import { useAuth } from "../contexts/authContext";
 import useGetHabits from "../hooks/useGetHabits";
 import OpenAI from "openai";
 
+
 const HabitTracker = () => {
   const [habitName, setHabitName] = useState("");
   const { currentUser } = useAuth();
@@ -22,25 +23,16 @@ const HabitTracker = () => {
   const [isSpeaking, setIsSpeaking] = useState(false); // State to track if speech is active
 
   // OpenAI Configuration
-  const openai = new OpenAI({
-    baseURL: "https://openrouter.ai/api/v1",
-    apiKey: process.env.REACT_APP_OPENAI_API_KEY,
-    dangerouslyAllowBrowser: true,
-  });
-
-  useEffect(() => {
-    calculateProgress();
-    checkStreaks();
-  }, [fetchedHabits]);
-
-  useEffect(() => {
-    if (fetchedHabits.length > 0) {
-      generateAIInsights();
-    }
-  }, [completionRate]);
+  const openai = useMemo(() => {
+    return new OpenAI({
+      baseURL: "https://openrouter.ai/api/v1",
+      apiKey: process.env.REACT_APP_OPENAI_API_KEY,
+      dangerouslyAllowBrowser: true,
+    });
+  }, []);
 
   // Function to calculate progress analytics
-  const calculateProgress = () => {
+  const calculateProgress = useCallback(() => {
     if (fetchedHabits.length === 0) {
       setCompletionRate(0);
       return;
@@ -52,10 +44,10 @@ const HabitTracker = () => {
     setCompletionRate(
       Math.round((completedCount / fetchedHabits.length) * 100)
     );
-  };
-
+  }, [fetchedHabits]);
   // Function to check and reset streaks if a day is missed
-  const checkStreaks = async () => {
+
+  const checkStreaks = useCallback(async () => {
     const today = new Date();
     const resetPromises = fetchedHabits.map(async (habit) => {
       const lastCompletedDate = habit.lastCompleted
@@ -77,10 +69,9 @@ const HabitTracker = () => {
 
     await Promise.all(resetPromises);
     fetchHabits();
-  };
-
+  }, [fetchedHabits, fetchHabits]); // Add dependencies
   // Function to generate AI insights using OpenAI
-  const generateAIInsights = async () => {
+  const generateAIInsights = useCallback(async () => {
     const habitSummary = fetchedHabits
       .map(
         (habit) =>
@@ -91,10 +82,10 @@ const HabitTracker = () => {
       .join("\n");
 
     const prompt = `
-      Analyze the following habit data and provide personalized motivational insights and habit improvement suggestions in 60-70 words:
-      ${habitSummary}
-      Completion Rate: ${completionRate}%
-    `;
+    Analyze the following habit data and provide personalized motivational insights and habit improvement suggestions in 60-70 words:
+    ${habitSummary}
+    Completion Rate: ${completionRate}%
+  `;
 
     try {
       const response = await openai.chat.completions.create({
@@ -109,8 +100,7 @@ const HabitTracker = () => {
     } catch (error) {
       console.error("Error generating AI insights:", error);
     }
-  };
-
+  }, [fetchedHabits, completionRate, openai]); // Add dependencies
   // Function to toggle speech synthesis
   const toggleSpeech = (text) => {
     if (isSpeaking) {
@@ -209,6 +199,17 @@ const HabitTracker = () => {
       console.error("Error updating habit: ", error);
     }
   };
+
+  useEffect(() => {
+    calculateProgress();
+    checkStreaks();
+  }, [calculateProgress, checkStreaks]);
+
+  useEffect(() => {
+    if (fetchedHabits.length > 0) {
+      generateAIInsights();
+    }
+  }, [fetchedHabits.length, generateAIInsights]);
 
   return (
     <div className="habit-tracker-container px-4 sm:px-6 lg:px-8">

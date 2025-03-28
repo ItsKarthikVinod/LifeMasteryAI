@@ -19,12 +19,7 @@ import useGetTodos from "../hooks/useGetTodos";
 import { useAuth } from "../contexts/authContext";
 
 
-const VoiceAssistant = ({
-  
-  
-  
-  
-}) => {
+const VoiceAssistant = () => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState(""); // State to store the final transcript
   const [interimTranscript, setInterimTranscript] = useState(""); // State to store the interim transcript

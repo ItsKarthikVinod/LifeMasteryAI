@@ -293,7 +293,7 @@ const CommunityPage = () => {
                         {comment.content}
                       </p>
                       {(currentUser?.email === adminEmail ||
-                        currentUser?.email == comment?.email) && (
+                        currentUser?.email === comment?.email) && (
                         <button
                           onClick={() => deleteComment(post.id, index)}
                           className="text-red-600 text-sm font-bold mt-2"
