@@ -3,7 +3,7 @@ import { Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/authContext'
 import { doCreateUserWithEmailAndPassword } from '../firebase/auth'
 import {
-  doSignInWithEmailAndPassword,
+
   doSignInWithGoogle,
 } from "../firebase/auth";
 
@@ -16,7 +16,7 @@ const RegisterPage = () => {
     const [password, setPassword] = useState('')
     const [confirmPassword, setconfirmPassword] = useState('')
     const [isRegistering, setIsRegistering] = useState(false)
-    const [errorMessage, setErrorMessage] = useState('') // eslint-disable-line
+    
 
     const { userLoggedIn } = useAuth()
 
@@ -99,9 +99,7 @@ const RegisterPage = () => {
                 />
               </div>
 
-              {errorMessage && (
-                <span className="text-red-600 font-bold">{errorMessage}</span>
-              )}
+             
 
               <button
                 type="submit"

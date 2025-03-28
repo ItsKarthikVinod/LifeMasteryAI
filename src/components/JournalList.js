@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import useGetJournalEntries from "../hooks/useGetJournals";
 import {
-  FaThumbsUp,
-  FaComment,
+
   FaTrash,
   FaRobot,
   FaSpinner,
@@ -32,7 +31,7 @@ const JournalList = () => {
 
   useEffect(() => {
     fetchJournalEntries();
-  }, []);
+  });
 
   const formatDate = (timestamp) => {
     const date = new Date(timestamp.seconds * 1000);

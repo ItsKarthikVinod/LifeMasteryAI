@@ -13,7 +13,7 @@ import HeroImage from "../assets/hero_img2.png"; // Ensure the path is correct
 
 const Hero = () => {
   const navigate = useNavigate();
-  const [selectedMood, setSelectedMood] = useState("");
+  
   const [showPopup, setShowPopup] = useState(false);
   const [backgroundColor, setBackgroundColor] = useState(
     "bg-gradient-to-br from-indigo-500 to-blue-600"
@@ -29,7 +29,7 @@ const Hero = () => {
   };
 
   const handleMoodChange = (mood) => {
-    setSelectedMood(mood);
+    
     switch (mood) {
       case "happy":
         setBackgroundColor("bg-gradient-to-br from-yellow-400 to-orange-500");

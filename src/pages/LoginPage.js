@@ -10,7 +10,7 @@ const LoginPage = () => {
     const [password, setPassword] = useState('')
     const [isSigningIn, setIsSigningIn] = useState(false)
     
-    const [errorMessage, setErrorMessage] = useState('') // eslint-disable-line
+
 
     const onSubmit = async (e) => {
         e.preventDefault()
@@ -74,9 +74,7 @@ const LoginPage = () => {
                             />
                         </div>
 
-                        {errorMessage && (
-                            <span className='text-red-600 font-bold'>{errorMessage}</span>
-                        )}
+                        
 
                         <button
                             type="submit"
