@@ -98,41 +98,45 @@ const VoiceAssistant = () => {
     recognition.continuous = true; // Enable continuous listening for real-time updates
     recognition.interimResults = true; // Enable interim results for real-time display
 
-    recognition.onstart = () => {
-      setIsListening(true);
-      setTranscript(""); // Clear the transcript when starting a new session
-      setInterimTranscript(""); // Clear interim transcript
-    };
+    // Ensure the `onresult` event listener is added only once
+    if (!recognitionInstance) {
+      recognition.onresult = (event) => {
+        let interim = "";
+        let final = "";
 
-    recognition.onresult = (event) => {
-      let interim = "";
-      let final = "";
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          final += result[0].transcript + " "; // Append final results
-        } else {
-          interim += result[0].transcript; // Capture interim results
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result.isFinal) {
+            final += result[0].transcript + " "; // Append final results
+          } else {
+            interim += result[0].transcript; // Capture interim results
+          }
         }
-      }
 
-      setTranscript((prev) => prev + final); // Update the final transcript
-      setInterimTranscript(interim); // Update the interim transcript in real-time
-    };
+        setTranscript(final.trim()); // Update the final transcript (overwrite instead of appending)
+        setInterimTranscript(interim); // Update the interim transcript in real-time
+      };
 
-    recognition.onend = () => {
-      setIsListening(false);
-      setInterimTranscript(""); // Clear interim transcript when recognition ends
-    };
+      recognition.onstart = () => {
+        setIsListening(true);
+        setTranscript(""); // Clear the transcript when starting a new session
+        setInterimTranscript(""); // Clear interim transcript
+      };
 
-    recognition.onerror = (event) => {
-      console.error("Speech recognition error:", event.error);
-      setIsListening(false);
-    };
+      recognition.onend = () => {
+        setIsListening(false);
+        setInterimTranscript(""); // Clear interim transcript when recognition ends
+      };
+
+      recognition.onerror = (event) => {
+        console.error("Speech recognition error:", event.error);
+        setIsListening(false);
+      };
+
+      setRecognitionInstance(recognition); // Store the recognition instance
+    }
 
     recognition.start();
-    setRecognitionInstance(recognition); // Store the recognition instance
   };
 
   const toggleModal = () => {

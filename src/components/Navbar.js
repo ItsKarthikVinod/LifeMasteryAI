@@ -70,13 +70,6 @@ const Navbar = () => {
           {userLoggedIn ? (
             <>
               <Link
-                to="/"
-                className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Home
-              </Link>
-              <Link
                 to="/dashboard"
                 className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
                 onClick={() => setIsMenuOpen(false)}
@@ -150,6 +143,13 @@ const Navbar = () => {
       >
         {userLoggedIn ? (
           <>
+            <Link
+              to="/"
+              className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Home
+            </Link>
             <Link
               to="/dashboard"
               className="text-lg text-center hover:text-teal-400"
