@@ -18,7 +18,6 @@ import {
 import useGetTodos from "../hooks/useGetTodos";
 import { useAuth } from "../contexts/authContext";
 
-
 const VoiceAssistant = () => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState(""); // State to store the final transcript
@@ -30,55 +29,55 @@ const VoiceAssistant = () => {
   const userId = currentUser.uid;
 
   const addTodos = async (todo) => {
-      
-      if (!todo) return;
-  
-      try {
-        await addDoc(collection(db, 'todos'), {
-          name: todo,
-          isCompleted: false,
-          isImportant: false, // Default importance is false
-          timestamp: new Date(),
-          userId: userId,
-        });
-        
-        fetchTodos();
-        alert("Todo added successfully!");
-      } catch (error) {
-        console.error('Error adding todo: ', error);
-      }
+    if (!todo) return;
+
+    try {
+      await addDoc(collection(db, "todos"), {
+        name: todo,
+        isCompleted: false,
+        isImportant: false, // Default importance is false
+        timestamp: new Date(),
+        userId: userId,
+      });
+
+      fetchTodos();
+      alert("Todo added successfully!");
+    } catch (error) {
+      console.error("Error adding todo: ", error);
+    }
   };
+
   const markAsDone = async (todo) => {
-      try {
-        await updateDoc(doc(db, 'todos', todo?.id), {
-          isCompleted: true,
-        });
-        fetchTodos();
-        alert("Todo marked as done!");
-      } catch (error) {
-        console.error('Error updating todo: ', error);
-      }
+    try {
+      await updateDoc(doc(db, "todos", todo?.id), {
+        isCompleted: true,
+      });
+      fetchTodos();
+      alert("Todo marked as done!");
+    } catch (error) {
+      console.error("Error updating todo: ", error);
+    }
   };
   const markAsImportant = async (todo) => {
-      try {
-        await updateDoc(doc(db, 'todos', todo?.id), {
-          isImportant: true,
-        });
-        fetchTodos();
-        alert("Todo marked as important!");
-      } catch (error) {
-        console.error('Error updating importance: ', error);
-      }
+    try {
+      await updateDoc(doc(db, "todos", todo?.id), {
+        isImportant: true,
+      });
+      fetchTodos();
+      alert("Todo marked as important!");
+    } catch (error) {
+      console.error("Error updating importance: ", error);
+    }
   };
   const deleteTodo = async (todo) => {
-      try {
-        await deleteDoc(doc(db, 'todos', todo?.id));
-        fetchTodos();
-        alert("Todo deleted successfully!");
-      } catch (error) {
-        console.error('Error deleting todo: ', error);
-      }
-    };
+    try {
+      await deleteDoc(doc(db, "todos", todo?.id));
+      fetchTodos();
+      alert("Todo deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting todo: ", error);
+    }
+  };
 
   const startListening = () => {
     if (!("webkitSpeechRecognition" in window)) {
@@ -92,7 +91,9 @@ const VoiceAssistant = () => {
       return;
     }
 
-    const recognition = new window.webkitSpeechRecognition();
+    // Create a new recognition instance if it doesn't exist
+    const recognition =
+      recognitionInstance || new window.webkitSpeechRecognition();
     recognition.lang = "en-US";
     recognition.continuous = true; // Enable continuous listening for real-time updates
     recognition.interimResults = true; // Enable interim results for real-time display
@@ -228,8 +229,7 @@ const VoiceAssistant = () => {
       if (recognitionInstance) {
         recognitionInstance.stop(); // Stop the recognition instance
       }
-    }
-    else if (interimTranscript.trim()) {  
+    } else if (interimTranscript.trim()) {
       handleCommand(interimTranscript.trim()); // Parse and execute the command
       setInterimTranscript(""); // Clear the interim transcript after confirmation
       setIsModalOpen(false); // Close the modal
@@ -237,7 +237,6 @@ const VoiceAssistant = () => {
       if (recognitionInstance) {
         recognitionInstance.stop(); // Stop the recognition instance
       }
-  
     } else {
       alert("No command to confirm.");
     }

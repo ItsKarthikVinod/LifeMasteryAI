@@ -70,6 +70,13 @@ const Navbar = () => {
           {userLoggedIn ? (
             <>
               <Link
+                to="/"
+                className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Home
+              </Link>
+              <Link
                 to="/dashboard"
                 className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
                 onClick={() => setIsMenuOpen(false)}
@@ -84,9 +91,8 @@ const Navbar = () => {
                 Community
               </Link>
               <button
-                onClick={handleSignOut }
+                onClick={handleSignOut}
                 className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
-                
               >
                 Logout
               </button>
@@ -117,7 +123,6 @@ const Navbar = () => {
             onClick={toggleMenu}
             className="text-white hover:text-teal-400 focus:outline-none"
             aria-label="Toggle Menu"
-            
           >
             <svg
               className="w-6 h-6"
@@ -162,7 +167,6 @@ const Navbar = () => {
             <button
               onClick={handleSignOut}
               className="text-lg text-center hover:text-teal-400"
-              
             >
               Logout
             </button>
@@ -171,14 +175,14 @@ const Navbar = () => {
           <>
             <Link
               to="/login"
-                className="text-lg text-center hover:text-teal-400"
+              className="text-lg text-center hover:text-teal-400"
               onClick={() => setIsMenuOpen(false)}
             >
               Login
             </Link>
             <Link
               to="/register"
-                className="text-lg text-center hover:text-teal-400"
+              className="text-lg text-center hover:text-teal-400"
               onClick={() => setIsMenuOpen(false)}
             >
               Register
