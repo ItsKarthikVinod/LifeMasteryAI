@@ -9,13 +9,13 @@ import {
   updateDoc,
   doc,
   deleteDoc,
-  serverTimestamp
+  serverTimestamp,
 } from "firebase/firestore";
-import { FaThumbsUp, FaComment, FaTrash, FaTimes } from "react-icons/fa"; // Added missing FaTimes import
+import { FaThumbsUp, FaComment, FaTrash, FaTimes } from "react-icons/fa";
 import Modal from "react-modal";
 import { useAuth } from "../contexts/authContext";
 
-Modal.setAppElement("#root"); // Set the app element for accessibility
+Modal.setAppElement("#root");
 
 const CommunityPage = () => {
   const [posts, setPosts] = useState([]);
@@ -82,7 +82,7 @@ const CommunityPage = () => {
         user: userName || "Anonymous User",
         content: newComment,
         timestamp: new Date(),
-        email: currentUser.email
+        email: currentUser.email,
       },
     ];
 
@@ -145,8 +145,6 @@ const CommunityPage = () => {
   };
 
   const deleteComment = async (postId, commentIndex) => {
-   
-
     const postRef = doc(db, "posts", postId);
     const post = posts.find((p) => p.id === postId);
     const updatedComments = post.comments.filter(
@@ -176,32 +174,32 @@ const CommunityPage = () => {
   const isAdmin = (userEmail) => userEmail === adminEmail;
 
   return (
-    <div className="bg-gradient-to-r from-teal-400 to-blue-500 min-h-screen mx-auto mt-15 p-24">
-      <h2 className="text-4xl font-extrabold mb-8 mt-24 text-center text-white">
+    <div className="bg-gradient-to-r from-teal-400 to-blue-500 min-h-screen mx-auto p-4 sm:p-8 lg:p-12 ">
+      <h2 className="text-3xl sm:text-4xl font-extrabold mb-8 lg:mt-20 mt-28 text-center text-white">
         Community Forum
       </h2>
 
       <div className="flex justify-center mb-6">
         <button
           onClick={openModal}
-          className="bg-teal-600 text-white px-6 py-3 rounded-full hover:bg-teal-700 shadow-lg text-lg font-bold"
+          className="bg-teal-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full hover:bg-teal-700 shadow-lg text-sm sm:text-lg font-bold"
         >
           New Post
         </button>
       </div>
 
-      <div className="posts-list grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="posts-list grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
         {posts.map((post) => (
           <div
             key={post.id}
-            className={`post-card shadow-xlg rounded-lg p-6 ${
+            className={`post-card shadow-lg rounded-lg p-4 sm:p-6 ${
               isAdmin(post.email)
                 ? "border-4 border-yellow-500 bg-yellow-100"
                 : "bg-white"
             }`}
           >
             <h3
-              className={`text-2xl font-extrabold mb-4 ${
+              className={`text-lg sm:text-xl font-extrabold mb-4 ${
                 isAdmin(post.email) ? "text-yellow-900" : "text-teal-700"
               }`}
             >
@@ -214,7 +212,7 @@ const CommunityPage = () => {
               className={
                 isAdmin(post.email)
                   ? "text-gray-800 font-medium mb-4"
-                  : "text-gray-800  mb-4"
+                  : "text-gray-800 mb-4"
               }
             >
               {post.content}
@@ -327,9 +325,11 @@ const CommunityPage = () => {
       <Modal
         isOpen={modalIsOpen}
         onRequestClose={closeModal}
-        className="lg:m-24 lg:p-20 m-12 my-20 p-12 modal-container bg-white z-10"
+        className="w-full sm:w-3/4 lg:w-1/2 mx-auto my-20 p-6 sm:p-12 bg-white rounded-lg shadow-lg"
       >
-        <h2 className="text-2xl font-extrabold mb-4">Create a New Post</h2>
+        <h2 className="text-xl sm:text-2xl font-extrabold mb-4">
+          Create a New Post
+        </h2>
         <input
           type="text"
           placeholder="Post Title"

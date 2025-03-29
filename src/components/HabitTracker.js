@@ -12,7 +12,6 @@ import { useAuth } from "../contexts/authContext";
 import useGetHabits from "../hooks/useGetHabits";
 import OpenAI from "openai";
 
-
 const HabitTracker = () => {
   const [habitName, setHabitName] = useState("");
   const { currentUser } = useAuth();
@@ -21,6 +20,7 @@ const HabitTracker = () => {
   const [completionRate, setCompletionRate] = useState(0); // Completion percentage
   const [aiInsights, setAiInsights] = useState(""); // AI-generated insights
   const [isSpeaking, setIsSpeaking] = useState(false); // State to track if speech is active
+  const [isLoading, setIsLoading] = useState(false);
 
   // OpenAI Configuration
   const openai = useMemo(() => {
@@ -30,6 +30,8 @@ const HabitTracker = () => {
       dangerouslyAllowBrowser: true,
     });
   }, []);
+
+  
 
   // Function to calculate progress analytics
   const calculateProgress = useCallback(() => {
@@ -69,9 +71,11 @@ const HabitTracker = () => {
 
     await Promise.all(resetPromises);
     fetchHabits();
-  }, [fetchedHabits, fetchHabits]); // Add dependencies
+  }, [ fetchedHabits, fetchHabits ]); // Add dependencies
   // Function to generate AI insights using OpenAI
-  const generateAIInsights = useCallback(async () => {
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const generateAIInsights = async () => {
     const habitSummary = fetchedHabits
       .map(
         (habit) =>
@@ -88,19 +92,32 @@ const HabitTracker = () => {
   `;
 
     try {
+      // Add a delay to prevent hitting the rate limit
+      setIsLoading(true);
+      await delay(3000); // 1-second delay
+
       const response = await openai.chat.completions.create({
-        model: "deepseek/deepseek-chat-v3-0324:free", // Use GPT-4 model
+        model: "google/gemma-3-12b-it:free",
         messages: [
           { role: "system", content: "You are a helpful assistant." },
           { role: "user", content: prompt },
         ],
       });
 
-      setAiInsights(response.choices[0].message.content.trim());
+      
+
+      if (response.choices && response.choices.length > 0) {
+        setAiInsights(response.choices[0].message.content.trim());
+      } else {
+        setAiInsights("Unable to generate insights at this time.");
+      }
     } catch (error) {
       console.error("Error generating AI insights:", error);
+      setAiInsights("An error occurred while generating insights.");
+    } finally {
+      setIsLoading(false);
     }
-  }, [fetchedHabits, completionRate, openai]); // Add dependencies
+  };
   // Function to toggle speech synthesis
   const toggleSpeech = (text) => {
     if (isSpeaking) {
@@ -205,11 +222,7 @@ const HabitTracker = () => {
     checkStreaks();
   }, [calculateProgress, checkStreaks]);
 
-  useEffect(() => {
-    if (fetchedHabits.length > 0) {
-      generateAIInsights();
-    }
-  }, [fetchedHabits.length, generateAIInsights]);
+
 
   return (
     <div className="habit-tracker-container px-4 sm:px-6 lg:px-8">
@@ -235,17 +248,17 @@ const HabitTracker = () => {
             <FaRobot className="text-2xl mr-2" />
             <h3 className="text-lg font-semibold">AI Insights</h3>
           </div>
-          {fetchedHabits.length === 0 ? (
-            <p className="text-sm">
-              Add some habits to get personalized AI-powered insights!
-            </p>
-          ) : aiInsights ? (
-            <p className="text-sm">{aiInsights}</p>
-          ) : (
+          {isLoading ? (
             <div className="flex items-center justify-center">
               <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-white mr-2"></div>
               <p className="text-sm">Loading AI-powered insights...</p>
             </div>
+          ) : aiInsights ? (
+            <p className="text-sm">{aiInsights}</p>
+          ) : (
+            <p className="text-sm">
+              Click the button below to generate AI-powered insights!
+            </p>
           )}
           {aiInsights && (
             <button
@@ -257,11 +270,18 @@ const HabitTracker = () => {
             </button>
           )}
         </div>
+        <button
+          onClick={generateAIInsights}
+          className="mt-4 bg-teal-500 text-white px-4 py-2 rounded w-full sm:w-auto"
+          disabled={isLoading} // Disable button while loading
+        >
+          {isLoading ? "Generating Insights..." : "Generate AI Insights"}
+        </button>
       </div>
 
       <form
         onSubmit={addHabit}
-        className="mb-6 flex flex-col sm:flex-row items-center"
+        className="mb-6 flex flex-col sm:flex-row items-center md:justify-center md:space-x-2"
       >
         <input
           type="text"
@@ -272,7 +292,7 @@ const HabitTracker = () => {
         />
         <button
           type="submit"
-          className="sm:ml-2 bg-teal-500 text-white px-4 py-2 rounded w-full sm:w-auto"
+          className="sm:ml-2 sm:w-auto bg-teal-500 text-white px-4 py-2 rounded w-full  "
         >
           Add Habit
         </button>

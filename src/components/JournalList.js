@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import useGetJournalEntries from "../hooks/useGetJournals";
-import {
-
-  FaTrash,
-  FaRobot,
-  FaSpinner,
-  FaVolumeUp,
-} from "react-icons/fa"; // Import speaker icon
+import { FaTrash, FaRobot, FaSpinner, FaVolumeUp } from "react-icons/fa"; // Import icons
 import { OpenAI } from "openai"; // Import OpenAI
 
 const JournalList = () => {
@@ -31,7 +25,7 @@ const JournalList = () => {
 
   useEffect(() => {
     fetchJournalEntries();
-  });
+  }, [fetchJournalEntries]);
 
   const formatDate = (timestamp) => {
     const date = new Date(timestamp.seconds * 1000);
@@ -83,9 +77,17 @@ const JournalList = () => {
         max_tokens: 150,
       });
 
-      setAiFeedback(response.choices[0].message.content.trim());
+      
+
+      if (response.choices && response.choices.length > 0) {
+        setAiFeedback(response.choices[0].message.content.trim());
+      } else {
+        console.error("No choices returned in the API response.");
+        setAiFeedback("Unable to analyze emotions at this time.");
+      }
     } catch (error) {
       console.error("Error analyzing emotions:", error);
+      setAiFeedback("An error occurred while analyzing emotions.");
     } finally {
       setLoadinga(false); // Stop loading
     }
@@ -104,7 +106,7 @@ const JournalList = () => {
 
     try {
       const response = await openai.chat.completions.create({
-        model: "deepseek/deepseek-chat-v3-0324:free",
+        model: "deepseek/deepseek-r1-zero:free",
         messages: [
           { role: "system", content: "You are a helpful assistant." },
           { role: "user", content: prompt },
@@ -112,9 +114,17 @@ const JournalList = () => {
         max_tokens: 200,
       });
 
-      setMonthlySummary(response.choices[0].message.content.trim());
+     
+
+      if (response.choices && response.choices.length > 0) {
+        setMonthlySummary(response.choices[0].message.content.trim());
+      } else {
+        console.error("No choices returned in the API response.");
+        setMonthlySummary("Unable to summarize reflections at this time.");
+      }
     } catch (error) {
       console.error("Error summarizing reflections:", error);
+      setMonthlySummary("An error occurred while summarizing reflections.");
     } finally {
       setLoadings(false); // Stop loading
     }

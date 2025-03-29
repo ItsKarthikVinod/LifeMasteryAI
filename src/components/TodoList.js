@@ -110,10 +110,14 @@ const TodoList = () => {
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-4 text-center">Your To-Do List</h2>
-      
+      <h2 className="text-2xl font-semibold mb-4 text-center">
+        Your To-Do List
+      </h2>
 
-      <form onSubmit={addTodo} className="flex items-center mb-6">
+      <form
+        onSubmit={addTodo}
+        className="flex items-center mb-6 flex-col sm:flex-row justify-center"
+      >
         <input
           type="text"
           value={taskName}
@@ -121,7 +125,10 @@ const TodoList = () => {
           className="flex-grow border p-2 rounded focus:outline-none focus:border-blue-500"
           placeholder="Enter a task"
         />
-        <button type="submit" className="ml-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+        <button
+          type="submit"
+          className=" sm:ml-2 sm:w-auto mt-3   bg-teal-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
           Add Task
         </button>
       </form>
@@ -130,7 +137,11 @@ const TodoList = () => {
         {todoss.map((todo) => (
           <li
             key={todo.id}
-            className={`flex items-center p-3 rounded-md shadow-md ${todo.isCompleted ? 'bg-teal-200 text-gray-600 line-through' : 'bg-white'} ${todo.isImportant ? 'border-4 border-yellow-500' : ''}`}
+            className={`flex items-center p-3 rounded-md shadow-md ${
+              todo.isCompleted
+                ? "bg-teal-200 text-gray-600 line-through"
+                : "bg-white"
+            } ${todo.isImportant ? "border-4 border-yellow-500" : ""}`}
           >
             {/* Checkbox for marking completion */}
             <input
@@ -140,8 +151,9 @@ const TodoList = () => {
               className="mr-3 accent-teal-500"
             />
             <span
-              className={`flex-grow cursor-pointer ${todo.isCompleted ? 'line-through text-gray-500' : ''}`}
-              
+              className={`flex-grow cursor-pointer ${
+                todo.isCompleted ? "line-through text-gray-500" : ""
+              }`}
             >
               {editId === todo.id ? (
                 <input
@@ -157,16 +169,32 @@ const TodoList = () => {
 
             <div className="flex space-x-2">
               {editId === todo.id ? (
-                <button onClick={saveEdit} className="text-blue-500 hover:text-blue-600">Save</button>
+                <button
+                  onClick={saveEdit}
+                  className="text-blue-500 hover:text-blue-600"
+                >
+                  Save
+                </button>
               ) : (
                 <>
-                  <button onClick={() => startEdit(todo.id, todo.name)} className="text-yellow-500 hover:text-yellow-600">
+                  <button
+                    onClick={() => startEdit(todo.id, todo.name)}
+                    className="text-yellow-500 hover:text-yellow-600"
+                  >
                     <FontAwesomeIcon icon={faEdit} />
                   </button>
-                  <button onClick={() => deleteTodo(todo.id)} className="text-red-500 hover:text-red-600">
+                  <button
+                    onClick={() => deleteTodo(todo.id)}
+                    className="text-red-500 hover:text-red-600"
+                  >
                     <FontAwesomeIcon icon={faTrash} />
                   </button>
-                  <button onClick={() => toggleImportant(todo)} className={`text-yellow-500 hover:text-yellow-600 ${todo.isImportant ? 'text-yellow-700' : ''}`}>
+                  <button
+                    onClick={() => toggleImportant(todo)}
+                    className={`text-yellow-500 hover:text-yellow-600 ${
+                      todo.isImportant ? "text-yellow-700" : ""
+                    }`}
+                  >
                     <FontAwesomeIcon icon={faStar} />
                   </button>
                 </>

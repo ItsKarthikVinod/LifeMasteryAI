@@ -10,7 +10,17 @@ const Pomodoro = () => {
   const [isWorkSession, setIsWorkSession] = useState(true);
   const [sessionCount, setSessionCount] = useState(0);
   const [isMaximized, setIsMaximized] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
+  
+  let bool = false;
+  
+  if (window.innerWidth < 1024) {
+    bool = false;
+  }
+  else {
+    bool = true;
+  }
+  const [isVisible, setIsVisible] = useState(bool);
+  
 
   const navigate = useNavigate();
   const nodeRef = useRef(null); // Create a ref for the draggable element

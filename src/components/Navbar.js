@@ -12,6 +12,7 @@ const Navbar = () => {
 
   const handleSignOut = async () => {
     try {
+      setIsMenuOpen(false); // Close the menu if it's open
       await doSignOut(); // Handle sign-out
       navigate("/login"); // Navigate to login page after sign out
     } catch (error) {
@@ -35,28 +36,24 @@ const Navbar = () => {
           />
 
           {/* Website Name and AI Badge */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             {/* Website Name */}
             <Link
               to="/"
-              className="text-4xl font-extrabold bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 text-transparent bg-clip-text hover:from-green-300 hover:via-green-400 hover:to-green-500 transition-all duration-500 transform hover:scale-110 font-poppins"
+              className="text-2xl font-extrabold bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 text-transparent bg-clip-text hover:from-green-300 hover:via-green-400 hover:to-green-500 transition-all duration-500 transform hover:scale-110 font-poppins sm:text-3xl md:text-4xl"
             >
               Life Mastery
             </Link>
 
             {/* AI Badge */}
-            <div className="relative flex items-center bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-gray-800 px-3 py-1 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 z-20">
-              <FaRobot className="text-xl mr-2 animate-pulse" />
-              <span className="text-sm font-semibold">AI</span>
+            <div className="relative flex items-center bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-gray-800 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 z-20">
+              <FaRobot className="text-sm sm:text-base md:text-lg mr-1 sm:mr-2 animate-pulse" />
+              <span className="text-xs sm:text-sm font-semibold">AI</span>
 
-              {/* Subtle Sparkle and Confetti Elements */}
-              <div className="absolute -top-3 -right-4 w-16 h-16">
-                {/* Top-Left Sparkle */}
-                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce-slow absolute top-2 left-9 -z-10 "></div>
-                
-                {/* Bottom-Left Sparkle */}
-                <div className="w-2 h-2 bg-yellow-300 rounded-full animate-bounce-slow absolute bottom-4 -left-3 -z-10"></div>
-                
+              {/* Sparkle Effects */}
+              <div className="absolute -top-2 lg:right-1 -right-3  w-10 sm:w-12 h-10 sm:h-12">
+                <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-yellow-400 rounded-full animate-bounce-slow absolute top-2 left-6 sm:left-9 -z-10"></div>
+                <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-yellow-300 rounded-full animate-bounce-slow absolute bottom-3 sm:bottom-3 -left-2 sm:-left-3 -z-10"></div>
               </div>
             </div>
           </div>
@@ -66,6 +63,7 @@ const Navbar = () => {
           <Link
             to="/"
             className="text-2xl hover:text-gray-300 transition-all duration-300 transform hover:scale-105"
+            onClick={() => setIsMenuOpen(false)}
           >
             Home
           </Link>
@@ -74,18 +72,21 @@ const Navbar = () => {
               <Link
                 to="/dashboard"
                 className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
+                onClick={() => setIsMenuOpen(false)}
               >
                 Dashboard
               </Link>
               <Link
                 to="/community"
                 className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
+                onClick={() => setIsMenuOpen(false)}
               >
                 Community
               </Link>
               <button
-                onClick={handleSignOut}
+                onClick={handleSignOut }
                 className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
+                
               >
                 Logout
               </button>
@@ -95,12 +96,14 @@ const Navbar = () => {
               <Link
                 to="/login"
                 className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
+                onClick={() => setIsMenuOpen(false)}
               >
                 Login
               </Link>
               <Link
                 to="/register"
                 className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
+                onClick={() => setIsMenuOpen(false)}
               >
                 Register
               </Link>
@@ -113,6 +116,8 @@ const Navbar = () => {
           <button
             onClick={toggleMenu}
             className="text-white hover:text-teal-400 focus:outline-none"
+            aria-label="Toggle Menu"
+            
           >
             <svg
               className="w-6 h-6"
@@ -143,18 +148,21 @@ const Navbar = () => {
             <Link
               to="/dashboard"
               className="text-lg text-center hover:text-teal-400"
+              onClick={() => setIsMenuOpen(false)}
             >
               Dashboard
             </Link>
             <Link
               to="/community"
               className="text-lg text-center hover:text-teal-400"
+              onClick={() => setIsMenuOpen(false)}
             >
               Community
             </Link>
             <button
               onClick={handleSignOut}
               className="text-lg text-center hover:text-teal-400"
+              
             >
               Logout
             </button>
@@ -163,13 +171,15 @@ const Navbar = () => {
           <>
             <Link
               to="/login"
-              className="text-lg text-center hover:text-teal-400"
+                className="text-lg text-center hover:text-teal-400"
+              onClick={() => setIsMenuOpen(false)}
             >
               Login
             </Link>
             <Link
               to="/register"
-              className="text-lg text-center hover:text-teal-400"
+                className="text-lg text-center hover:text-teal-400"
+              onClick={() => setIsMenuOpen(false)}
             >
               Register
             </Link>

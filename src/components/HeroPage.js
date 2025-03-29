@@ -13,7 +13,7 @@ import HeroImage from "../assets/hero_img2.png"; // Ensure the path is correct
 
 const Hero = () => {
   const navigate = useNavigate();
-  
+
   const [showPopup, setShowPopup] = useState(false);
   const [backgroundColor, setBackgroundColor] = useState(
     "bg-gradient-to-br from-indigo-500 to-blue-600"
@@ -29,7 +29,6 @@ const Hero = () => {
   };
 
   const handleMoodChange = (mood) => {
-    
     switch (mood) {
       case "happy":
         setBackgroundColor("bg-gradient-to-br from-yellow-400 to-orange-500");
@@ -121,7 +120,7 @@ const Hero = () => {
       {/* Hero Section Container */}
       <div className="container mx-auto flex flex-col-reverse md:flex-row items-center px-6 py-16 space-y-12 md:space-y-0 md:space-x-16">
         {/* Hero Image */}
-        <div className="flex-shrink-0 w-full md:w-1/2 xl:w-1/3 transform transition-all duration-1000 ease-in-out opacity-0 translate-y-10 hover:scale-105 hover:opacity-100 animate__animated animate__fadeInLeft">
+        <div className="flex-shrink-0 w-full md:w-1/2 xl:w-1/3 transform transition-all duration-1000 ease-in-out hover:scale-105">
           <img
             src={HeroImage}
             alt="Hero"
@@ -130,18 +129,18 @@ const Hero = () => {
         </div>
 
         {/* Text Content */}
-        <div className="z-20 text-white text-center md:text-left space-y-6 md:space-y-8 opacity-0 translate-x-10 animate__animated animate__fadeInRight">
-          <h2 className="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight transition duration-500 transform hover:text-yellow-400">
+        <div className="z-20 text-white text-center md:text-left space-y-6 md:space-y-8">
+          <h2 className="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight">
             Unlock Your True Potential with <br /> Life Mastery
           </h2>
-          <p className="text-lg sm:text-xl opacity-90 max-w-lg mx-auto md:mx-0 transition duration-300 hover:opacity-100">
+          <p className="text-lg sm:text-xl opacity-90 max-w-lg mx-auto md:mx-0">
             Organize your life, track your habits, set goals, and achieve
             personal growth with our intelligent tools. Begin your journey
             today!
           </p>
           <button
             onClick={handleGetStarted}
-            className="z-30 px-8 py-3 bg-yellow-400 text-blue-600 font-semibold rounded-full hover:bg-yellow-500 hover:text-white transition duration-300 flex items-center justify-center space-x-2 mx-auto md:mx-0 cursor-pointer transform opacity-0 translate-y-6 animate__animated animate__fadeInUp"
+            className="px-8 py-3 bg-yellow-400 text-blue-600 font-semibold rounded-full hover:bg-yellow-500 hover:text-white transition duration-300 flex items-center justify-center space-x-2 mx-auto md:mx-0"
           >
             <span>Get Started</span>
             <FaArrowRight />
@@ -226,13 +225,13 @@ const Hero = () => {
 
       {/* Decorative Bubbles */}
       <div className="absolute inset-0 flex justify-center items-center pointer-events-none z-0">
-        <div className="absolute top-0 left-0 opacity-20 animate__animated animate__fadeIn animate__delay-1s z-0">
+        <div className="absolute top-0 left-0 opacity-20">
           <div className="w-32 h-32 bg-gradient-to-br from-yellow-500 to-blue-500 rounded-full blur-xl"></div>
         </div>
-        <div className="absolute bottom-0 right-0 opacity-20 animate__animated animate__fadeIn animate__delay-2s z-0">
+        <div className="absolute bottom-0 right-0 opacity-20">
           <div className="w-48 h-48 bg-gradient-to-br from-pink-500 to-purple-500 rounded-full blur-xl"></div>
         </div>
-        <div className="absolute bottom-12 left-12 opacity-30 animate__animated animate__fadeIn animate__delay-3s z-0">
+        <div className="absolute bottom-12 left-12 opacity-30">
           <div className="w-24 h-24 bg-gradient-to-br from-teal-500 to-blue-500 rounded-full blur-xl"></div>
         </div>
       </div>

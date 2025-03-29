@@ -214,7 +214,7 @@ const GoalTracker = () => {
                   />
                   <button
                     onClick={addSubGoal}
-                    className="bg-teal-500 text-white px-4 py-2 rounded"
+                    className="bg-teal-500 text-white px-4 py-2 rounded "
                   >
                     Add
                   </button>
