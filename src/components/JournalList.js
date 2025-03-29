@@ -106,7 +106,7 @@ const JournalList = () => {
 
     try {
       const response = await openai.chat.completions.create({
-        model: "deepseek/deepseek-r1-zero:free",
+        model: "deepseek/deepseek-chat-v3-0324:free",
         messages: [
           { role: "system", content: "You are a helpful assistant." },
           { role: "user", content: prompt },
