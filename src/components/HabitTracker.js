@@ -170,31 +170,63 @@ const HabitTracker = () => {
     }
   };
 
-  const toggleCompletion = async (id, completed, streak) => {
-    try {
-      const habitRef = doc(db, "habits", id);
-      const today = new Date();
+ const toggleCompletion = async (id, completed, streak, lastCompleted) => {
+   try {
+     const habitRef = doc(db, "habits", id);
+     const today = new Date();
+     const todayStart = new Date(today.setHours(0, 0, 0, 0)); // Start of today
 
-      if (!completed) {
-        // Increment streak and update lastCompleted date
-        await updateDoc(habitRef, {
-          completed: true,
-          streak: streak + 1,
-          lastCompleted: today,
-        });
-      } else {
-        // Reset completion status (but keep streak unchanged)
-        await updateDoc(habitRef, {
-          completed: false,
-          streak: streak - 1,
-        });
-      }
+     if (!completed) {
+       // If the habit is being marked as completed
+       if (
+         lastCompleted &&
+         new Date(lastCompleted.seconds * 1000) >= todayStart
+       ) {
+         // If already completed today, do nothing
+         return;
+       }
 
-      fetchHabits();
-    } catch (error) {
-      console.error("Error updating habit completion: ", error);
-    }
-  };
+       // Increment streak and update lastCompleted date
+       await updateDoc(habitRef, {
+         completed: true,
+         streak: streak + 1,
+         lastCompleted: today,
+       });
+     } else {
+       // If the habit is being unchecked
+       if (
+         lastCompleted &&
+         new Date(lastCompleted.seconds * 1000) >= todayStart
+       ) {
+         // If unchecking on the same day, decrement streak
+         await updateDoc(habitRef, {
+           completed: false,
+           streak: streak > 0 ? streak - 1 : 0,
+           lastCompleted: null, // Reset lastCompleted since it's unchecked
+         });
+       } else if (
+         lastCompleted &&
+         new Date(lastCompleted.seconds * 1000) < todayStart
+       ) {
+         // If unchecking after a day has passed, keep streak unchanged
+         await updateDoc(habitRef, {
+           completed: false,
+         });
+       } else {
+         // If no valid lastCompleted date, just uncheck the habit
+         await updateDoc(habitRef, {
+           completed: false,
+           streak: streak > 0 ? streak - 1 : 0,
+           lastCompleted: null,
+         });
+       }
+     }
+
+     fetchHabits();
+   } catch (error) {
+     console.error("Error updating habit completion: ", error);
+   }
+ };
 
   const deleteHabit = async (id) => {
     try {
