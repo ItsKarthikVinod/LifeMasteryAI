@@ -154,7 +154,10 @@ const GoalTracker = () => {
     <div className="goal-tracker-container p-4 sm:p-6 md:p-8 lg:p-10">
       <h2 className="text-2xl font-semibold mb-4 text-center">Your Goals</h2>
 
-      <form onSubmit={addGoal} className="mb-6 flex flex-col sm:flex-row items-center gap-4">
+      <form
+        onSubmit={addGoal}
+        className="mb-6 flex flex-col sm:flex-row items-center gap-4"
+      >
         <input
           type="text"
           value={goalName}
@@ -162,7 +165,10 @@ const GoalTracker = () => {
           className="border p-2 rounded w-full sm:w-auto flex-grow"
           placeholder="Enter your goal"
         />
-        <button type="submit" className="bg-teal-500 text-white px-4 py-2 rounded w-full sm:w-auto">
+        <button
+          type="submit"
+          className="bg-teal-500 text-white px-4 py-2 rounded w-full sm:w-auto"
+        >
           Add Goal
         </button>
       </form>
@@ -171,35 +177,44 @@ const GoalTracker = () => {
         {goalss?.map((goal) => (
           <li key={goal.id} className="mb-4 p-4 border rounded shadow-sm">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <h3 className={`text-xl font-semibold ${goal.completed ? 'line-through text-gray-500' : ''}`}>
+              <h3
+                className={`text-xl font-semibold ${
+                  goal.completed ? "line-through text-gray-500" : ""
+                }`}
+              >
                 {goal.name}
               </h3>
-              <button onClick={() => deleteGoal(goal.id)} className="text-red-500">
+              <button
+                onClick={() => deleteGoal(goal.id)}
+                className="text-red-500"
+              >
                 <FaTrash />
               </button>
             </div>
-            
+
             {/* Progress Bar */}
             <div className="mt-4">
               <label className="block text-sm">Progress</label>
               <progress
-                value={calculateProgress(goal?.subGoals || [])} 
-                max="100" 
+                value={calculateProgress(goal?.subGoals || [])}
+                max="100"
                 className="w-full h-2 bg-gray-200 rounded"
               />
-              <span className="text-sm ml-2">{Math.round(calculateProgress(goal?.subGoals || []))}%</span>
+              <span className="text-sm ml-2">
+                {Math.round(calculateProgress(goal?.subGoals || []))}%
+              </span>
             </div>
 
             {/* Add Sub-goal Button */}
-            <div className="flex flex-col sm:flex-row justify-between mt-4 gap-4">
-              <button 
-                onClick={() => setCurrentGoalId(goal.id)} 
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mt-4">
+              <button
+                onClick={() => setCurrentGoalId(goal.id) }
                 className="bg-teal-500 text-white px-4 py-2 rounded w-full sm:w-auto"
               >
                 Add Sub-goal
               </button>
               {currentGoalId === goal.id && (
-                <div className="flex flex-col sm:flex-row gap-2 mt-2 w-full">
+                <div className="flex flex-col lg:flex-row gap-4 mt-2 lg:mt-0">
                   <input
                     type="text"
                     value={subGoalInput}
@@ -227,8 +242,12 @@ const GoalTracker = () => {
             {/* Render sub-goals */}
             <ul className="mt-4">
               {goal?.subGoals?.map((subGoal, index) => (
-                <li key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 p-2 border rounded gap-4">
-                  {editingSubGoalIndex === index && currentGoalId === goal.id ? (
+                <li
+                  key={index}
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 p-2 border rounded gap-4"
+                >
+                  {editingSubGoalIndex === index &&
+                  currentGoalId === goal.id ? (
                     <div className="flex flex-col sm:flex-row gap-2 items-center w-full">
                       <input
                         type="text"
@@ -243,7 +262,10 @@ const GoalTracker = () => {
                         onChange={(e) => setEditingDueDate(e.target.value)}
                         className="border p-2 rounded flex-grow"
                       />
-                      <button onClick={saveSubGoalEdit} className="text-teal-500">
+                      <button
+                        onClick={saveSubGoalEdit}
+                        className="text-teal-500"
+                      >
                         <FaCheck />
                       </button>
                     </div>
@@ -253,18 +275,39 @@ const GoalTracker = () => {
                         <input
                           type="checkbox"
                           checked={subGoal.completed}
-                          onChange={() => toggleSubGoalCompletion(goal.id, index)}
+                          onChange={() =>
+                            toggleSubGoalCompletion(goal.id, index)
+                          }
                           className="mr-2"
                         />
-                        <span className={`${subGoal.completed ? 'line-through text-gray-500' : ''}`}>
+                        <span
+                          className={`${
+                            subGoal.completed
+                              ? "line-through text-gray-500"
+                              : ""
+                          }`}
+                        >
                           {subGoal.name} (Due: {subGoal.dueDate})
                         </span>
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={() => editSubGoal(goal.id, index, subGoal.name, subGoal.dueDate)} className="text-teal-500">
+                        <button
+                          onClick={() =>
+                            editSubGoal(
+                              goal.id,
+                              index,
+                              subGoal.name,
+                              subGoal.dueDate
+                            )
+                          }
+                          className="text-teal-500"
+                        >
                           <FaEdit />
                         </button>
-                        <button onClick={() => deleteSubGoal(goal.id, index)} className="text-red-500">
+                        <button
+                          onClick={() => deleteSubGoal(goal.id, index)}
+                          className="text-red-500"
+                        >
                           <FaTrash />
                         </button>
                       </div>

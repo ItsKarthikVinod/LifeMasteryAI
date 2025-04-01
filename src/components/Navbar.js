@@ -145,7 +145,7 @@ const Navbar = () => {
           <>
             <Link
               to="/"
-              className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
+              className="text-lg text-center hover:text-teal-400"
               onClick={() => setIsMenuOpen(false)}
             >
               Home
