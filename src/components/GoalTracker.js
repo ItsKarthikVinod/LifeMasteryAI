@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase/firebase';
 import { collection, addDoc,  doc, updateDoc, deleteDoc, } from 'firebase/firestore';
-import { FaCheck, FaEdit, FaTrash } from 'react-icons/fa'; // Icons for edit, delete, and check
+import { FaCheck, FaEdit, FaTrash, FaCalendarAlt } from 'react-icons/fa'; // Icons for edit, delete, and check
 import { useAuth } from "../contexts/authContext";
 
 import useGetGoals from '../hooks/useGetGoals';
-const GoalTracker = () => {
+const GoalTracker = ({toggleCalendarModal}) => {
   const [goalName, setGoalName] = useState('');
 
   const [subGoalInput, setSubGoalInput] = useState('');
@@ -22,6 +22,26 @@ const GoalTracker = () => {
     fetchGoals();
   });
 
+  const isOverdue = (dueDate) => {
+    const today = new Date();
+    const due = new Date(dueDate);
+    return due < today && !isNaN(due); // Check if due date is in the past
+  };
+
+  const getCalendarEvents = () => {
+    const events = [];
+    goalss.forEach((goal) => {
+      goal.subGoals.forEach((subGoal) => {
+        events.push({
+          title: `${goal.name}: ${subGoal.name}`,
+          start: new Date(subGoal.dueDate),
+          end: new Date(subGoal.dueDate),
+          allDay: true,
+        });
+      });
+    });
+    return events;
+  };
   
 
   const addGoal = async (e) => {
@@ -151,11 +171,9 @@ const GoalTracker = () => {
   };
 
   return (
-    <div
-      className={`goal-tracker-container  `}
-    >
+    <div className={`goal-tracker-container `}>
       <h2
-        className={`text-2xl font-semibold mb-4 text-center ${
+        className={`text-2xl font-semibold mb-6 text-center ${
           theme === "dark" ? "text-teal-400" : ""
         }`}
       >
@@ -189,11 +207,11 @@ const GoalTracker = () => {
       </form>
 
       {/* Goals List */}
-      <ul>
+      <ul className="space-y-6">
         {goalss?.map((goal) => (
           <li
             key={goal.id}
-            className={`mb-4 p-4 border rounded shadow-sm ${
+            className={`p-4 border rounded shadow-sm ${
               theme === "dark"
                 ? "bg-gray-800 border-gray-700 text-white"
                 : "bg-white/40 border-gray-300"
@@ -206,6 +224,8 @@ const GoalTracker = () => {
                     ? theme === "dark"
                       ? "line-through text-gray-400"
                       : "line-through text-gray-500"
+                    : isOverdue(goal.dueDate)
+                    ? "text-red-500"
                     : ""
                 }`}
               >
@@ -297,14 +317,20 @@ const GoalTracker = () => {
             </div>
 
             {/* Render Sub-goals */}
-            <ul className="mt-4">
+            <ul className="mt-4 space-y-2">
               {goal?.subGoals?.map((subGoal, index) => (
                 <li
                   key={index}
-                  className={`flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 p-2 border rounded gap-4 ${
+                  className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 border rounded gap-4 ${
                     theme === "dark"
                       ? "bg-gray-800 border-gray-700 text-gray-200"
                       : "bg-white border-gray-300 text-gray-800"
+                  }  ${
+                    isOverdue(subGoal.dueDate)
+                      ? theme === "dark"
+                        ? "border-red-500 text-red-600"
+                        : "border-red-500 text-red-600"
+                      : ""
                   }`}
                 >
                   {editingSubGoalIndex === index &&
@@ -406,6 +432,18 @@ const GoalTracker = () => {
           </li>
         ))}
       </ul>
+      {/* View Calendar Button */}
+      <div className="mt-8 text-center">
+        <button
+          onClick={() => toggleCalendarModal(getCalendarEvents())}
+          className={`bg-teal-500 text-white px-6 py-3 rounded-lg font-bold ${
+            theme === "dark" ? "hover:bg-teal-600" : "hover:bg-teal-400"
+          }`}
+        >
+          <FaCalendarAlt className="inline-block mr-2" />
+          View Calendar
+        </button>
+      </div>
     </div>
   );
 };

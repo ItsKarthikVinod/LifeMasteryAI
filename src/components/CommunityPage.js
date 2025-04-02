@@ -177,7 +177,7 @@ const CommunityPage = () => {
     <div
       className={`min-h-screen mx-auto p-4 sm:p-8 lg:p-12 ${
         theme === "dark"
-          ? "bg-gray-900 text-gray-200"
+          ? "bg-gradient-to-r from-teal-900 to-blue-900 text-gray-200"
           : "bg-gradient-to-r from-teal-400 to-blue-500 text-gray-800"
       }`}
     >

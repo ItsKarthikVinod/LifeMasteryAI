@@ -9,6 +9,8 @@ const FullscreenPomodoro = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [isWorkSession, setIsWorkSession] = useState(true); // Track work/break session
   const [sessionCount, setSessionCount] = useState(0); // Track Pomodoro cycles
+  const [workDuration, setWorkDuration] = useState(25); // Adjustable work duration
+    const [breakDuration, setBreakDuration] = useState(5);
   const navigate = useNavigate();
   const {theme} = useAuth();
 
@@ -56,7 +58,9 @@ const FullscreenPomodoro = () => {
     >
       <div
         className={`relative  rounded-lg p-6 md:p-10 shadow-2xl w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-2xl ${
-          theme === "dark" ? "bg-gray-800/60 text-white" : "bg-white text-gray-800"
+          theme === "dark"
+            ? "bg-gray-800/60 text-white"
+            : "bg-white text-gray-800"
         }`}
       >
         {/* Close Fullscreen Button */}
@@ -78,6 +82,48 @@ const FullscreenPomodoro = () => {
         <div className="text-center text-5xl sm:text-6xl md:text-7xl font-bold  mb-6">
           {String(minutes).padStart(2, "0")} :{" "}
           {String(seconds).padStart(2, "0")}
+        </div>
+
+        {/* Adjust Work and Break Durations */}
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col items-center">
+            <label
+              className={`text-sm ${
+                theme === "dark" ? "text-gray-300" : "text-gray-600"
+              }`}
+            >
+              Work (min)
+            </label>
+            <input
+              type="number"
+              value={workDuration}
+              onChange={(e) => setWorkDuration(Number(e.target.value))}
+              className={`w-16 p-1 text-center border rounded ${
+                theme === "dark"
+                  ? "bg-gray-700 text-gray-200"
+                  : "bg-white text-gray-800"
+              }`}
+            />
+          </div>
+          <div className="flex flex-col items-center">
+            <label
+              className={`text-sm ${
+                theme === "dark" ? "text-gray-300" : "text-gray-600"
+              }`}
+            >
+              Break (min)
+            </label>
+            <input
+              type="number"
+              value={breakDuration}
+              onChange={(e) => setBreakDuration(Number(e.target.value))}
+              className={`w-16 p-1 text-center border rounded ${
+                theme === "dark"
+                  ? "bg-gray-700 text-gray-200"
+                  : "bg-white text-gray-800"
+              }`}
+            />
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row justify-center gap-4 mt-4">

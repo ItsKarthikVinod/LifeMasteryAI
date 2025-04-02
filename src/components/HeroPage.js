@@ -124,7 +124,7 @@ const Hero = () => {
           <img
             src={HeroImage}
             alt="Hero"
-            className="w-full h-full object-cover rounded-lg"
+            className="w-full h-full object-cover rounded-lg hidden sm:block"
           />
         </div>
 
@@ -149,7 +149,7 @@ const Hero = () => {
       </div>
 
       {/* Mood Selector (Positioned Below Hero Image on Mobile) */}
-      <div className="absolute bottom-12 w-full flex flex-wrap justify-center items-center space-x-4 md:mt-0 z-10">
+      <div className="absolute bottom-12 w-full flex flex-wrap justify-center items-center space-x-4 md:mt-0 z-10 sm:space-x-8 sm:space-y-0 space-y-4 sm:mt-24">
         <p className="text-white text-xl">How are you feeling today?</p>
         <div className="flex flex-wrap justify-center space-x-4 mt-4">
           <button
