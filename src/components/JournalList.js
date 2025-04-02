@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import useGetJournalEntries from "../hooks/useGetJournals";
 import { FaTrash, FaRobot, FaSpinner, FaVolumeUp } from "react-icons/fa"; // Import icons
 import { OpenAI } from "openai"; // Import OpenAI
+import { useAuth } from "../contexts/authContext"; // Import auth context
 
 const JournalList = () => {
   const [selectedDate, setSelectedDate] = useState("");
@@ -15,6 +16,7 @@ const JournalList = () => {
   const navigate = useNavigate();
   const { journalEntries, fetchJournalEntries, deleteJournalEntry } =
     useGetJournalEntries();
+  const { theme } = useAuth(); // Assuming you have a theme context
 
   // OpenAI Configuration
   const openai = new OpenAI({
@@ -163,16 +165,33 @@ const JournalList = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="max-w-4xl w-full mx-auto p-6 bg-gray-50 shadow-lg rounded-lg mt-24 sm:mt-32">
-        <h2 className="text-3xl font-bold text-teal-600 mb-6 text-center">
+    <div
+      className={`min-h-screen flex items-center justify-center ${
+        theme === "dark"
+          ? "bg-gray-900 text-gray-200"
+          : "bg-gray-100 text-gray-800"
+      }`}
+    >
+      <div
+        className={`max-w-4xl w-full mx-auto p-6 shadow-lg rounded-lg mt-24 sm:mt-32 ${
+          theme === "dark" ? "bg-gray-800" : "bg-gray-50"
+        }`}
+      >
+        <h2
+          className={`text-3xl font-bold mb-6 text-center ${
+            theme === "dark" ? "text-teal-400" : "text-teal-600"
+          }`}
+        >
           Your Journal Entries
         </h2>
 
+        {/* Search by Date */}
         <div className="mb-6">
           <label
             htmlFor="date"
-            className="block text-gray-700 font-medium mb-2"
+            className={`block font-medium mb-2 ${
+              theme === "dark" ? "text-gray-300" : "text-gray-700"
+            }`}
           >
             Search by Date
           </label>
@@ -181,41 +200,70 @@ const JournalList = () => {
             id="date"
             value={selectedDate}
             onChange={handleDateChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-400 focus:outline-none"
+            className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:outline-none ${
+              theme === "dark"
+                ? "bg-gray-700 border-gray-600 text-gray-200 focus:ring-teal-500"
+                : "bg-white border-gray-300 text-gray-800 focus:ring-teal-400"
+            }`}
           />
         </div>
 
+        {/* Journal Entries */}
         <div
           className="space-y-6 overflow-hidden overflow-y-auto"
           style={{ maxHeight: "400px", scrollBehavior: "smooth" }}
         >
           {filteredEntries.length === 0 ? (
             selectedDate ? (
-              <p className="text-center text-gray-500 italic">
+              <p
+                className={`text-center italic ${
+                  theme === "dark" ? "text-gray-400" : "text-gray-500"
+                }`}
+              >
                 No journal was found for the selected date.
               </p>
             ) : journalEntries.length === 0 ? (
-              <p className="text-center text-gray-500 italic">
+              <p
+                className={`text-center italic ${
+                  theme === "dark" ? "text-gray-400" : "text-gray-500"
+                }`}
+              >
                 No journal entries available. Try writing a journal entry!
               </p>
             ) : (
               journalEntries.map((entry, index) => (
                 <div
                   key={index}
-                  className="p-6 bg-white shadow-md rounded-md hover:shadow-lg transition-shadow flex justify-between items-start"
+                  className={`p-6 shadow-md rounded-md hover:shadow-lg transition-shadow flex justify-between items-start ${
+                    theme === "dark"
+                      ? "bg-gray-700 text-gray-200"
+                      : "bg-white text-gray-800"
+                  }`}
                 >
                   <div>
-                    <h3 className="text-xl font-semibold text-teal-700">
+                    <h3
+                      className={`text-xl font-semibold ${
+                        theme === "dark" ? "text-teal-400" : "text-teal-700"
+                      }`}
+                    >
                       {entry.title}
                     </h3>
-                    <p className="text-gray-600 mt-2">{entry.content}</p>
-                    <p className="text-sm text-gray-500 mt-4">
+                    <p className="mt-2">{entry.content}</p>
+                    <p
+                      className={`text-sm mt-4 ${
+                        theme === "dark" ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
                       {formatDate(entry.createdAt)}
                     </p>
                   </div>
                   <button
                     onClick={() => handleDelete(entry.id)}
-                    className="ml-4 text-gray-500 hover:text-red-500 transition-colors"
+                    className={`ml-4 transition-colors ${
+                      theme === "dark"
+                        ? "text-gray-400 hover:text-red-500"
+                        : "text-gray-500 hover:text-red-500"
+                    }`}
                   >
                     <FaTrash />
                   </button>
@@ -226,20 +274,36 @@ const JournalList = () => {
             filteredEntries.map((entry, index) => (
               <div
                 key={index}
-                className="p-6 bg-white shadow-md rounded-md hover:shadow-lg transition-shadow flex justify-between items-start"
+                className={`p-6 shadow-md rounded-md hover:shadow-lg transition-shadow flex justify-between items-start ${
+                  theme === "dark"
+                    ? "bg-gray-700 text-gray-200"
+                    : "bg-white text-gray-800"
+                }`}
               >
                 <div>
-                  <h3 className="text-xl font-semibold text-teal-700">
+                  <h3
+                    className={`text-xl font-semibold ${
+                      theme === "dark" ? "text-teal-400" : "text-teal-700"
+                    }`}
+                  >
                     {entry.title}
                   </h3>
-                  <p className="text-gray-600 mt-2">{entry.content}</p>
-                  <p className="text-sm text-gray-500 mt-4">
+                  <p className="mt-2">{entry.content}</p>
+                  <p
+                    className={`text-sm mt-4 ${
+                      theme === "dark" ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
                     {formatDate(entry.createdAt)}
                   </p>
                 </div>
                 <button
                   onClick={() => handleDelete(entry.id)}
-                  className="ml-4 text-gray-500 hover:text-red-500 transition-colors"
+                  className={`ml-4 transition-colors ${
+                    theme === "dark"
+                      ? "text-gray-400 hover:text-red-500"
+                      : "text-gray-500 hover:text-red-500"
+                  }`}
                 >
                   <FaTrash />
                 </button>
@@ -250,14 +314,22 @@ const JournalList = () => {
 
         {/* AI Feedback Section */}
         <div className="mt-10">
-          <h3 className="text-xl font-bold text-teal-600 mb-4 flex items-center">
-            <FaRobot className="text-2xl mr-2 text-blue-500" />
+          <h3
+            className={`text-xl font-bold mb-4 flex items-center ${
+              theme === "dark" ? "text-teal-400" : "text-teal-600"
+            }`}
+          >
+            <FaRobot className="text-2xl mr-2" />
             AI Smart Journal & Reflection Bot 📝
           </h3>
           <button
             onClick={analyzeEmotions}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-400 transition-transform transform hover:scale-105 mr-4"
-            disabled={loadinga} // Disable button while loading
+            className={`px-4 py-2 rounded-lg shadow-md transition-transform transform hover:scale-105 mr-4 ${
+              theme === "dark"
+                ? "bg-teal-600 text-white hover:bg-teal-500"
+                : "bg-blue-500 text-white hover:bg-blue-400"
+            }`}
+            disabled={loadinga}
           >
             {loadinga ? (
               <FaSpinner className="animate-spin inline-block mr-2" />
@@ -267,8 +339,12 @@ const JournalList = () => {
           </button>
           <button
             onClick={summarizeMonthlyReflections}
-            className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-400 transition-transform transform hover:scale-105"
-            disabled={loadings} // Disable button while loading
+            className={`px-4 py-2 rounded-lg shadow-md transition-transform transform hover:scale-105 ${
+              theme === "dark"
+                ? "bg-teal-600 text-white hover:bg-teal-500"
+                : "bg-green-500 text-white hover:bg-green-400"
+            }`}
+            disabled={loadings}
           >
             {loadings ? (
               <FaSpinner className="animate-spin inline-block mr-2" />
@@ -278,15 +354,25 @@ const JournalList = () => {
           </button>
 
           {aiFeedback && (
-            <div className="mt-6 p-4 bg-blue-100 text-blue-800 rounded-lg shadow relative">
+            <div
+              className={`mt-6 p-4 rounded-lg shadow relative ${
+                theme === "dark"
+                  ? "bg-gray-700 text-gray-200"
+                  : "bg-blue-100 text-blue-800"
+              }`}
+            >
               <h4 className="font-bold flex items-center">
-                <FaRobot className="text-xl mr-2 text-blue-500" />
+                <FaRobot className="text-xl mr-2" />
                 AI Feedback:
               </h4>
               <p>{aiFeedback}</p>
               <button
                 onClick={() => toggleSpeech(aiFeedback)}
-                className="absolute top-2 right-2 text-blue-500 hover:text-blue-700 transition"
+                className={`absolute top-2 right-2 transition ${
+                  theme === "dark"
+                    ? "text-gray-400 hover:text-teal-400"
+                    : "text-blue-500 hover:text-blue-700"
+                }`}
                 title="Read AI Feedback"
               >
                 <FaVolumeUp className="text-xl" />
@@ -295,15 +381,25 @@ const JournalList = () => {
           )}
 
           {monthlySummary && (
-            <div className="mt-6 p-4 bg-green-100 text-green-800 rounded-lg shadow relative">
+            <div
+              className={`mt-6 p-4 rounded-lg shadow relative ${
+                theme === "dark"
+                  ? "bg-gray-700 text-gray-200"
+                  : "bg-green-100 text-green-800"
+              }`}
+            >
               <h4 className="font-bold flex items-center">
-                <FaRobot className="text-xl mr-2 text-green-500" />
+                <FaRobot className="text-xl mr-2" />
                 Monthly Summary:
               </h4>
               <p>{monthlySummary}</p>
               <button
                 onClick={() => toggleSpeech(monthlySummary)}
-                className="absolute top-2 right-2 text-green-500 hover:text-green-700 transition"
+                className={`absolute top-2 right-2 transition ${
+                  theme === "dark"
+                    ? "text-gray-400 hover:text-teal-400"
+                    : "text-green-500 hover:text-green-700"
+                }`}
                 title="Read Monthly Summary"
               >
                 <FaVolumeUp className="text-xl" />
@@ -312,10 +408,15 @@ const JournalList = () => {
           )}
         </div>
 
+        {/* Back to Dashboard Button */}
         <div className="mt-10 text-center">
           <button
             onClick={() => navigate("/dashboard")}
-            className="bg-teal-500 text-white px-8 py-3 rounded-lg shadow-md hover:bg-teal-400 transition-transform transform hover:scale-105"
+            className={`px-8 py-3 rounded-lg shadow-md transition-transform transform hover:scale-105 ${
+              theme === "dark"
+                ? "bg-teal-600 text-white hover:bg-teal-500"
+                : "bg-teal-500 text-white hover:bg-teal-400"
+            }`}
           >
             Go Back to Dashboard
           </button>

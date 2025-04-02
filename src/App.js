@@ -10,25 +10,31 @@ import Challenges from './components/Challenges/Challenges';
 import CommunityPage from './components/CommunityPage';
 import FullscreenPomodoro from './components/FullScreenPomodoro';
 import Footer from './components/Footer'
-import Settings from './components/Settings';
+import {useAuth} from './contexts/authContext';
+
+import SettingsPage from './pages/SettingsPage';
+
 
 const App = () => {
+  const {theme} = useAuth();
   return (
-    <Router>
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<HeroPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/journal-list" element={<JournalList />} />
-        <Route path="/challenges" element={<Challenges />} />
-        <Route path="/community" element={<CommunityPage />} />
-        <Route path="/pomodoro/fullscreen" element={<FullscreenPomodoro />} />
-        <Route path="/settings" element={<Settings />} />
-      </Routes>
-      <Footer />
-    </Router>
+    <div className={theme === "dark" ? "dark" : ""}>
+      <Router>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<HeroPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/journal-list" element={<JournalList />} />
+          <Route path="/challenges" element={<Challenges />} />
+          <Route path="/community" element={<CommunityPage />} />
+          <Route path="/pomodoro/fullscreen" element={<FullscreenPomodoro />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Routes>
+        <Footer />
+      </Router>
+    </div>
   );
 };
 

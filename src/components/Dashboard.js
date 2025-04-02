@@ -9,7 +9,7 @@ import Pomodoro from "./Pomodoro";
 import VoiceAssistant from "./VoiceAssistant";
 
 const Dashboard = () => {
-  const { currentUser, userLoggedIn } = useAuth();
+  const { currentUser, userLoggedIn, theme } = useAuth();
   const navigate = useNavigate();
 
   // Redirect to login if not logged in
@@ -48,14 +48,34 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="bg-gradient-to-r from-teal-400 to-blue-500 min-h-screen p-6">
+    <div
+      className={` min-h-screen pt-6 ${
+        theme === "dark"
+          ? "bg-gradient-to-r from-gray-900 via-teal-800 to-blue-900"
+          : "bg-gradient-to-r from-teal-400 to-blue-500"
+      } `}
+    >
       <div className="p-8 mt-12">
-        <div className="text-center mb-6 bg-white shadow-lg rounded-lg p-3 mt-2">
-          <h1 className="text-4xl font-bold text-gray-800">
+        <div
+          className={`text-center mb-6  shadow-lg rounded-lg p-3 mt-2 ${
+            theme === "dark"
+              ? " bg-gray-800/90 backdrop-blur-lg"
+              : "bg-white/50 backdrop-blur-lg"
+          }`}
+        >
+          <h1
+            className={`text-4xl font-bold ${
+              theme === "dark" ? "text-gray-100" : "text-gray-800"
+            }`}
+          >
             Welcome to your Dashboard
           </h1>
 
-          <p className="text-gray-600 mt-2 text-lg flex items-center justify-center">
+          <p
+            className={` mt-2 text-lg flex items-center justify-center ${
+              theme === "dark" ? "text-gray-100" : "text-gray-600"
+            }`}
+          >
             <img
               src={
                 currentUser.photoURL
@@ -76,22 +96,38 @@ const Dashboard = () => {
         {/* Dashboard main section */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* GoalTracker Component (Largest) */}
-          <div className=" border-white col-span-1 lg:col-span-2 p-6 shadow-xl rounded-lg backdrop-blur-lg bg-white/50 transition-transform transform hover:scale-105 hover:shadow-2xl ">
+          <div
+            className={` border-white col-span-1 lg:col-span-2 p-6 shadow-xl rounded-lg backdrop-blur-lg bg-white/50 transition-transform transform hover:scale-105 hover:shadow-2xl ${
+              theme === "dark" ? "bg-gray-800/40 " : "bg-white/40"
+            } `}
+          >
             <GoalTracker />
           </div>
 
           {/* ToDoList Component (Second largest) */}
-          <div className="col-span-1 lg:col-span-1 p-6 shadow-xl rounded-lg backdrop-blur-lg bg-white/30 transition-transform transform hover:scale-105 hover:shadow-2xl">
+          <div
+            className={`col-span-1 lg:col-span-1 p-6 shadow-xl rounded-lg backdrop-blur-lg bg-white/30 transition-transform transform hover:scale-105 hover:shadow-2xl ${
+              theme === "dark" ? "bg-gray-900/40 " : "bg-white/40"
+            }`}
+          >
             <ToDoList todos={todos} />
           </div>
 
           {/* HabitTracker Component (Smallest) */}
-          <div className="col-span-1 lg:col-span-1 p-6 shadow-xl rounded-lg backdrop-blur-lg bg-white/30 transition-transform transform hover:scale-105 hover:shadow-2xl">
+          <div
+            className={`col-span-1 lg:col-span-1 p-6 shadow-xl rounded-lg backdrop-blur-lg bg-white/30 transition-transform transform hover:scale-105 hover:shadow-2xl  ${
+              theme === "dark" ? "bg-gray-800/40 " : "bg-white/40"
+            }`}
+          >
             <HabitTracker />
           </div>
 
           {/* Journal Component */}
-          <div className="col-span-1 lg:col-span-2 p-6 shadow-xl rounded-lg backdrop-blur-lg bg-white/40 transition-transform transform hover:scale-105 hover:shadow-2xl">
+          <div
+            className={`col-span-1 lg:col-span-2 p-6 shadow-xl rounded-lg backdrop-blur-lg bg-white/40 transition-transform transform hover:scale-105 hover:shadow-2xl ${
+              theme === "dark" ? "bg-gray-800/30 " : "bg-white/40"
+            }`}
+          >
             <Journal />
           </div>
         </div>
@@ -111,7 +147,11 @@ const Dashboard = () => {
         <div className="mt-8 text-center">
           <button
             onClick={() => navigate("/login")}
-            className="bg-teal-500 text-white px-6 py-3 rounded-lg shadow hover:bg-teal-400 transition"
+            className={` text-white px-6 py-3 rounded-lg shadow  transition  ${
+              theme === "dark"
+                ? "bg-teal-600 hover:bg-teal-500"
+                : "bg-teal-500 hover:bg-teal-400"
+            }`}
           >
             Logout
           </button>

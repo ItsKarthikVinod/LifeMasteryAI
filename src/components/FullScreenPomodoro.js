@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaWindowMinimize } from 'react-icons/fa';
+import { useAuth } from '../contexts/authContext';
 
 const FullscreenPomodoro = () => {
   const [minutes, setMinutes] = useState(25);
@@ -9,6 +10,7 @@ const FullscreenPomodoro = () => {
   const [isWorkSession, setIsWorkSession] = useState(true); // Track work/break session
   const [sessionCount, setSessionCount] = useState(0); // Track Pomodoro cycles
   const navigate = useNavigate();
+  const {theme} = useAuth();
 
   useEffect(() => {
     let interval;
@@ -45,22 +47,37 @@ const FullscreenPomodoro = () => {
   };
 
   return (
-    <div className="flex items-center justify-center w-screen h-screen bg-gradient-to-r from-purple-600 to-blue-500 p-6 sm:p-10 md:p-20">
-      <div className="relative bg-white rounded-lg p-6 md:p-10 shadow-2xl w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-2xl">
+    <div
+      className={`flex items-center justify-center w-screen h-screen  p-6 sm:p-10 md:p-20 lg:p-24 xl:p-28 ${
+        theme === "dark"
+          ? "bg-gradient-to-r from-purple-900 to-blue-800"
+          : "bg-gradient-to-r from-purple-600 to-blue-500"
+      }`}
+    >
+      <div
+        className={`relative  rounded-lg p-6 md:p-10 shadow-2xl w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-2xl ${
+          theme === "dark" ? "bg-gray-800/60 text-white" : "bg-white text-gray-800"
+        }`}
+      >
         {/* Close Fullscreen Button */}
         <button
-          className="absolute top-2 right-2 text-gray-700"
+          className={`absolute top-2 right-2  ${
+            theme === "dark"
+              ? "text-gray-300 hover:text-gray-100"
+              : "text-gray-700 hover:text-gray-900"
+          }`}
           onClick={closeFullscreen}
         >
           <FaWindowMinimize size={24} />
         </button>
 
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-teal-600 mb-6">
-          {isWorkSession ? 'Work Time' : 'Break Time'}
+          {isWorkSession ? "Work Time" : "Break Time"}
         </h2>
 
-        <div className="text-center text-5xl sm:text-6xl md:text-7xl font-bold text-gray-800 mb-6">
-          {String(minutes).padStart(2, '0')} : {String(seconds).padStart(2, '0')}
+        <div className="text-center text-5xl sm:text-6xl md:text-7xl font-bold  mb-6">
+          {String(minutes).padStart(2, "0")} :{" "}
+          {String(seconds).padStart(2, "0")}
         </div>
 
         <div className="flex flex-col sm:flex-row justify-center gap-4 mt-4">

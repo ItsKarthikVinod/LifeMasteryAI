@@ -83,6 +83,13 @@ const Navbar = () => {
               >
                 Community
               </Link>
+              <Link
+                to="/settings"
+                className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Settings
+              </Link>
               <button
                 onClick={handleSignOut}
                 className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"

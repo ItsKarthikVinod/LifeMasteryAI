@@ -14,7 +14,7 @@ const GoalTracker = () => {
   const [editingSubGoalIndex, setEditingSubGoalIndex] = useState(null);
   const [editingSubGoalName, setEditingSubGoalName] = useState('');
   const [editingDueDate, setEditingDueDate] = useState('');
-  const { currentUser } = useAuth();
+  const { currentUser, theme } = useAuth();
   const userId = currentUser.uid;
   const { fetchGoals, goalss } = useGetGoals();
 
@@ -151,9 +151,18 @@ const GoalTracker = () => {
   };
 
   return (
-    <div className="goal-tracker-container p-4 sm:p-6 md:p-8 lg:p-10">
-      <h2 className="text-2xl font-semibold mb-4 text-center">Your Goals</h2>
+    <div
+      className={`goal-tracker-container  `}
+    >
+      <h2
+        className={`text-2xl font-semibold mb-4 text-center ${
+          theme === "dark" ? "text-teal-400" : ""
+        }`}
+      >
+        Your Goals
+      </h2>
 
+      {/* Add Goal Form */}
       <form
         onSubmit={addGoal}
         className="mb-6 flex flex-col sm:flex-row items-center gap-4"
@@ -162,31 +171,53 @@ const GoalTracker = () => {
           type="text"
           value={goalName}
           onChange={(e) => setGoalName(e.target.value)}
-          className="border p-2 rounded w-full sm:w-auto flex-grow"
+          className={`border p-2 rounded w-full sm:w-auto flex-grow focus:outline-none focus:ring-2 ${
+            theme === "dark"
+              ? "bg-gray-800 border-gray-600 text-gray-200 focus:ring-teal-500"
+              : "bg-white border-gray-300 text-gray-800 focus:ring-teal-400"
+          }`}
           placeholder="Enter your goal"
         />
         <button
           type="submit"
-          className="bg-teal-500 text-white px-4 py-2 rounded w-full sm:w-auto"
+          className={`bg-teal-500 text-white px-4 py-2 rounded w-full sm:w-auto ${
+            theme === "dark" ? "hover:bg-teal-600" : "hover:bg-teal-400"
+          }`}
         >
           Add Goal
         </button>
       </form>
 
+      {/* Goals List */}
       <ul>
         {goalss?.map((goal) => (
-          <li key={goal.id} className="mb-4 p-4 border rounded shadow-sm">
+          <li
+            key={goal.id}
+            className={`mb-4 p-4 border rounded shadow-sm ${
+              theme === "dark"
+                ? "bg-gray-800 border-gray-700 text-white"
+                : "bg-white/40 border-gray-300"
+            }`}
+          >
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <h3
                 className={`text-xl font-semibold ${
-                  goal.completed ? "line-through text-gray-500" : ""
+                  goal.completed
+                    ? theme === "dark"
+                      ? "line-through text-gray-400"
+                      : "line-through text-gray-500"
+                    : ""
                 }`}
               >
                 {goal.name}
               </h3>
               <button
                 onClick={() => deleteGoal(goal.id)}
-                className="text-red-500"
+                className={`${
+                  theme === "dark"
+                    ? "text-red-400 hover:text-red-500"
+                    : "text-red-500 hover:text-red-600"
+                }`}
               >
                 <FaTrash />
               </button>
@@ -194,13 +225,25 @@ const GoalTracker = () => {
 
             {/* Progress Bar */}
             <div className="mt-4">
-              <label className="block text-sm">Progress</label>
+              <label
+                className={`block text-sm ${
+                  theme === "dark" ? "text-gray-300" : "text-gray-700"
+                }`}
+              >
+                Progress
+              </label>
               <progress
                 value={calculateProgress(goal?.subGoals || [])}
                 max="100"
-                className="w-full h-2 bg-gray-200 rounded"
+                className={`w-full h-2 rounded ${
+                  theme === "dark" ? "bg-gray-700" : "bg-gray-200"
+                }`}
               />
-              <span className="text-sm ml-2">
+              <span
+                className={`text-sm ml-2 ${
+                  theme === "dark" ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
                 {Math.round(calculateProgress(goal?.subGoals || []))}%
               </span>
             </div>
@@ -208,8 +251,10 @@ const GoalTracker = () => {
             {/* Add Sub-goal Button */}
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mt-4">
               <button
-                onClick={() => setCurrentGoalId(goal.id) }
-                className="bg-teal-500 text-white px-4 py-2 rounded w-full sm:w-auto"
+                onClick={() => setCurrentGoalId(goal.id)}
+                className={`bg-teal-500 text-white px-4 py-2 rounded w-full sm:w-auto ${
+                  theme === "dark" ? "hover:bg-teal-600" : "hover:bg-teal-400"
+                }`}
               >
                 Add Sub-goal
               </button>
@@ -219,19 +264,31 @@ const GoalTracker = () => {
                     type="text"
                     value={subGoalInput}
                     onChange={(e) => setSubGoalInput(e.target.value)}
-                    className="border p-2 rounded flex-grow"
+                    className={`border p-2 rounded flex-grow focus:outline-none focus:ring-2 ${
+                      theme === "dark"
+                        ? "bg-gray-800 border-gray-600 text-gray-200 focus:ring-teal-500"
+                        : "bg-white border-gray-300 text-gray-800 focus:ring-teal-400"
+                    }`}
                     placeholder="Enter sub-goal"
                   />
                   <input
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="border p-2 rounded flex-grow"
+                    className={`border p-2 rounded flex-grow focus:outline-none focus:ring-2 ${
+                      theme === "dark"
+                        ? "bg-gray-800 border-gray-600 text-white focus:ring-teal-500"
+                        : "bg-white border-gray-300 text-gray-800 focus:ring-teal-400"
+                    }`}
                     placeholder="Due date"
                   />
                   <button
                     onClick={addSubGoal}
-                    className="bg-teal-500 text-white px-4 py-2 rounded w-full sm:w-auto"
+                    className={`bg-teal-500 text-white px-4 py-2 rounded w-full sm:w-auto ${
+                      theme === "dark"
+                        ? "hover:bg-teal-600"
+                        : "hover:bg-teal-400"
+                    }`}
                   >
                     Add
                   </button>
@@ -239,12 +296,16 @@ const GoalTracker = () => {
               )}
             </div>
 
-            {/* Render sub-goals */}
+            {/* Render Sub-goals */}
             <ul className="mt-4">
               {goal?.subGoals?.map((subGoal, index) => (
                 <li
                   key={index}
-                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 p-2 border rounded gap-4"
+                  className={`flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 p-2 border rounded gap-4 ${
+                    theme === "dark"
+                      ? "bg-gray-800 border-gray-700 text-gray-200"
+                      : "bg-white border-gray-300 text-gray-800"
+                  }`}
                 >
                   {editingSubGoalIndex === index &&
                   currentGoalId === goal.id ? (
@@ -253,18 +314,30 @@ const GoalTracker = () => {
                         type="text"
                         value={editingSubGoalName}
                         onChange={(e) => setEditingSubGoalName(e.target.value)}
-                        className="border p-2 rounded flex-grow"
+                        className={`border p-2 rounded flex-grow focus:outline-none focus:ring-2 ${
+                          theme === "dark"
+                            ? "bg-gray-800 border-gray-600 text-gray-200 focus:ring-teal-500"
+                            : "bg-white border-gray-300 text-gray-800 focus:ring-teal-400"
+                        }`}
                         placeholder="Edit sub-goal"
                       />
                       <input
                         type="date"
                         value={editingDueDate}
                         onChange={(e) => setEditingDueDate(e.target.value)}
-                        className="border p-2 rounded flex-grow"
+                        className={`border p-2 rounded flex-grow focus:outline-none focus:ring-2 ${
+                          theme === "dark"
+                            ? "bg-gray-800 border-gray-600 text-gray-200 focus:ring-teal-500"
+                            : "bg-white border-gray-300 text-gray-800 focus:ring-teal-400"
+                        }`}
                       />
                       <button
                         onClick={saveSubGoalEdit}
-                        className="text-teal-500"
+                        className={`${
+                          theme === "dark"
+                            ? "text-teal-400 hover:text-teal-500"
+                            : "text-teal-500 hover:text-teal-600"
+                        }`}
                       >
                         <FaCheck />
                       </button>
@@ -278,12 +351,18 @@ const GoalTracker = () => {
                           onChange={() =>
                             toggleSubGoalCompletion(goal.id, index)
                           }
-                          className="mr-2"
+                          className={`mr-2 ${
+                            theme === "dark"
+                              ? "accent-teal-500"
+                              : "accent-teal-500"
+                          }`}
                         />
                         <span
                           className={`${
                             subGoal.completed
-                              ? "line-through text-gray-500"
+                              ? theme === "dark"
+                                ? "line-through text-gray-400"
+                                : "line-through text-gray-500"
                               : ""
                           }`}
                         >
@@ -300,13 +379,21 @@ const GoalTracker = () => {
                               subGoal.dueDate
                             )
                           }
-                          className="text-teal-500"
+                          className={`${
+                            theme === "dark"
+                              ? "text-teal-400 hover:text-teal-500"
+                              : "text-teal-500 hover:text-teal-600"
+                          }`}
                         >
                           <FaEdit />
                         </button>
                         <button
                           onClick={() => deleteSubGoal(goal.id, index)}
-                          className="text-red-500"
+                          className={`${
+                            theme === "dark"
+                              ? "text-red-400 hover:text-red-500"
+                              : "text-red-500 hover:text-red-600"
+                          }`}
                         >
                           <FaTrash />
                         </button>

@@ -1,57 +1,60 @@
-import React, { useState, useEffect } from 'react';
-import { db } from '../firebase/firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrash, faStar } from '@fortawesome/free-solid-svg-icons';
-import { Pie } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import useGetTodos from '../hooks/useGetTodos';
-import { useAuth } from '../contexts/authContext';
+import React, { useState, useEffect } from "react";
+import { db } from "../firebase/firebase";
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEdit, faTrash, faStar } from "@fortawesome/free-solid-svg-icons";
+import { Pie } from "react-chartjs-2";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import useGetTodos from "../hooks/useGetTodos";
+import { useAuth } from "../contexts/authContext";
 
 // Register the required Chart.js elements
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const TodoList = () => {
-  const [taskName, setTaskName] = useState('');
+  const [taskName, setTaskName] = useState("");
 
   const [editId, setEditId] = useState(null);
-  const [editName, setEditName] = useState('');
+  const [editName, setEditName] = useState("");
   const { fetchTodos, todoss } = useGetTodos();
-  const { currentUser } = useAuth();
+  const { currentUser, theme } = useAuth();
   const userId = currentUser.uid;
 
   useEffect(() => {
     fetchTodos();
-    
   });
-
-  
 
   const addTodo = async (e) => {
     e.preventDefault();
     if (!taskName) return;
 
     try {
-      await addDoc(collection(db, 'todos'), {
+      await addDoc(collection(db, "todos"), {
         name: taskName,
         isCompleted: false,
         isImportant: false, // Default importance is false
         timestamp: new Date(),
         userId: userId,
       });
-      setTaskName('');
+      setTaskName("");
       fetchTodos();
     } catch (error) {
-      console.error('Error adding todo: ', error);
+      console.error("Error adding todo: ", error);
     }
   };
 
   const deleteTodo = async (id) => {
     try {
-      await deleteDoc(doc(db, 'todos', id));
+      await deleteDoc(doc(db, "todos", id));
       fetchTodos();
     } catch (error) {
-      console.error('Error deleting todo: ', error);
+      console.error("Error deleting todo: ", error);
     }
   };
 
@@ -62,35 +65,35 @@ const TodoList = () => {
 
   const saveEdit = async () => {
     try {
-      const todoRef = doc(db, 'todos', editId);
+      const todoRef = doc(db, "todos", editId);
       await updateDoc(todoRef, { name: editName });
       setEditId(null);
-      setEditName('');
+      setEditName("");
       fetchTodos();
     } catch (error) {
-      console.error('Error updating todo: ', error);
+      console.error("Error updating todo: ", error);
     }
   };
 
   const toggleComplete = async (todo) => {
     try {
-      await updateDoc(doc(db, 'todos', todo.id), {
+      await updateDoc(doc(db, "todos", todo.id), {
         isCompleted: !todo.isCompleted,
       });
       fetchTodos();
     } catch (error) {
-      console.error('Error updating todo: ', error);
+      console.error("Error updating todo: ", error);
     }
   };
 
   const toggleImportant = async (todo) => {
     try {
-      await updateDoc(doc(db, 'todos', todo.id), {
+      await updateDoc(doc(db, "todos", todo.id), {
         isImportant: !todo.isImportant,
       });
       fetchTodos();
     } catch (error) {
-      console.error('Error updating importance: ', error);
+      console.error("Error updating importance: ", error);
     }
   };
 
@@ -98,22 +101,27 @@ const TodoList = () => {
   const completedTasks = todoss.filter((todo) => todo.isCompleted).length;
   const totalTasks = todoss.length;
   const pieData = {
-    labels: ['Completed', 'Incomplete'],
+    labels: ["Completed", "Incomplete"],
     datasets: [
       {
         data: [completedTasks, totalTasks - completedTasks],
-        backgroundColor: ['#4CAF50', '#FF6347'],
-        hoverBackgroundColor: ['#45a049', '#ff5349'],
+        backgroundColor: ["#4CAF50", "#FF6347"],
+        hoverBackgroundColor: ["#45a049", "#ff5349"],
       },
     ],
   };
 
   return (
-    <div>
-      <h2 className="text-2xl font-semibold mb-4 text-center">
+    <div className={`todo-list-container px-4 sm:px-6 lg:px-8 `}>
+      <h2
+        className={`text-2xl font-semibold mb-4 text-center ${
+          theme === "dark" ? "text-teal-400" : ""
+        }`}
+      >
         Your To-Do List
       </h2>
 
+      {/* Add Task Form */}
       <form
         onSubmit={addTodo}
         className="flex items-center mb-6 flex-col sm:flex-row justify-center"
@@ -122,25 +130,38 @@ const TodoList = () => {
           type="text"
           value={taskName}
           onChange={(e) => setTaskName(e.target.value)}
-          className="flex-grow border p-2 rounded focus:outline-none focus:border-blue-500"
+          className={`flex-grow border p-2 rounded focus:outline-none focus:ring-2 ${
+            theme === "dark"
+              ? "bg-gray-800 border-gray-600 text-gray-200 focus:ring-teal-500"
+              : "bg-white border-gray-300 text-gray-800 focus:ring-teal-400"
+          }`}
           placeholder="Enter a task"
         />
         <button
           type="submit"
-          className=" sm:ml-2 sm:w-auto mt-3   bg-teal-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          className={`sm:ml-2 sm:w-auto mt-3 px-4 py-2 rounded ${
+            theme === "dark"
+              ? "bg-teal-600 text-white hover:bg-teal-500"
+              : "bg-teal-500 text-white hover:bg-teal-400"
+          }`}
         >
           Add Task
         </button>
       </form>
 
+      {/* Task List */}
       <ul className="space-y-3">
         {todoss.map((todo) => (
           <li
             key={todo.id}
             className={`flex items-center p-3 rounded-md shadow-md ${
               todo.isCompleted
-                ? "bg-teal-200 text-gray-600 line-through"
-                : "bg-white"
+                ? theme === "dark"
+                  ? "bg-teal-800 text-gray-400 line-through"
+                  : "bg-teal-200 text-gray-600 line-through"
+                : theme === "dark"
+                ? "bg-gray-800 text-gray-200"
+                : "bg-white text-gray-800"
             } ${todo.isImportant ? "border-4 border-yellow-500" : ""}`}
           >
             {/* Checkbox for marking completion */}
@@ -148,11 +169,17 @@ const TodoList = () => {
               type="checkbox"
               checked={todo.isCompleted}
               onChange={() => toggleComplete(todo)}
-              className="mr-3 accent-teal-500"
+              className={`mr-3 ${
+                theme === "dark" ? "accent-teal-500" : "accent-teal-500"
+              }`}
             />
             <span
               className={`flex-grow cursor-pointer ${
-                todo.isCompleted ? "line-through text-gray-500" : ""
+                todo.isCompleted
+                  ? theme === "dark"
+                    ? "line-through text-gray-400"
+                    : "line-through text-gray-500"
+                  : ""
               }`}
             >
               {editId === todo.id ? (
@@ -160,7 +187,11 @@ const TodoList = () => {
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="border p-2 rounded mr-2 focus:outline-none focus:border-blue-500"
+                  className={`border p-2 rounded mr-2 focus:outline-none focus:ring-2 ${
+                    theme === "dark"
+                      ? "bg-gray-700 border-gray-600 text-gray-200 focus:ring-teal-500"
+                      : "bg-white border-gray-300 text-gray-800 focus:ring-teal-400"
+                  }`}
                 />
               ) : (
                 todo.name
@@ -171,7 +202,11 @@ const TodoList = () => {
               {editId === todo.id ? (
                 <button
                   onClick={saveEdit}
-                  className="text-blue-500 hover:text-blue-600"
+                  className={`${
+                    theme === "dark"
+                      ? "text-teal-400 hover:text-teal-500"
+                      : "text-blue-500 hover:text-blue-600"
+                  }`}
                 >
                   Save
                 </button>
@@ -179,21 +214,31 @@ const TodoList = () => {
                 <>
                   <button
                     onClick={() => startEdit(todo.id, todo.name)}
-                    className="text-yellow-500 hover:text-yellow-600"
+                    className={`${
+                      theme === "dark"
+                        ? "text-yellow-400 hover:text-yellow-500"
+                        : "text-yellow-500 hover:text-yellow-600"
+                    }`}
                   >
                     <FontAwesomeIcon icon={faEdit} />
                   </button>
                   <button
                     onClick={() => deleteTodo(todo.id)}
-                    className="text-red-500 hover:text-red-600"
+                    className={`${
+                      theme === "dark"
+                        ? "text-red-400 hover:text-red-500"
+                        : "text-red-500 hover:text-red-600"
+                    }`}
                   >
                     <FontAwesomeIcon icon={faTrash} />
                   </button>
                   <button
                     onClick={() => toggleImportant(todo)}
-                    className={`text-yellow-500 hover:text-yellow-600 ${
-                      todo.isImportant ? "text-yellow-700" : ""
-                    }`}
+                    className={`${
+                      theme === "dark"
+                        ? "text-yellow-400 hover:text-yellow-500"
+                        : "text-yellow-500 hover:text-yellow-600"
+                    } ${todo.isImportant ? "text-yellow-500" : ""}`}
                   >
                     <FontAwesomeIcon icon={faStar} />
                   </button>
@@ -206,8 +251,16 @@ const TodoList = () => {
 
       {/* Pie Chart */}
       <div className="mt-6">
-        <h3 className="text-lg font-medium">Task Breakdown</h3>
-        <Pie data={pieData} />
+        <h3
+          className={`text-lg font-medium ${
+            theme === "dark" ? "text-teal-400" : ""
+          }`}
+        >
+          Task Breakdown
+        </h3>
+        <div className={`p-4 `}>
+          <Pie data={pieData} />
+        </div>
       </div>
     </div>
   );

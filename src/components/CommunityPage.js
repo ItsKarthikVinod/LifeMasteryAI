@@ -24,7 +24,7 @@ const CommunityPage = () => {
   const [newComment, setNewComment] = useState("");
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [modalIsOpen, setModalIsOpen] = useState(false);
-  const { currentUser } = useAuth();
+  const { currentUser, theme } = useAuth();
   const userName = currentUser?.displayName;
   const userId = currentUser?.uid;
   const adminEmail = "karthivinu1122@gmail.com";
@@ -174,57 +174,92 @@ const CommunityPage = () => {
   const isAdmin = (userEmail) => userEmail === adminEmail;
 
   return (
-    <div className="bg-gradient-to-r from-teal-400 to-blue-500 min-h-screen mx-auto p-4 sm:p-8 lg:p-12 ">
-      <h2 className="text-3xl sm:text-4xl font-extrabold mb-8 lg:mt-20 mt-28 text-center text-white">
+    <div
+      className={`min-h-screen mx-auto p-4 sm:p-8 lg:p-12 ${
+        theme === "dark"
+          ? "bg-gray-900 text-gray-200"
+          : "bg-gradient-to-r from-teal-400 to-blue-500 text-gray-800"
+      }`}
+    >
+      <h2
+        className={`text-3xl sm:text-4xl font-extrabold mb-8 lg:mt-20 mt-28 text-center ${
+          theme === "dark" ? "text-teal-400" : "text-white"
+        }`}
+      >
         Community Forum
       </h2>
 
+      {/* New Post Button */}
       <div className="flex justify-center mb-6">
         <button
           onClick={openModal}
-          className="bg-teal-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full hover:bg-teal-700 shadow-lg text-sm sm:text-lg font-bold"
+          className={`px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg text-sm sm:text-lg font-bold ${
+            theme === "dark"
+              ? "bg-teal-600 text-white hover:bg-teal-500"
+              : "bg-teal-600 text-white hover:bg-teal-700"
+          }`}
         >
           New Post
         </button>
       </div>
 
+      {/* Posts List */}
       <div className="posts-list grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
         {posts.map((post) => (
           <div
             key={post.id}
             className={`post-card shadow-lg rounded-lg p-4 sm:p-6 ${
               isAdmin(post.email)
-                ? "border-4 border-yellow-500 bg-yellow-100"
+                ? theme === "dark"
+                  ? "border-4 border-yellow-500 bg-gray-800"
+                  : "border-4 border-yellow-500 bg-yellow-100"
+                : theme === "dark"
+                ? "bg-gray-800"
                 : "bg-white"
             }`}
           >
             <h3
               className={`text-lg sm:text-xl font-extrabold mb-4 ${
-                isAdmin(post.email) ? "text-yellow-900" : "text-teal-700"
+                isAdmin(post.email)
+                  ? theme === "dark"
+                    ? "text-yellow-400"
+                    : "text-yellow-900"
+                  : theme === "dark"
+                  ? "text-teal-400"
+                  : "text-teal-700"
               }`}
             >
               {post.title}
               {isAdmin(post.email) && (
-                <span className="text-yellow-700 ml-2 font-bold">(Admin)</span>
+                <span
+                  className={`ml-2 font-bold ${
+                    theme === "dark" ? "text-yellow-400" : "text-yellow-700"
+                  }`}
+                >
+                  (Admin)
+                </span>
               )}
             </h3>
             <p
-              className={
-                isAdmin(post.email)
-                  ? "text-gray-800 font-medium mb-4"
-                  : "text-gray-800 mb-4"
-              }
+              className={`mb-4 ${
+                theme === "dark" ? "text-gray-300" : "text-gray-800"
+              }`}
             >
               {post.content}
             </p>
             <p
               className={`text-sm mb-4 ${
-                isAdmin(post.email)
-                  ? "text-yellow-800 font-bold"
-                  : "text-gray-600 font-medium"
+                theme === "dark" ? "text-gray-400" : "text-gray-600"
               }`}
             >
-              Posted by: <span className="font-bold">{post.userName}</span>
+              Posted by:{" "}
+              <span
+                className={`font-bold ${
+                  theme === "dark" ? "text-teal-400" : "text-teal-700"
+                }`}
+              >
+                {post.userName}
+              </span>
               {isAdmin(post.email) && " (Admin)"}
             </p>
             <div className="flex justify-between items-center">
@@ -232,7 +267,7 @@ const CommunityPage = () => {
                 <button
                   onClick={() => toggleLike(post.id)}
                   className={`flex items-center font-bold ${
-                    isAdmin(post.email) ? "text-yellow-800" : "text-teal-600"
+                    theme === "dark" ? "text-teal-400" : "text-teal-600"
                   }`}
                 >
                   <FaThumbsUp className="mr-1" />
@@ -241,7 +276,7 @@ const CommunityPage = () => {
                 <button
                   onClick={() => toggleComments(post.id)}
                   className={`flex items-center font-bold ${
-                    isAdmin(post.email) ? "text-yellow-800" : "text-teal-600"
+                    theme === "dark" ? "text-teal-400" : "text-teal-600"
                   }`}
                 >
                   <FaComment className="mr-1" />
@@ -261,11 +296,14 @@ const CommunityPage = () => {
               </button>
             </div>
 
+            {/* Comments Section */}
             {selectedPostId === post.id && (
               <div className="comments-section mt-6">
                 <button
                   onClick={() => setSelectedPostId(null)}
-                  className="text-red-600 font-bold mb-4 flex items-center"
+                  className={`font-bold mb-4 flex items-center ${
+                    theme === "dark" ? "text-red-400" : "text-red-600"
+                  }`}
                 >
                   <FaTimes className="mr-1" /> Close Comments
                 </button>
@@ -273,28 +311,45 @@ const CommunityPage = () => {
                   {post.comments.map((comment, index) => (
                     <div
                       key={index}
-                      className="comment mb-4 p-4 border-b border-gray-300"
+                      className={`comment mb-4 p-4 border-b ${
+                        theme === "dark"
+                          ? "border-gray-700 text-gray-300"
+                          : "border-gray-300 text-gray-800"
+                      }`}
                     >
-                      <strong className="font-bold">
+                      <strong
+                        className={`font-bold ${
+                          theme === "dark" ? "text-teal-400" : "text-teal-700"
+                        }`}
+                      >
                         {comment.user}
                         {isAdmin(comment.email) && (
-                          <span className="text-yellow-700 font-bold">
-                            {" "}
+                          <span
+                            className={`ml-2 font-bold ${
+                              theme === "dark"
+                                ? "text-yellow-400"
+                                : "text-yellow-700"
+                            }`}
+                          >
                             (Admin)
                           </span>
                         )}
                       </strong>{" "}
-                      <span className="text-gray-500 text-xs">
+                      <span
+                        className={`text-xs ${
+                          theme === "dark" ? "text-gray-400" : "text-gray-500"
+                        }`}
+                      >
                         {comment.timestamp.toDate().toLocaleString()}
                       </span>
-                      <p className="text-gray-800 mt-2 font-medium">
-                        {comment.content}
-                      </p>
+                      <p className="mt-2">{comment.content}</p>
                       {(currentUser?.email === adminEmail ||
                         currentUser?.email === comment?.email) && (
                         <button
                           onClick={() => deleteComment(post.id, index)}
-                          className="text-red-600 text-sm font-bold mt-2"
+                          className={`text-sm font-bold mt-2 ${
+                            theme === "dark" ? "text-red-400" : "text-red-600"
+                          }`}
                         >
                           Delete
                         </button>
@@ -306,12 +361,20 @@ const CommunityPage = () => {
                   <textarea
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    className="w-full p-4 border border-gray-300 rounded-md mb-4 font-medium"
+                    className={`w-full p-4 border rounded-md mb-4 ${
+                      theme === "dark"
+                        ? "bg-gray-800 border-gray-700 text-gray-200"
+                        : "bg-white border-gray-300 text-gray-800"
+                    }`}
                     placeholder="Add a comment..."
                   />
                   <button
                     onClick={() => addComment(post.id)}
-                    className="bg-teal-600 text-white px-6 py-3 rounded-full hover:bg-teal-700 font-bold"
+                    className={`px-6 py-3 rounded-full font-bold ${
+                      theme === "dark"
+                        ? "bg-teal-600 text-white hover:bg-teal-500"
+                        : "bg-teal-600 text-white hover:bg-teal-700"
+                    }`}
                   >
                     Add Comment
                   </button>
@@ -322,37 +385,60 @@ const CommunityPage = () => {
         ))}
       </div>
 
+      {/* Modal for New Post */}
       <Modal
         isOpen={modalIsOpen}
         onRequestClose={closeModal}
-        className="w-full sm:w-3/4 lg:w-1/2 mx-auto my-20 p-6 sm:p-12 bg-white rounded-lg shadow-lg"
+        className={`w-full sm:w-3/4 lg:w-1/2 mx-auto my-20 p-6 sm:p-12 rounded-lg shadow-lg ${
+          theme === "dark"
+            ? "bg-gray-800 text-gray-200"
+            : "bg-white text-gray-800"
+        }`}
       >
-        <h2 className="text-xl sm:text-2xl font-extrabold mb-4">
+        <h2
+          className={`text-xl sm:text-2xl font-extrabold mb-4 ${
+            theme === "dark" ? "text-teal-400" : "text-gray-800"
+          }`}
+        >
           Create a New Post
         </h2>
         <input
           type="text"
           placeholder="Post Title"
-          className="w-full p-4 mb-4 border border-gray-300 rounded-md font-medium"
+          className={`w-full p-4 mb-4 border rounded-md ${
+            theme === "dark"
+              ? "bg-gray-800 border-gray-700 text-gray-200"
+              : "bg-white border-gray-300 text-gray-800"
+          }`}
           value={newPostTitle}
           onChange={(e) => setNewPostTitle(e.target.value)}
         />
         <textarea
           placeholder="Post Content"
-          className="w-full p-4 mb-4 border border-gray-300 rounded-md font-medium"
+          className={`w-full p-4 mb-4 border rounded-md ${
+            theme === "dark"
+              ? "bg-gray-800 border-gray-700 text-gray-200"
+              : "bg-white border-gray-300 text-gray-800"
+          }`}
           value={newPostContent}
           onChange={(e) => setNewPostContent(e.target.value)}
         />
         <div className="flex justify-between">
           <button
             onClick={addPost}
-            className="bg-teal-600 text-white px-6 py-3 rounded-full hover:bg-teal-700 font-bold"
+            className={`px-6 py-3 rounded-full font-bold ${
+              theme === "dark"
+                ? "bg-teal-600 text-white hover:bg-teal-500"
+                : "bg-teal-600 text-white hover:bg-teal-700"
+            }`}
           >
             Post
           </button>
           <button
             onClick={closeModal}
-            className="text-gray-600 px-6 py-3 font-bold"
+            className={`px-6 py-3 font-bold ${
+              theme === "dark" ? "text-gray-400" : "text-gray-600"
+            }`}
           >
             Close
           </button>
