@@ -149,7 +149,7 @@ const Hero = () => {
       </div>
 
       {/* Mood Selector (Positioned Below Hero Image on Mobile) */}
-      <div className=" absolute bottom-0 md:bottom-12 w-full flex flex-wrap justify-center items-center space-x-4 md:mt-0 z-10 sm:space-x-8 sm:space-y-0 space-y-4 sm:mt-24">
+      <div className=" absolute bottom-0 md:bottom-12 w-full flex-wrap justify-center items-center space-x-4 md:mt-0 z-10 sm:space-x-8 sm:space-y-0 space-y-4 sm:mt-24 hidden sm:flex">
         <p className="text-white text-xl">How are you feeling today?</p>
         <div className="flex flex-wrap justify-center space-x-4 mt-4">
           <button

@@ -24,7 +24,13 @@ const Pomodoro = () => {
 
   const audioRef = useRef(null); // Ref for the bell sound
 
-  const [isVisible, setIsVisible] = useState(true); // Track visibility of the widget
+  let bool = false
+  if (window.minWidth < 1024) {
+    bool = true
+  } else {
+    bool = false
+  }
+  const [isVisible, setIsVisible] = useState(bool); // Track visibility of the widget
 
   const toggleVisibility = () => {
     setIsVisible(!isVisible); // Toggle visibility of the widget
