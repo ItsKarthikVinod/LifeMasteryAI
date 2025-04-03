@@ -8,7 +8,7 @@ import Dashboard from './components/Dashboard';
 import JournalList from './components/JournalList';
 import Challenges from './components/Challenges/Challenges';
 import CommunityPage from './components/CommunityPage';
-import FullscreenPomodoro from './components/FullScreenPomodoro';
+
 import Footer from './components/Footer'
 import {useAuth} from './contexts/authContext';
 
@@ -29,7 +29,7 @@ const App = () => {
           <Route path="/journal-list" element={<JournalList />} />
           <Route path="/challenges" element={<Challenges />} />
           <Route path="/community" element={<CommunityPage />} />
-          <Route path="/pomodoro/fullscreen" element={<FullscreenPomodoro />} />
+          
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
         <Footer />
