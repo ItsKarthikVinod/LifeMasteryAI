@@ -171,6 +171,13 @@ const Navbar = () => {
             >
               Community
             </Link>
+            <Link
+              to="/settings"
+              className="text-lg text-center hover:text-teal-400"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Settings
+            </Link>
             <button
               onClick={handleSignOut}
               className="text-lg text-center hover:text-teal-400"

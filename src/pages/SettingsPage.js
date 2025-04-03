@@ -8,7 +8,10 @@ const SettingsPage = () => {
 
   // Add the initial Google profile picture dynamically
   const profilePictureOptions = [
-    currentUser?.providerData?.[0]?.photoURL , // Initial Google profile picture
+    ...(currentUser?.providerData?.[0]?.providerId === "google.com" &&
+    currentUser?.providerData?.[0]?.photoURL
+      ? [currentUser?.providerData?.[0]?.photoURL]
+      : ""), // Initial Google profile picture
     "https://avatar.iran.liara.run/public/31",
     "https://avatar.iran.liara.run/public/17",
     "https://avatar.iran.liara.run/public/73",
