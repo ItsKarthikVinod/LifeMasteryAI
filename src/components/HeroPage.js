@@ -237,7 +237,7 @@ const Hero = () => {
       </div>
 
       {/* Floating Decorative Elements */}
-      <div className="absolute inset-0 top-16 left-10 animate__animated animate__fadeIn animate__delay-1s z-0">
+      <div className="absolute inset-0 top-16 left-10 animate__animated animate__fadeIn animate__delay-1s z-0 hidden sm:block">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="100"
