@@ -129,7 +129,7 @@ const Hero = () => {
         </div>
 
         {/* Text Content */}
-        <div className="z-20 text-white text-center md:text-left md:space-y-8">
+        <div className="z-20 text-white text-center md:text-left md:space-y-8 space-y-4">
           <h2 className="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight">
             Unlock Your True Potential with <br /> Life Mastery
           </h2>
