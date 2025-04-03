@@ -129,7 +129,7 @@ const Hero = () => {
         </div>
 
         {/* Text Content */}
-        <div className="z-20 text-white text-center md:text-left md:space-y-8 space-y-4">
+        <div className="z-20 text-white text-center md:text-left md:space-y-8 space-y-6">
           <h2 className="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight">
             Unlock Your True Potential with <br /> Life Mastery
           </h2>
@@ -140,7 +140,7 @@ const Hero = () => {
           </p>
           <button
             onClick={handleGetStarted}
-            className="px-8 py-3 bg-yellow-400 text-blue-600 font-semibold rounded-full hover:bg-yellow-500 hover:text-white transition duration-300 flex items-center justify-center space-x-2 mx-auto md:mx-0"
+            className="px-8 py-3 bg-yellow-400 text-blue-600 font-semibold rounded-full hover:bg-yellow-500 hover:text-white transition duration-300 flex items-center justify-center space-x-2 mx-auto md:mx-0 z-40"
           >
             <span>Get Started</span>
             <FaArrowRight />
