@@ -25,7 +25,7 @@ const Pomodoro = () => {
   const audioRef = useRef(null); // Ref for the bell sound
 
   let bool = false
-  if (window.minWidth < 1024) {
+  if (window.innerWidth > 1024) {
     bool = true
   } else {
     bool = false
