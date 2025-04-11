@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useGetJournalEntries from "../hooks/useGetJournals";
 import { FaTrash, FaRobot, FaSpinner, FaVolumeUp } from "react-icons/fa"; // Import icons
@@ -25,9 +25,22 @@ const JournalList = () => {
     dangerouslyAllowBrowser: true,
   });
 
-  useEffect(() => {
-    fetchJournalEntries();
-  }, [fetchJournalEntries]);
+    const formatAIOutput = (text) => {
+      // Split the text into parts based on `**` (bold) and `*` (italic)
+      const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/); // Match text surrounded by `**` or `*`
+      return parts.map((part, index) => {
+        if (part.startsWith("**") && part.endsWith("**")) {
+          // Bold text
+          return <strong key={index}>{part.slice(2, -2)}</strong>; // Remove `**` and wrap in <strong>
+        } else if (part.startsWith("*") && part.endsWith("*")) {
+          // Italic text
+          return <strong key={index}>{part.slice(1, -1)}</strong>; // Remove `*` and wrap in <em>
+        } else {
+          // Normal text
+          return part;
+        }
+      });
+    };
 
   const formatDate = (timestamp) => {
     const date = new Date(timestamp.seconds * 1000);
@@ -365,7 +378,7 @@ const JournalList = () => {
                 <FaRobot className="text-xl mr-2" />
                 AI Feedback:
               </h4>
-              <p>{aiFeedback}</p>
+              <p>{formatAIOutput(aiFeedback)}</p>
               <button
                 onClick={() => toggleSpeech(aiFeedback)}
                 className={`absolute top-2 right-2 transition ${
@@ -392,7 +405,7 @@ const JournalList = () => {
                 <FaRobot className="text-xl mr-2" />
                 Monthly Summary:
               </h4>
-              <p>{monthlySummary}</p>
+              <p>{formatAIOutput(monthlySummary)}</p>
               <button
                 onClick={() => toggleSpeech(monthlySummary)}
                 className={`absolute top-2 right-2 transition ${

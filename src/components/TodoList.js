@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { db } from "../firebase/firebase";
 import {
   collection,
@@ -8,7 +8,7 @@ import {
   doc,
 } from "firebase/firestore";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEdit, faTrash, faStar } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faTrash, faStar, faClock } from "@fortawesome/free-solid-svg-icons";
 import { Pie } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import useGetTodos from "../hooks/useGetTodos";
@@ -17,7 +17,7 @@ import { useAuth } from "../contexts/authContext";
 // Register the required Chart.js elements
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const TodoList = () => {
+const TodoList = ({ onTriggerPomodoro }) => {
   const [taskName, setTaskName] = useState("");
 
   const [editId, setEditId] = useState(null);
@@ -26,9 +26,7 @@ const TodoList = () => {
   const { currentUser, theme } = useAuth();
   const userId = currentUser.uid;
 
-  useEffect(() => {
-    fetchTodos();
-  });
+
 
   const addTodo = async (e) => {
     e.preventDefault();
@@ -212,6 +210,16 @@ const TodoList = () => {
                 </button>
               ) : (
                 <>
+                  <button
+                    onClick={() => onTriggerPomodoro(todo.name)}
+                    className={`${
+                      theme === "dark"
+                        ? "text-yellow-400 hover:text-yellow-500"
+                        : "text-yellow-500 hover:text-yellow-600"
+                    }`}
+                  >
+                    <FontAwesomeIcon icon={faClock} />
+                  </button>
                   <button
                     onClick={() => startEdit(todo.id, todo.name)}
                     className={`${

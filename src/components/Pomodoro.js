@@ -9,55 +9,35 @@ import {
 } from "react-icons/fa";
 import { useAuth } from "../contexts/authContext";
 import Bell from "../assets/bell.mp3"; // Ensure the path is correct
-import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
-import { db } from "../firebase/firebase";
 
-const Pomodoro = () => {
+const Pomodoro = ({ initialTitle, isRunning, setIsRunning }) => {
   const [minutes, setMinutes] = useState(25);
   const [seconds, setSeconds] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
+  const [title, setTitle] = useState(initialTitle || "");
   const [isWorkSession, setIsWorkSession] = useState(true);
-  const { currentUser, theme } = useAuth();
+  const { theme } = useAuth();
   const [isMaximized, setIsMaximized] = useState(false); // Track if the Pomodoro is in modal view
   const [workDuration, setWorkDuration] = useState(25); // Adjustable work duration
   const [breakDuration, setBreakDuration] = useState(5);
   const [isDurationUpdated, setIsDurationUpdated] = useState(false); // Track if durations are updated
   const [sessionLog, setSessionLog] = useState([]); // Log of Pomodoro sessions
   const [isLogModalOpen, setIsLogModalOpen] = useState(false); // Track visibility of the session log modal
-  
+
   const nodeRef = useRef(null); // Ref for the draggable component
 
   const audioRef = useRef(null); // Ref for the bell sound
 
-  const logSessionToFirebase = useCallback(
-    async (session) => {
-      try {
-        const sessionRef = collection(db, "pomodoroLogs"); // Reference to the Firestore collection
-        await addDoc(sessionRef, { ...session, userId: currentUser.uid }); // Add the session log with userId to Firestore
-      } catch (error) {
-        console.error("Error logging session to Firebase: ", error);
-      }
-    },
-    [currentUser.uid] // Dependency: currentUser.uid
-  );
+  useEffect(() => {
+    setTitle(initialTitle); // Update the title when the prop changes
+  }, [initialTitle]);
 
-  const fetchSessionLogs = async () => {
-    try {
-      const sessionRef = collection(db, "pomodoroLogs");
-      const q = query(sessionRef, where("userId", "==", currentUser.uid)); // Query logs for the current user
-      const querySnapshot = await getDocs(q);
-      const logs = querySnapshot.docs.map((doc) => doc.data());
-      setSessionLog(logs); // Update the session log state
-    } catch (error) {
-      console.error("Error fetching session logs: ", error);
-    }
+  const toggleVisibility = () => {
+    setIsVisible(!isVisible); // Toggle visibility of the widget
   };
 
-  useEffect(() => {
-    if (isLogModalOpen) {
-      fetchSessionLogs(); // Fetch logs when the modal is opened
-    }
-  });
+  const toggleLogModal = () => {
+    setIsLogModalOpen(!isLogModalOpen); // Toggle visibility of the session log modal
+  };
 
   let bool = false;
   if (window.innerWidth > 1024) {
@@ -67,13 +47,27 @@ const Pomodoro = () => {
   }
   const [isVisible, setIsVisible] = useState(bool); // Track visibility of the widget
 
-  const toggleVisibility = () => {
-    setIsVisible(!isVisible); // Toggle visibility of the widget
-  };
+  // Fetch session logs from Local Storage
+  const fetchSessionLogsFromLocalStorage = useCallback(() => {
+    const storedLogs =
+      JSON.parse(localStorage.getItem("pomodoroSessionLogs")) || [];
+    setSessionLog(storedLogs);
+  }, []);
 
-  const toggleLogModal = () => {
-    setIsLogModalOpen(!isLogModalOpen); // Toggle visibility of the session log modal
-  };
+  // Save session logs to Local Storage
+  const saveSessionToLocalStorage = useCallback(
+    (session) => {
+      const updatedLogs = [...sessionLog, session];
+      setSessionLog(updatedLogs);
+      localStorage.setItem("pomodoroSessionLogs", JSON.stringify(updatedLogs));
+    },
+    [sessionLog] // Dependency: sessionLog
+  );
+
+  useEffect(() => {
+    // Fetch logs from Local Storage on component mount
+    fetchSessionLogsFromLocalStorage();
+  }, [fetchSessionLogsFromLocalStorage]);
 
   useEffect(() => {
     let interval;
@@ -90,23 +84,30 @@ const Pomodoro = () => {
 
           // Create a session log entry
           const session = {
+            title: title ? title : "Session",
             type: isWorkSession ? "Work" : "Break",
             duration: isWorkSession ? workDuration : breakDuration,
             timestamp: new Date().toLocaleString(),
           };
 
-          // Save the session log to Firebase
-          logSessionToFirebase(session);
+          // Save the session log to Local Storage
+          saveSessionToLocalStorage(session);
 
           if (isWorkSession) {
+            // Switch to Break Time
             setMinutes(breakDuration);
+            setSeconds(0);
+            setIsWorkSession(false);
           } else {
+            // End the Pomodoro session after the break
+            setIsRunning(false);
             setMinutes(workDuration);
+            setSeconds(0);
+            setIsWorkSession(true);
+            document.title = "Life Mastery"; // Reset title when session ends
           }
-          setIsWorkSession(!isWorkSession);
-          setSeconds(0);
+
           clearInterval(interval);
-          document.title = "LifeMastery"; // Reset title when timer finishes
         } else {
           const remainingMinutes = Math.floor(totalSeconds / 60);
           const remainingSeconds = totalSeconds % 60;
@@ -114,7 +115,7 @@ const Pomodoro = () => {
           setSeconds(remainingSeconds);
 
           // Update the document title with the timer
-          document.title = `LifeMastery - ${String(remainingMinutes).padStart(
+          document.title = `Life Mastery - ${String(remainingMinutes).padStart(
             2,
             "0"
           )}:${String(remainingSeconds).padStart(2, "0")}`;
@@ -122,12 +123,21 @@ const Pomodoro = () => {
       }, 1000);
     } else {
       // Reset the title when the timer is paused or stopped
-      document.title = "LifeMastery";
+      document.title = "Life Mastery";
     }
 
     return () => clearInterval(interval);
-  }, [isRunning, minutes, seconds, isWorkSession, breakDuration, workDuration, logSessionToFirebase]);
-  // Cleanup function to reset the title when the component unmounts
+  }, [
+    isRunning,
+    minutes,
+    seconds,
+    isWorkSession,
+    breakDuration,
+    workDuration,
+    saveSessionToLocalStorage,
+    title,
+    setIsRunning
+  ]);
 
   const startTimer = () => {
     setIsRunning(true);
@@ -142,7 +152,7 @@ const Pomodoro = () => {
     setMinutes(workDuration);
     setSeconds(0);
     setIsWorkSession(true);
-    
+
     setIsDurationUpdated(false); // Reset the updated state
   };
 
@@ -198,10 +208,17 @@ const Pomodoro = () => {
             >
               <FaWindowMinimize />
             </button>
-
             {/* Timer Display */}
             <h3
-              className={`text-4xl font-semibold mb-6 text-center ${
+              className={`text-4xl font-semibold mb-2 text-center mt-3 ${
+                theme === "dark" ? "text-gray-200" : "text-gray-600"
+              }`}
+            >
+              {title ? `"${title}"` : ""}
+            </h3>
+            {/* Timer Display */}
+            <h3
+              className={`text-2xl font-semibold mb-6 text-center ${
                 theme === "dark" ? "text-teal-400" : "text-teal-600"
               }`}
             >
@@ -352,7 +369,14 @@ const Pomodoro = () => {
 
             {/* Timer Display */}
             <h3
-              className={`text-2xl font-semibold mb-4 text-center ${
+              className={`text-2xl font-semibold mb-2 text-center mt-3 ${
+                theme === "dark" ? "text-gray-200" : "text-gray-600"
+              }`}
+            >
+              {title ? `"${title}"` : ""}
+            </h3>
+            <h3
+              className={`text-xl font-semibold mb-4 text-center ${
                 theme === "dark" ? "text-teal-400" : "text-teal-600"
               }`}
             >
@@ -433,7 +457,6 @@ const Pomodoro = () => {
         </button>
       )}
 
-    
       {/* Session Log Modal */}
       {isLogModalOpen && (
         <div
@@ -477,12 +500,15 @@ const Pomodoro = () => {
                 {sessionLog.map((session, index) => (
                   <li
                     key={index}
-                    className={`p-4 rounded-lg shadow ${
+                    className={`p-4 rounded-lg shadow mt-2 mr-2 ${
                       theme === "dark"
                         ? "bg-gray-700 text-gray-200"
                         : "bg-gray-100 text-gray-800"
                     }`}
                   >
+                    <p>
+                      <strong>Title:</strong> {session.title}
+                    </p>
                     <p>
                       <strong>Type:</strong> {session.type}
                     </p>

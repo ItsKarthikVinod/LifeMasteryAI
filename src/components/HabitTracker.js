@@ -6,14 +6,15 @@ import {
   updateDoc,
   doc,
   deleteDoc,
+  writeBatch
 } from "firebase/firestore";
-import { FaEdit, FaTrash, FaRobot, FaVolumeUp } from "react-icons/fa"; // Import speaker icon
+import { FaEdit, FaTrash, FaRobot, FaVolumeUp, FaClock } from "react-icons/fa"; // Import speaker icon
 import { useAuth } from "../contexts/authContext";
 import useGetHabits from "../hooks/useGetHabits";
 import OpenAI from "openai";
 
 
-const HabitTracker = () => {
+const HabitTracker = ({ onTriggerPomodoro }) => {
   const [habitName, setHabitName] = useState("");
   const { currentUser, theme } = useAuth();
   const { fetchedHabits, fetchHabits } = useGetHabits();
@@ -32,8 +33,6 @@ const HabitTracker = () => {
     });
   }, []);
 
-  
-
   // Function to calculate progress analytics
   const calculateProgress = useCallback(() => {
     if (fetchedHabits.length === 0) {
@@ -50,40 +49,67 @@ const HabitTracker = () => {
   }, [fetchedHabits]);
   // Function to check and reset streaks if a day is missed
 
-const checkStreaks = useCallback(async () => {
-  
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Start of today (normalized)
-
-  const resetPromises = fetchedHabits.map(async (habit) => {
-    const lastCompletedDate = habit.lastCompleted
-      ? new Date(habit.lastCompleted.seconds * 1000)
-      : null;
-
-    if (lastCompletedDate) {
-      // Normalize lastCompletedDate to the start of its day
-      const lastCompletedStart = new Date(
-        lastCompletedDate.getFullYear(),
-        lastCompletedDate.getMonth(),
-        lastCompletedDate.getDate()
-      );
-
-      const diffInDays = Math.floor(
-        (todayStart - lastCompletedStart) / (1000 * 60 * 60 * 24)
-      );
-      
-
-      if (diffInDays >= 1) {
-        // Reset `completed` to false but keep the streak
-        const habitRef = doc(db, "habits", habit.id);
-        await updateDoc(habitRef, { completed: false });
+  const formatAIOutput = (text) => {
+    // Split the text into parts based on `**` (bold) and `*` (italic)
+    const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/); // Match text surrounded by `**` or `*`
+    return parts.map((part, index) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        // Bold text
+        return <strong key={index}>{part.slice(2, -2)}</strong>; // Remove `**` and wrap in <strong>
+      } else if (part.startsWith("*") && part.endsWith("*")) {
+        // Italic text
+        return <strong key={index}>{part.slice(1, -1)}</strong>; // Remove `*` and wrap in <em>
+      } else {
+        // Normal text
+        return part;
       }
-    }
-  });
+    });
+  };
 
-  await Promise.all(resetPromises);
-  fetchHabits(); // Refresh the habits after updating
-}, [fetchedHabits, fetchHabits]);
+  const checkStreaks = useCallback(async () => {
+    const now = new Date();
+    const todayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    ); // Start of today (normalized)
+
+    // Initialize Firestore batch
+    const batch = writeBatch(db);
+
+    fetchedHabits.forEach((habit) => {
+      const lastCompletedDate = habit.lastCompleted
+        ? new Date(habit.lastCompleted.seconds * 1000)
+        : null;
+
+      if (lastCompletedDate) {
+        // Normalize lastCompletedDate to the start of its day
+        const lastCompletedStart = new Date(
+          lastCompletedDate.getFullYear(),
+          lastCompletedDate.getMonth(),
+          lastCompletedDate.getDate()
+        );
+
+        const diffInDays = Math.floor(
+          (todayStart - lastCompletedStart) / (1000 * 60 * 60 * 24)
+        );
+
+        if (diffInDays >= 1 && habit.completed) {
+          // Reset `completed` to false but keep the streak
+          const habitRef = doc(db, "habits", habit.id);
+          batch.update(habitRef, { completed: false });
+        }
+      }
+    });
+
+    try {
+      // Commit the batch update
+      await batch.commit();
+      fetchHabits(); // Refresh the habits after updating
+    } catch (error) {
+      console.error("Error updating habits:", error);
+    }
+  }, [fetchedHabits, fetchHabits]);
   // Function to generate AI insights using OpenAI
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -115,8 +141,6 @@ const checkStreaks = useCallback(async () => {
           { role: "user", content: prompt },
         ],
       });
-
-      
 
       if (response.choices && response.choices.length > 0) {
         setAiInsights(response.choices[0].message.content.trim());
@@ -175,6 +199,7 @@ const checkStreaks = useCallback(async () => {
         timestamp: new Date(),
         userId: currentUser.uid,
       });
+
       setHabitName("");
       fetchHabits();
     } catch (error) {
@@ -182,63 +207,63 @@ const checkStreaks = useCallback(async () => {
     }
   };
 
- const toggleCompletion = async (id, completed, streak, lastCompleted) => {
-   try {
-     const habitRef = doc(db, "habits", id);
-     const today = new Date();
-     const todayStart = new Date(today.setHours(0, 0, 0, 0)); // Start of today
+  const toggleCompletion = async (id, completed, streak, lastCompleted) => {
+    try {
+      const habitRef = doc(db, "habits", id);
+      const today = new Date();
+      const todayStart = new Date(today.setHours(0, 0, 0, 0)); // Start of today
 
-     if (!completed) {
-       // If the habit is being marked as completed
-       if (
-         lastCompleted &&
-         new Date(lastCompleted.seconds * 1000) >= todayStart
-       ) {
-         // If already completed today, do nothing
-         return;
-       }
+      if (!completed) {
+        // If the habit is being marked as completed
+        if (
+          lastCompleted &&
+          new Date(lastCompleted.seconds * 1000) >= todayStart
+        ) {
+          // If already completed today, do nothing
+          return;
+        }
 
-       // Increment streak and update lastCompleted date
-       await updateDoc(habitRef, {
-         completed: true,
-         streak: streak + 1,
-         lastCompleted: today,
-       });
-     } else {
-       // If the habit is being unchecked
-       if (
-         lastCompleted &&
-         new Date(lastCompleted.seconds * 1000) >= todayStart
-       ) {
-         // If unchecking on the same day, decrement streak
-         await updateDoc(habitRef, {
-           completed: false,
-           streak: streak > 0 ? streak - 1 : 0,
-           lastCompleted: null, // Reset lastCompleted since it's unchecked
-         });
-       } else if (
-         lastCompleted &&
-         new Date(lastCompleted.seconds * 1000) < todayStart
-       ) {
-         // If unchecking after a day has passed, keep streak unchanged
-         await updateDoc(habitRef, {
-           completed: false,
-         });
-       } else {
-         // If no valid lastCompleted date, just uncheck the habit
-         await updateDoc(habitRef, {
-           completed: false,
-           streak: streak > 0 ? streak - 1 : 0,
-           lastCompleted: null,
-         });
-       }
-     }
+        // Increment streak and update lastCompleted date
+        await updateDoc(habitRef, {
+          completed: true,
+          streak: streak + 1,
+          lastCompleted: today,
+        });
+      } else {
+        // If the habit is being unchecked
+        if (
+          lastCompleted &&
+          new Date(lastCompleted.seconds * 1000) >= todayStart
+        ) {
+          // If unchecking on the same day, decrement streak
+          await updateDoc(habitRef, {
+            completed: false,
+            streak: streak > 0 ? streak - 1 : 0,
+            lastCompleted: null, // Reset lastCompleted since it's unchecked
+          });
+        } else if (
+          lastCompleted &&
+          new Date(lastCompleted.seconds * 1000) < todayStart
+        ) {
+          // If unchecking after a day has passed, keep streak unchanged
+          await updateDoc(habitRef, {
+            completed: false,
+          });
+        } else {
+          // If no valid lastCompleted date, just uncheck the habit
+          await updateDoc(habitRef, {
+            completed: false,
+            streak: streak > 0 ? streak - 1 : 0,
+            lastCompleted: null,
+          });
+        }
+      }
 
-     fetchHabits();
-   } catch (error) {
-     console.error("Error updating habit completion: ", error);
-   }
- };
+      fetchHabits();
+    } catch (error) {
+      console.error("Error updating habit completion: ", error);
+    }
+  };
 
   const deleteHabit = async (id) => {
     try {
@@ -266,19 +291,15 @@ const checkStreaks = useCallback(async () => {
     checkStreaks();
   }, [calculateProgress, checkStreaks]);
 
-
-
   return (
     <div
       className={`habit-tracker-container px-4 sm:px-6 lg:px-8 ${
-        theme === "dark"
-          ? " text-gray-200"
-          : " text-gray-800"
+        theme === "dark" ? " text-gray-200" : " text-gray-800"
       }`}
     >
       <h2
         className={`text-2xl font-semibold mb-4 text-center ${
-          theme === "dark" ? "text-teal-400" : ''
+          theme === "dark" ? "text-teal-400" : ""
         }`}
       >
         Your Habits
@@ -327,7 +348,7 @@ const checkStreaks = useCallback(async () => {
               <p className="text-sm">Loading AI-powered insights...</p>
             </div>
           ) : aiInsights ? (
-            <p className="text-sm">{aiInsights}</p>
+            <p className="text-sm">{formatAIOutput(aiInsights)}</p>
           ) : (
             <p className="text-sm">
               Click the button below to generate AI-powered insights!
@@ -439,6 +460,16 @@ const checkStreaks = useCallback(async () => {
               </div>
             </div>
             <div className="flex items-center space-x-4 mt-4 sm:mt-0">
+              <button
+                onClick={() => onTriggerPomodoro(habit.name)}
+                className={`${
+                  theme === "dark"
+                    ? "text-teal-400 hover:text-teal-500"
+                    : "text-teal-500 hover:text-teal-600"
+                }`}
+              >
+                <FaClock />
+              </button>
               <button
                 onClick={() => {
                   const newName = prompt("Edit Habit", habit.name);

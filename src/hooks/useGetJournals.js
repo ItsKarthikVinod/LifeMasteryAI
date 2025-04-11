@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getFirestore, collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
@@ -8,7 +8,7 @@ const useGetJournalEntries = () => {
     const [error, setError] = useState(null);
     const db = getFirestore();
 
-    const fetchJournalEntries = async () => {
+    const fetchJournalEntries = useCallback ( async () => {
         try {
             const auth = getAuth();
             const user = auth.currentUser;
@@ -33,7 +33,7 @@ const useGetJournalEntries = () => {
         } finally {
             setLoading(false);
         }
-    };
+    },[db]);
 
     const deleteJournalEntry = async (id) => {
         try {
@@ -47,7 +47,7 @@ const useGetJournalEntries = () => {
 
     useEffect(() => {
         fetchJournalEntries();
-    });
+    },[fetchJournalEntries]);
 
     return { journalEntries, loading, error, fetchJournalEntries, deleteJournalEntry };  
 };

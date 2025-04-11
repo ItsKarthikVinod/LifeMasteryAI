@@ -26,13 +26,19 @@ const localizer = dateFnsLocalizer({
 const Dashboard = () => {
   const { currentUser, userLoggedIn, theme } = useAuth();
   const [showCalendarModal, setShowCalendarModal] = useState(false); // State to control calendar modal visibility
-  const [calendarEvents, setCalendarEvents] = useState([]); 
+  const [calendarEvents, setCalendarEvents] = useState([]);
   const navigate = useNavigate();
+  const [pomodoroTitle, setPomodoroTitle] = useState(""); // State to hold the Pomodoro session title
+  const [isPomodoroRunning, setIsPomodoroRunning] = useState(false); // State to track if Pomodoro is running
 
   // Redirect to login if not logged in
   if (!userLoggedIn) {
     navigate("/login");
   }
+  const triggerPomodoro = (title) => {
+    setPomodoroTitle(title);
+    setIsPomodoroRunning(true); // Start the Pomodoro session
+  };
 
   // State for managing todos
   const [todos, setTodos] = useState([]);
@@ -64,8 +70,6 @@ const Dashboard = () => {
     );
   };
 
-  
-  
   const toggleCalendarModal = (events = []) => {
     setCalendarEvents(events); // Set the events to display in the calendar
     setShowCalendarModal(!showCalendarModal); // Toggle the modal visibility
@@ -125,7 +129,10 @@ const Dashboard = () => {
               theme === "dark" ? "bg-gray-800/40 " : "bg-white/40"
             } `}
           >
-            <GoalTracker toggleCalendarModal={toggleCalendarModal} />
+            <GoalTracker
+              toggleCalendarModal={toggleCalendarModal}
+              onTriggerPomodoro={triggerPomodoro}
+            />
           </div>
 
           {/* ToDoList Component (Second largest) */}
@@ -134,7 +141,7 @@ const Dashboard = () => {
               theme === "dark" ? "bg-gray-900/40 " : "bg-white/40"
             }`}
           >
-            <ToDoList todos={todos} />
+            <ToDoList todos={todos} onTriggerPomodoro={triggerPomodoro} />
           </div>
 
           {/* HabitTracker Component (Smallest) */}
@@ -143,7 +150,7 @@ const Dashboard = () => {
               theme === "dark" ? "bg-gray-800/40 " : "bg-white/40"
             }`}
           >
-            <HabitTracker />
+            <HabitTracker onTriggerPomodoro={triggerPomodoro} />
           </div>
 
           {/* Journal Component */}
@@ -157,7 +164,11 @@ const Dashboard = () => {
         </div>
 
         {/* Pomodoro Timer */}
-        <Pomodoro />
+        <Pomodoro
+          initialTitle={pomodoroTitle}
+          isRunning={isPomodoroRunning}
+          setIsRunning={setIsPomodoroRunning}
+        />
 
         {/* Voice Assistant */}
         <VoiceAssistant
@@ -177,20 +188,20 @@ const Dashboard = () => {
                 : "bg-gradient-to-r from-purple-600 via-purple-300 to-purple-400 hover:from-purple-600 hover:via-purple-700 hover:to-purple-800"
             }`}
           >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 mx-auto"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M17 20h5v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2h5m6-10a4 4 0 11-8 0 4 4 0 018 0zm6 4h.01"
-            />
-          </svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 mx-auto"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M17 20h5v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2h5m6-10a4 4 0 11-8 0 4 4 0 018 0zm6 4h.01"
+              />
+            </svg>
             Join the Community
           </button>
         </div>

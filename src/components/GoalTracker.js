@@ -1,11 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { db } from '../firebase/firebase';
 import { collection, addDoc,  doc, updateDoc, deleteDoc, } from 'firebase/firestore';
-import { FaCheck, FaEdit, FaTrash, FaCalendarAlt } from 'react-icons/fa'; // Icons for edit, delete, and check
+import {
+  FaCheck,
+  FaEdit,
+  FaTrash,
+  FaCalendarAlt,
+  FaClock,
+} from "react-icons/fa"; // Icons for edit, delete, and check
 import { useAuth } from "../contexts/authContext";
 
 import useGetGoals from '../hooks/useGetGoals';
-const GoalTracker = ({toggleCalendarModal}) => {
+const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
   const [goalName, setGoalName] = useState('');
 
   const [subGoalInput, setSubGoalInput] = useState('');
@@ -18,9 +24,7 @@ const GoalTracker = ({toggleCalendarModal}) => {
   const userId = currentUser.uid;
   const { fetchGoals, goalss } = useGetGoals();
 
-  useEffect(() => {
-    fetchGoals();
-  });
+ 
 
   const isOverdue = (dueDate) => {
     const today = new Date();
@@ -396,6 +400,16 @@ const GoalTracker = ({toggleCalendarModal}) => {
                         </span>
                       </div>
                       <div className="flex gap-2">
+                        <button
+                          onClick={() => onTriggerPomodoro(subGoal.name)}
+                          className={`${
+                            theme === "dark"
+                              ? "text-teal-400 hover:text-teal-500"
+                              : "text-teal-500 hover:text-teal-600"
+                          }`}
+                        >
+                          <FaClock />
+                        </button>
                         <button
                           onClick={() =>
                             editSubGoal(
