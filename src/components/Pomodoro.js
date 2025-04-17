@@ -1,3 +1,4 @@
+/* global chrome */
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Draggable from "react-draggable";
 import {
@@ -63,6 +64,34 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning }) => {
     },
     [sessionLog] // Dependency: sessionLog
   );
+
+  const [blockedSites, setBlockedSites] = useState([]);
+  const [isBlockingEnabled, setIsBlockingEnabled] = useState(false);
+
+  // Fetch blocked sites and blocking status from localStorage
+  useEffect(() => {
+    const storedSites = JSON.parse(localStorage.getItem("blockedSites")) || [];
+    setBlockedSites(storedSites);
+
+    const blockingStatus =
+      JSON.parse(localStorage.getItem("isBlockingEnabled")) || false;
+    setIsBlockingEnabled(blockingStatus);
+  }, []);
+
+  // Block sites when the timer starts
+  useEffect(() => {
+    if (isRunning && isBlockingEnabled) {
+      const interval = setInterval(() => {
+        blockedSites.forEach((site) => {
+          if (window.location.href.includes(site)) {
+            window.location.href = "about:blank"; // Redirect to a blank page
+          }
+        });
+      }, 1000);
+
+      return () => clearInterval(interval); // Cleanup interval when timer stops
+    }
+  }, [isRunning, isBlockingEnabled, blockedSites]);
 
   useEffect(() => {
     // Fetch logs from Local Storage on component mount
@@ -136,15 +165,28 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning }) => {
     workDuration,
     saveSessionToLocalStorage,
     title,
-    setIsRunning
+    setIsRunning,
   ]);
 
   const startTimer = () => {
     setIsRunning(true);
-  };
 
+    // Check if the `chrome` API is available
+    if (typeof chrome !== "undefined" && chrome.runtime) {
+      chrome.runtime.sendMessage({ action: "startPomodoro" }, (response) => {
+        console.log(response?.status || "No response from extension");
+      });
+    }
+  };
   const pauseTimer = () => {
     setIsRunning(false);
+
+    // Check if the `chrome` API is available
+    if (typeof chrome !== "undefined" && chrome.runtime) {
+      chrome.runtime.sendMessage({ action: "stopPomodoro" }, (response) => {
+        console.log(response?.status || "No response from extension");
+      });
+    }
   };
 
   const resetTimer = () => {

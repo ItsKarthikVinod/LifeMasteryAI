@@ -22,7 +22,7 @@ const TodoList = ({ onTriggerPomodoro }) => {
 
   const [editId, setEditId] = useState(null);
   const [editName, setEditName] = useState("");
-  const { fetchTodos, todoss } = useGetTodos();
+  const {  todoss } = useGetTodos();
   const { currentUser, theme } = useAuth();
   const userId = currentUser.uid;
 
@@ -41,7 +41,7 @@ const TodoList = ({ onTriggerPomodoro }) => {
         userId: userId,
       });
       setTaskName("");
-      fetchTodos();
+      
     } catch (error) {
       console.error("Error adding todo: ", error);
     }
@@ -50,7 +50,7 @@ const TodoList = ({ onTriggerPomodoro }) => {
   const deleteTodo = async (id) => {
     try {
       await deleteDoc(doc(db, "todos", id));
-      fetchTodos();
+      
     } catch (error) {
       console.error("Error deleting todo: ", error);
     }
@@ -67,7 +67,7 @@ const TodoList = ({ onTriggerPomodoro }) => {
       await updateDoc(todoRef, { name: editName });
       setEditId(null);
       setEditName("");
-      fetchTodos();
+      
     } catch (error) {
       console.error("Error updating todo: ", error);
     }
@@ -78,7 +78,7 @@ const TodoList = ({ onTriggerPomodoro }) => {
       await updateDoc(doc(db, "todos", todo.id), {
         isCompleted: !todo.isCompleted,
       });
-      fetchTodos();
+      
     } catch (error) {
       console.error("Error updating todo: ", error);
     }
@@ -89,7 +89,7 @@ const TodoList = ({ onTriggerPomodoro }) => {
       await updateDoc(doc(db, "todos", todo.id), {
         isImportant: !todo.isImportant,
       });
-      fetchTodos();
+      
     } catch (error) {
       console.error("Error updating importance: ", error);
     }

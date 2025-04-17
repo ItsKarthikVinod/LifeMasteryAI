@@ -14,7 +14,7 @@ const JournalList = () => {
   const [loadings, setLoadings] = useState(false); // Loading state for Summarize
   const [isSpeaking, setIsSpeaking] = useState(false); // State to track if speech is active
   const navigate = useNavigate();
-  const { journalEntries, fetchJournalEntries, deleteJournalEntry } =
+  const { journalEntries, deleteJournalEntry } =
     useGetJournalEntries();
   const { theme } = useAuth(); // Assuming you have a theme context
 
@@ -67,7 +67,7 @@ const JournalList = () => {
     );
     if (confirmed) {
       await deleteJournalEntry(id);
-      fetchJournalEntries();
+      
     }
   };
 

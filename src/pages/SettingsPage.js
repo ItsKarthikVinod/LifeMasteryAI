@@ -6,47 +6,80 @@ import { FaUser, FaPalette, FaSave, FaCamera, FaUndo } from "react-icons/fa";
 const SettingsPage = () => {
   const { currentUser, theme, toggleTheme } = useAuth(); // Use currentUser directly
 
-  // Add the initial Google profile picture dynamically
   const profilePictureOptions = [
     ...(currentUser?.providerData?.[0]?.providerId === "google.com" &&
     currentUser?.providerData?.[0]?.photoURL
       ? [currentUser?.providerData?.[0]?.photoURL]
-      : ""), // Initial Google profile picture
+      : ""),
     "https://avatar.iran.liara.run/public/31",
     "https://avatar.iran.liara.run/public/17",
     "https://avatar.iran.liara.run/public/73",
     "https://avatar.iran.liara.run/public/98",
     "https://avatar.iran.liara.run/public/49",
     "https://avatar.iran.liara.run/public/85",
-  ]; // Remove null values if Google profile picture doesn't exist
-   // Log the Google profile picture URL
-  // State for display name and profile picture
+  ];
+
   const [displayName, setDisplayName] = useState(
     currentUser?.displayName || ""
-  ); // Initialize with currentUser's displayName
+  );
   const [selectedPhoto, setSelectedPhoto] = useState(
     currentUser?.photoURL || profilePictureOptions[0]
-  ); // Initialize with currentUser's photoURL
+  );
 
-  // Reset to original values
   const handleReset = () => {
-    setDisplayName(currentUser?.providerData?.[0]?.displayName || ""); // Reset display name
-    setSelectedPhoto(currentUser?.providerData?.[0]?.photoURL); // Reset profile picture
+    setDisplayName(currentUser?.providerData?.[0]?.displayName || "");
+    setSelectedPhoto(currentUser?.providerData?.[0]?.photoURL);
   };
 
   const handleSave = async () => {
     try {
-      // Update the currentUser's profile in Firebase
       await updateProfile(currentUser, {
         displayName,
         photoURL: selectedPhoto,
       });
-      alert("Settings Changes Saved Successfully!"); // Notify user of success
+      alert("Settings Changes Saved Successfully!");
     } catch (error) {
       console.error("Error updating profile:", error);
       alert("Failed to update profile. Please try again.");
     }
   };
+
+  // const [blockedSites, setBlockedSites] = useState([]);
+  // const [newSite, setNewSite] = useState("");
+  // const [isBlockingEnabled, setIsBlockingEnabled] = useState(false);
+
+  // useEffect(() => {
+  //   const storedSites = JSON.parse(localStorage.getItem("blockedSites")) || [];
+  //   setBlockedSites(storedSites);
+
+  //   const blockingStatus =
+  //     JSON.parse(localStorage.getItem("isBlockingEnabled")) || false;
+  //   setIsBlockingEnabled(blockingStatus);
+  // }, []);
+
+  // const saveBlockedSites = (sites) => {
+  //   localStorage.setItem("blockedSites", JSON.stringify(sites));
+  //   setBlockedSites(sites);
+  // };
+
+  // const addBlockedSite = () => {
+  //   if (newSite.trim() && !blockedSites.includes(newSite.trim())) {
+  //     const updatedSites = [...blockedSites, newSite.trim()];
+  //     saveBlockedSites(updatedSites);
+  //     setNewSite("");
+  //   }
+  // };
+
+  // const removeBlockedSite = (site) => {
+  //   const updatedSites = blockedSites.filter((s) => s !== site);
+  //   saveBlockedSites(updatedSites);
+  // };
+
+  // const toggleBlocking = () => {
+  //   const newStatus = !isBlockingEnabled;
+  //   setIsBlockingEnabled(newStatus);
+  //   localStorage.setItem("isBlockingEnabled", JSON.stringify(newStatus));
+  // };
 
   return (
     <div
@@ -129,7 +162,77 @@ const SettingsPage = () => {
           </button>
         </div>
 
-        {/* Save and Reset Buttons */}
+        
+          {/* <div className="mb-6">
+            <label className="flex items-center mb-4">
+              <span className="mr-2 text-lg font-semibold">
+                Enable Site Blocking
+              </span>
+              <div
+                className={`relative inline-block w-12 h-6 ${
+            isBlockingEnabled ? "bg-teal-500" : "bg-gray-300"
+                } rounded-full cursor-pointer transition`}
+                onClick={toggleBlocking}
+              >
+                <span
+            className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow-md transition-transform ${
+              isBlockingEnabled ? "transform translate-x-6" : ""
+            }`}
+                ></span>
+              </div>
+            </label>
+
+            {isBlockingEnabled && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Blocked Sites</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            {blockedSites.map((site, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between bg-gray-100 p-4 rounded-lg shadow-md hover:shadow-lg transition"
+              >
+                <span className="text-gray-800 truncate max-w-[70%]">
+                  {site}
+                </span>
+                <button
+                  onClick={() => removeBlockedSite(site)}
+                  className="text-red-500 hover:text-red-600 transition"
+                  title="Remove Site"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+                </div>
+
+                <div className="flex items-center gap-4 mb-4">
+            <input
+              type="text"
+              value={newSite}
+              onChange={(e) => setNewSite(e.target.value)}
+              placeholder="Add a site (e.g., facebook.com)"
+              className={`flex-grow p-3 border rounded-lg focus:outline-none focus:ring-2 ${
+                theme === "dark"
+                  ? "bg-gray-800 border-gray-600 text-gray-200 focus:ring-teal-500"
+                  : "bg-gray-100 border-gray-300 text-gray-800 focus:ring-teal-400"
+              }`}
+            />
+            <button
+              onClick={addBlockedSite}
+              className="bg-teal-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-teal-600 transition"
+            >
+              Add
+            </button>
+                </div>
+
+                <div className="text-sm text-gray-500 italic">
+            Tip: You can block sites by entering their domain name (e.g., "example.com").
+                </div>
+              </div>
+            )}
+          </div> */}
+
+         
         <div className="flex justify-center gap-4">
           <button
             onClick={handleSave}

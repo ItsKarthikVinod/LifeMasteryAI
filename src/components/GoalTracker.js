@@ -22,7 +22,7 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
   const [editingDueDate, setEditingDueDate] = useState('');
   const { currentUser, theme } = useAuth();
   const userId = currentUser.uid;
-  const { fetchGoals, goalss } = useGetGoals();
+  const {  goalss } = useGetGoals();
 
  
 
@@ -62,7 +62,7 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
         userId: userId,
       });
       setGoalName('');
-      fetchGoals();
+      
     } catch (error) {
       console.error('Error adding goal: ', error);
     }
@@ -87,7 +87,7 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
       setSubGoalInput('');
       setDueDate('');
       setCurrentGoalId(null);
-      fetchGoals();
+      
     } catch (error) {
       console.error('Error adding sub-goal: ', error);
     }
@@ -105,7 +105,6 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
       const allSubGoalsCompleted = subGoals.every(subGoal => subGoal.completed);
       await updateDoc(goalRef, { completed: allSubGoalsCompleted });
 
-      fetchGoals();
     } catch (error) {
       console.error('Error toggling sub-goal completion: ', error);
     }
@@ -119,7 +118,7 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
 
     try {
       await updateDoc(goalRef, { subGoals });
-      fetchGoals();
+      
     } catch (error) {
       console.error('Error deleting sub-goal: ', error);
     }
@@ -129,7 +128,7 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
     const goalRef = doc(db, 'goals', goalId);
     try {
       await deleteDoc(goalRef);
-      fetchGoals();
+     
     } catch (error) {
       console.error('Error deleting goal: ', error);
     }
@@ -159,7 +158,7 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
       setEditingSubGoalIndex(null);
       setEditingSubGoalName('');
       setEditingDueDate('');
-      fetchGoals();
+   
     } catch (error) {
       console.error('Error saving sub-goal edit: ', error);
     }

@@ -1,47 +1,55 @@
-import { useState, useEffect } from 'react';
-import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { useState, useEffect } from "react";
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  onSnapshot,
+} from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 const useGetTodos = () => {
-    const [todoss, setTodoss] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+  const [todoss, setTodoss] = useState([]); // State to store todos
+  const [loading, setLoading] = useState(true); // State to track loading
+  const [error, setError] = useState(null); // State to track errors
 
-    const fetchTodos = async () => {
-        setLoading(true);
-        setError(null);
+  useEffect(() => {
+    const auth = getAuth();
+    const user = auth.currentUser;
 
-        try {
-            const auth = getAuth();
-            const user = auth.currentUser;
+    if (!user) {
+      setError("No user is logged in");
+      setLoading(false);
+      return;
+    }
 
-            if (!user) {
-                throw new Error('No user is logged in');
-            }
+    const db = getFirestore();
+    const todosRef = collection(db, "todos");
+    const q = query(todosRef, where("userId", "==", user.uid));
 
-            const db = getFirestore();
-            const todosRef = collection(db, 'todos');
-            const q = query(todosRef, where('userId', '==', user.uid));
-            const querySnapshot = await getDocs(q);
+    // Set up Firestore listener
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        const userTodos = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setTodoss(userTodos); // Update state with real-time data
+        setLoading(false); // Set loading to false after data is fetched
+      },
+      (err) => {
+        console.error("Error fetching todos in real-time:", err);
+        setError(err.message);
+        setLoading(false);
+      }
+    );
 
-            const userTodos = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
+    // Cleanup listener on component unmount
+    return () => unsubscribe();
+  }, []);
 
-            setTodoss(userTodos);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchTodos();
-    }, []);
-
-    return { todoss, loading, error, fetchTodos };
+  return { todoss, loading, error };
 };
 
 export default useGetTodos;

@@ -17,7 +17,7 @@ import OpenAI from "openai";
 const HabitTracker = ({ onTriggerPomodoro }) => {
   const [habitName, setHabitName] = useState("");
   const { currentUser, theme } = useAuth();
-  const { fetchedHabits, fetchHabits } = useGetHabits();
+  const { fetchedHabits } = useGetHabits();
 
   const [completionRate, setCompletionRate] = useState(0); // Completion percentage
   const [aiInsights, setAiInsights] = useState(""); // AI-generated insights
@@ -105,11 +105,11 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
     try {
       // Commit the batch update
       await batch.commit();
-      fetchHabits(); // Refresh the habits after updating
+     
     } catch (error) {
       console.error("Error updating habits:", error);
     }
-  }, [fetchedHabits, fetchHabits]);
+  }, [fetchedHabits]);
   // Function to generate AI insights using OpenAI
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -201,7 +201,7 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
       });
 
       setHabitName("");
-      fetchHabits();
+      
     } catch (error) {
       console.error("Error adding habit: ", error);
     }
@@ -259,7 +259,7 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
         }
       }
 
-      fetchHabits();
+      
     } catch (error) {
       console.error("Error updating habit completion: ", error);
     }
@@ -269,7 +269,7 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
     try {
       const habitRef = doc(db, "habits", id);
       await deleteDoc(habitRef);
-      fetchHabits();
+      
     } catch (error) {
       console.error("Error deleting habit: ", error);
     }
@@ -280,7 +280,7 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
     try {
       const habitRef = doc(db, "habits", id);
       await updateDoc(habitRef, { name: newName });
-      fetchHabits();
+    
     } catch (error) {
       console.error("Error updating habit: ", error);
     }

@@ -24,7 +24,7 @@ const VoiceAssistant = () => {
   const [interimTranscript, setInterimTranscript] = useState(""); // State to store the interim transcript
   const [isModalOpen, setIsModalOpen] = useState(false); // State to toggle modal
   const [recognitionInstance, setRecognitionInstance] = useState(null); // Store the recognition instance
-  const { fetchTodos, todoss } = useGetTodos();
+  const {  todoss } = useGetTodos();
   const { currentUser } = useAuth();
   const userId = currentUser.uid;
 
@@ -40,7 +40,7 @@ const VoiceAssistant = () => {
         userId: userId,
       });
 
-      fetchTodos();
+      
       alert("Todo added successfully!");
     } catch (error) {
       console.error("Error adding todo: ", error);
@@ -52,8 +52,9 @@ const VoiceAssistant = () => {
       await updateDoc(doc(db, "todos", todo?.id), {
         isCompleted: true,
       });
-      fetchTodos();
+      
       alert("Todo marked as done!");
+      
     } catch (error) {
       console.error("Error updating todo: ", error);
     }
@@ -63,7 +64,7 @@ const VoiceAssistant = () => {
       await updateDoc(doc(db, "todos", todo?.id), {
         isImportant: true,
       });
-      fetchTodos();
+     
       alert("Todo marked as important!");
     } catch (error) {
       console.error("Error updating importance: ", error);
@@ -72,7 +73,7 @@ const VoiceAssistant = () => {
   const deleteTodo = async (todo) => {
     try {
       await deleteDoc(doc(db, "todos", todo?.id));
-      fetchTodos();
+      
       alert("Todo deleted successfully!");
     } catch (error) {
       console.error("Error deleting todo: ", error);

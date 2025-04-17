@@ -1,55 +1,66 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getFirestore, collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { useState, useEffect } from "react";
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  onSnapshot,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 const useGetJournalEntries = () => {
-    const [journalEntries, setFetchedJournalEntries] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const db = getFirestore();
+  const [journalEntries, setFetchedJournalEntries] = useState([]); // State to store journal entries
+  const [loading, setLoading] = useState(true); // State to track loading
+  const [error, setError] = useState(null); // State to track errors
+  const db = getFirestore();
 
-    const fetchJournalEntries = useCallback ( async () => {
-        try {
-            const auth = getAuth();
-            const user = auth.currentUser;
+  useEffect(() => {
+    const auth = getAuth();
+    const user = auth.currentUser;
 
-            if (!user) {
-                throw new Error('User not logged in');
-            }
+    if (!user) {
+      setError("User not logged in");
+      setLoading(false);
+      return;
+    }
 
-            
-            const journalEntriesRef = collection(db, 'journalEntries');
-            const q = query(journalEntriesRef, where('userId', '==', user.uid));
-            const querySnapshot = await getDocs(q);
+    const journalEntriesRef = collection(db, "journalEntries");
+    const q = query(journalEntriesRef, where("userId", "==", user.uid));
 
-            const journalEntriesData = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
+    // Set up Firestore listener
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        const journalEntriesData = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setFetchedJournalEntries(journalEntriesData); // Update state with real-time data
+        setLoading(false); // Set loading to false after data is fetched
+      },
+      (err) => {
+        console.error("Error fetching journal entries in real-time:", err);
+        setError(err.message);
+        setLoading(false);
+      }
+    );
 
-            setFetchedJournalEntries(journalEntriesData);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    },[db]);
+    // Cleanup listener on component unmount
+    return () => unsubscribe();
+  }, [db]);
 
-    const deleteJournalEntry = async (id) => {
-        try {
-          const journalRef = doc(db, 'journalEntries', id);
-          await deleteDoc(journalRef);
-          fetchJournalEntries();
-        } catch (error) {
-          console.error('Error deleting journal: ', error);
-        }
-      };
+  const deleteJournalEntry = async (id) => {
+    try {
+      const journalRef = doc(db, "journalEntries", id);
+      await deleteDoc(journalRef);
+    } catch (error) {
+      console.error("Error deleting journal: ", error);
+    }
+  };
 
-    useEffect(() => {
-        fetchJournalEntries();
-    },[fetchJournalEntries]);
-
-    return { journalEntries, loading, error, fetchJournalEntries, deleteJournalEntry };  
+  return { journalEntries, loading, error, deleteJournalEntry };
 };
 
 export default useGetJournalEntries;
