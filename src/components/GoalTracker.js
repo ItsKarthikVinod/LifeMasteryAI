@@ -7,13 +7,15 @@ import {
   FaTrash,
   FaCalendarAlt,
   FaClock,
+  FaChevronDown,
+  FaChevronRight,
 } from "react-icons/fa"; // Icons for edit, delete, and check
 import { useAuth } from "../contexts/authContext";
 
 import useGetGoals from '../hooks/useGetGoals';
 const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
   const [goalName, setGoalName] = useState('');
-
+  const [expandedGoals, setExpandedGoals] = useState({});
   const [subGoalInput, setSubGoalInput] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [currentGoalId, setCurrentGoalId] = useState(null);
@@ -24,7 +26,12 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
   const userId = currentUser.uid;
   const {  goalss } = useGetGoals();
 
- 
+ const toggleGoalExpansion = (goalId) => {
+   setExpandedGoals((prev) => ({
+     ...prev,
+     [goalId]: !prev[goalId], // Toggle the expanded state for the specific goal
+   }));
+ };
 
   const isOverdue = (dueDate) => {
     const today = new Date();
@@ -220,7 +227,17 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
                 : "bg-white/40 border-gray-300"
             }`}
           >
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center ">
+              <button
+                onClick={() => toggleGoalExpansion(goal.id)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                {expandedGoals[goal.id] ? (
+                  <FaChevronDown />
+                ) : (
+                  <FaChevronRight />
+                )}
+              </button>
               <h3
                 className={`text-xl font-semibold ${
                   goal.completed
@@ -270,8 +287,8 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
                 {Math.round(calculateProgress(goal?.subGoals || []))}%
               </span>
             </div>
-
-            {/* Add Sub-goal Button */}
+            
+            {expandedGoals[goal.id] && <>
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mt-4">
               <button
                 onClick={() => setCurrentGoalId(goal.id)}
@@ -442,6 +459,7 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
                 </li>
               ))}
             </ul>
+            </>}
           </li>
         ))}
       </ul>
