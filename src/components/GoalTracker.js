@@ -230,7 +230,9 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center ">
               <button
                 onClick={() => toggleGoalExpansion(goal.id)}
-                className="text-gray-500 hover:text-gray-700"
+                className={`${
+                  theme === "dark" ? "text-gray-200" : "text-gray-600"
+                }`}
               >
                 {expandedGoals[goal.id] ? (
                   <FaChevronDown />
