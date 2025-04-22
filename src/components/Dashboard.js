@@ -231,7 +231,9 @@ const Dashboard = () => {
             className={`fixed inset-0 flex items-center justify-center z-50`}
           >
             <div
-              className={`bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-4xl`}
+              className={` ${
+                theme === "dark" ? "bg-gray-800" : "bg-gray-300"
+              } p-6 rounded-lg shadow-lg w-full max-w-4xl`}
             >
               {/* Modal Header */}
               <div
@@ -254,21 +256,24 @@ const Dashboard = () => {
                 </button>
               </div>
 
-              {/* Calendar */}
               <Calendar
                 localizer={localizer}
                 events={calendarEvents}
                 startAccessor="start"
+                defaultView="day"
                 endAccessor="end"
+                popup
                 style={{ height: 500 }}
                 className={`rounded-lg shadow-md ${
                   theme === "dark"
                     ? "bg-gray-800 text-gray-200"
-                    : "bg-white text-gray-800"
+                    : "bg-gray-200 text-gray-800"
                 }`}
-                eventPropGetter={(event) => ({
+                eventPropGetter={(event) => (
+                
+                  {
                   style: {
-                    backgroundColor: theme === "dark" ? "#2dd4bf" : "#14b8a6",
+                    backgroundColor: event.color ,
                     color: "white",
                     borderRadius: "5px",
                     border: "none",
