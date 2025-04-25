@@ -1,7 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/authContext";
 import { updateProfile } from "firebase/auth"; // Import Firebase's updateProfile method
-import { FaUser, FaPalette, FaSave, FaCamera, FaUndo } from "react-icons/fa";
+import {
+  FaUser,
+  FaPalette,
+  FaSave,
+  FaCamera,
+  FaUndo,
+  FaClock,
+} from "react-icons/fa";
 
 const SettingsPage = () => {
   const { currentUser, theme, toggleTheme } = useAuth(); // Use currentUser directly
@@ -26,6 +33,16 @@ const SettingsPage = () => {
     currentUser?.photoURL || profilePictureOptions[0]
   );
 
+  const [initialMinutes, setInitialMinutes] = useState(25); // State for Pomodoro initial minutes
+
+  // Load initial minutes from localStorage on component mount
+  useEffect(() => {
+    const storedMinutes = localStorage.getItem("pomodoroInitialMinutes");
+    if (storedMinutes) {
+      setInitialMinutes(parseInt(storedMinutes, 10));
+    }
+  }, []);
+
   const handleReset = () => {
     setDisplayName(currentUser?.providerData?.[0]?.displayName || "");
     setSelectedPhoto(currentUser?.providerData?.[0]?.photoURL);
@@ -37,6 +54,10 @@ const SettingsPage = () => {
         displayName,
         photoURL: selectedPhoto,
       });
+
+      // Save initial minutes to localStorage
+      localStorage.setItem("pomodoroInitialMinutes", initialMinutes);
+
       alert("Settings Changes Saved Successfully!");
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -144,6 +165,29 @@ const SettingsPage = () => {
           </div>
         </div>
 
+        {/* Pomodoro Initial Minutes Section */}
+        <div className="mb-8">
+          <label className="text-lg font-medium mb-4 flex items-center">
+            <FaClock className="mr-2" />
+            Pomodoro Timer Initial Minutes
+          </label>
+          <input
+            type="number"
+            value={initialMinutes}
+            onChange={(e) => setInitialMinutes(parseInt(e.target.value, 10))}
+            className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 ${
+              theme === "dark"
+                ? "bg-gray-800 border-gray-600 text-gray-200 focus:ring-teal-500"
+                : "bg-gray-100 border-gray-300 text-gray-800 focus:ring-teal-400"
+            }`}
+            placeholder="Enter initial minutes"
+            min="1"
+          />
+          <p className="text-sm mt-2 text-gray-500">
+            Set the default duration for your Pomodoro timer.
+          </p>
+        </div>
+
         {/* Theme Section */}
         <div className="mb-8">
           <label className="block text-lg font-medium mb-4 flex items-center">
@@ -162,8 +206,7 @@ const SettingsPage = () => {
           </button>
         </div>
 
-        
-          {/* <div className="mb-6">
+        {/* <div className="mb-6">
             <label className="flex items-center mb-4">
               <span className="mr-2 text-lg font-semibold">
                 Enable Site Blocking
@@ -232,7 +275,6 @@ const SettingsPage = () => {
             )}
           </div> */}
 
-         
         <div className="flex justify-center gap-4">
           <button
             onClick={handleSave}

@@ -11,8 +11,8 @@ import {
 import { useAuth } from "../contexts/authContext";
 import Bell from "../assets/bell.mp3"; // Ensure the path is correct
 
-const Pomodoro = ({ initialTitle, isRunning, setIsRunning }) => {
-  const [minutes, setMinutes] = useState(25);
+const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => {
+  const [minutes, setMinutes] = useState(initialMinutes ); // Default work duration is 25 minutes
   const [seconds, setSeconds] = useState(0);
   const [title, setTitle] = useState(initialTitle || "");
   const [isWorkSession, setIsWorkSession] = useState(true);
@@ -27,6 +27,18 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning }) => {
   const nodeRef = useRef(null); // Ref for the draggable component
 
   const audioRef = useRef(null); // Ref for the bell sound
+
+  useEffect(() => {
+    const storedMinutes = localStorage.getItem("pomodoroInitialMinutes");
+    if (storedMinutes) {
+      const updatedMinutes = parseInt(storedMinutes, 10);
+      setMinutes(updatedMinutes);
+      setWorkDuration(updatedMinutes);
+    } else {
+      setMinutes(initialMinutes);
+      setWorkDuration(initialMinutes);
+    }
+  }, [initialMinutes]);
 
   useEffect(() => {
     setTitle(initialTitle); // Update the title when the prop changes

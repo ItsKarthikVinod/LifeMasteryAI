@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { useAuth } from "../contexts/authContext";
 import { useNavigate } from "react-router-dom";
 import HabitTracker from "./HabitTracker";
@@ -30,11 +30,19 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [pomodoroTitle, setPomodoroTitle] = useState(""); // State to hold the Pomodoro session title
   const [isPomodoroRunning, setIsPomodoroRunning] = useState(false); // State to track if Pomodoro is running
+  const [initialMinutes,setInitialMinutes] = useState(25); // Initial minutes for Pomodoro timer
 
   // Redirect to login if not logged in
   if (!userLoggedIn) {
     navigate("/login");
   }
+
+  useEffect(() => {
+    const storedMinutes = localStorage.getItem("pomodoroInitialMinutes");
+    if (storedMinutes) {
+      setInitialMinutes(parseInt(storedMinutes, 10));
+    }
+  },[]);
   const triggerPomodoro = (title) => {
     setPomodoroTitle(title);
     setIsPomodoroRunning(true); // Start the Pomodoro session
@@ -168,6 +176,7 @@ const Dashboard = () => {
           initialTitle={pomodoroTitle}
           isRunning={isPomodoroRunning}
           setIsRunning={setIsPomodoroRunning}
+          initialMinutes={initialMinutes}
         />
 
         {/* Voice Assistant */}
