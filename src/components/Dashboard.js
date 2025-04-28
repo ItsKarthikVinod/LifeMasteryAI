@@ -23,6 +23,81 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
+const CustomToolbar = (toolbar) => {
+  const { theme } = useAuth(); // Get the theme from context
+  const textColor = theme === "dark" ? "text-gray-200" : "text-gray-800";
+  const bgColor = theme === "dark" ? "bg-gray-800" : "bg-gray-200";
+
+  return (
+    <div
+      className={`flex flex-wrap md:flex-nowrap justify-between items-center p-4 rounded-lg shadow-md mb-2 ${bgColor}`}
+    >
+      {/* Navigation Buttons */}
+      <div className="flex items-center gap-4 mb-2 md:mb-0">
+        <button
+          onClick={() => toolbar.onNavigate("PREV")}
+          className={`font-bold ${textColor} text-2xl`}
+        >
+          ‹
+        </button>
+        <span className={`text-lg font-bold ${textColor}`}>
+          {toolbar.label} {/* Displays the current month/year */}
+        </span>
+        <button
+          onClick={() => toolbar.onNavigate("NEXT")}
+          className={`font-bold ${textColor} text-2xl`}
+        >
+          ›
+        </button>
+      </div>
+
+      {/* View Options */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => toolbar.onView("month")}
+          className={`px-3 py-1 rounded-lg font-bold ${
+            toolbar.view === "month"
+              ? "bg-teal-500 text-white"
+              : `${bgColor} ${textColor}`
+          }`}
+        >
+          Month
+        </button>
+        <button
+          onClick={() => toolbar.onView("week")}
+          className={`px-3 py-1 rounded-lg font-bold ${
+            toolbar.view === "week"
+              ? "bg-teal-500 text-white"
+              : `${bgColor} ${textColor}`
+          }`}
+        >
+          Week
+        </button>
+        <button
+          onClick={() => toolbar.onView("day")}
+          className={`px-3 py-1 rounded-lg font-bold ${
+            toolbar.view === "day"
+              ? "bg-teal-500 text-white"
+              : `${bgColor} ${textColor}`
+          }`}
+        >
+          Day
+        </button>
+        <button
+          onClick={() => toolbar.onView("agenda")}
+          className={`px-3 py-1 rounded-lg font-bold ${
+            toolbar.view === "agenda"
+              ? "bg-teal-500 text-white"
+              : `${bgColor} ${textColor}`
+          }`}
+        >
+          Agenda
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const Dashboard = () => {
   const { currentUser, userLoggedIn, theme } = useAuth();
   const [showCalendarModal, setShowCalendarModal] = useState(false); // State to control calendar modal visibility
@@ -232,8 +307,8 @@ const Dashboard = () => {
       {/* Calendar Modal */}
       {showCalendarModal && (
         <>
-          {/* Dark overlay */}
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-40"></div>
+          {/* Overlay */}
+          <div className="fixed inset-0 bg-black opacity-50 z-40"></div>
 
           {/* Modal */}
           <div
@@ -271,16 +346,24 @@ const Dashboard = () => {
                 startAccessor="start"
                 defaultView="day"
                 endAccessor="end"
-                popup
+                components={{
+                  toolbar: (props) => (
+                    <CustomToolbar {...props} theme={theme} />
+                  ), // Pass theme to CustomToolbar
+                  
+                }}
+                selectable
                 style={{ height: 500 }}
                 className={`rounded-lg shadow-md ${
                   theme === "dark"
                     ? "bg-gray-800 text-gray-200"
                     : "bg-gray-200 text-gray-800"
                 }`}
+                
+                
                 eventPropGetter={(event) => ({
                   style: {
-                    backgroundColor: event.completed ? "#38b2ac" : "#3182ce",
+                    backgroundColor: event.completed ? "#1d9a8a" : "#3182ce",
                     color: "white",
                     borderRadius: "5px",
                     border: "none",
