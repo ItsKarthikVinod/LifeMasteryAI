@@ -57,7 +57,7 @@ const CustomToolbar = (toolbar) => {
         {isNotToday && ( // Render "Today" button only if the current date is not today
           <button
             onClick={() => toolbar.onNavigate("TODAY")} // Navigate to today
-            className={`px-3 py-1 rounded-lg font-bold outline outline-1 text-white`}
+            className={`px-3 py-1 rounded-lg font-bold outline outline-1 ${textColor}`}
           >
             Today
           </button>
