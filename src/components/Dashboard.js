@@ -27,6 +27,7 @@ const CustomToolbar = (toolbar) => {
   const { theme } = useAuth(); // Get the theme from context
   const textColor = theme === "dark" ? "text-gray-200" : "text-gray-800";
   const bgColor = theme === "dark" ? "bg-gray-800" : "bg-gray-200";
+  const isNotToday = new Date().toDateString() !== toolbar.date.toDateString();
 
   return (
     <div
@@ -53,6 +54,14 @@ const CustomToolbar = (toolbar) => {
 
       {/* View Options */}
       <div className="flex flex-wrap gap-2">
+        {isNotToday && ( // Render "Today" button only if the current date is not today
+          <button
+            onClick={() => toolbar.onNavigate("TODAY")} // Navigate to today
+            className={`px-3 py-1 rounded-lg font-bold outline outline-1 text-white`}
+          >
+            Today
+          </button>
+        )}
         <button
           onClick={() => toolbar.onView("month")}
           className={`px-3 py-1 rounded-lg font-bold ${
