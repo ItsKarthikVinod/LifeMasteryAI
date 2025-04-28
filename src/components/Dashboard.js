@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/authContext";
 import { useNavigate } from "react-router-dom";
 import HabitTracker from "./HabitTracker";
@@ -30,7 +30,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [pomodoroTitle, setPomodoroTitle] = useState(""); // State to hold the Pomodoro session title
   const [isPomodoroRunning, setIsPomodoroRunning] = useState(false); // State to track if Pomodoro is running
-  const [initialMinutes,setInitialMinutes] = useState(25); // Initial minutes for Pomodoro timer
+  const [initialMinutes, setInitialMinutes] = useState(25); // Initial minutes for Pomodoro timer
 
   // Redirect to login if not logged in
   if (!userLoggedIn) {
@@ -42,7 +42,7 @@ const Dashboard = () => {
     if (storedMinutes) {
       setInitialMinutes(parseInt(storedMinutes, 10));
     }
-  },[]);
+  }, []);
   const triggerPomodoro = (title) => {
     setPomodoroTitle(title);
     setIsPomodoroRunning(true); // Start the Pomodoro session
@@ -278,11 +278,9 @@ const Dashboard = () => {
                     ? "bg-gray-800 text-gray-200"
                     : "bg-gray-200 text-gray-800"
                 }`}
-                eventPropGetter={(event) => (
-                
-                  {
+                eventPropGetter={(event) => ({
                   style: {
-                    backgroundColor: event.color ,
+                    backgroundColor: event.completed ? "#38b2ac" : "#3182ce",
                     color: "white",
                     borderRadius: "5px",
                     border: "none",

@@ -48,14 +48,15 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
           start: new Date(subGoal.dueDate),
           end: new Date(subGoal.dueDate),
           allDay: true,
-          color: goal.completed
-            ? theme === "dark" ? "#38b2ac" : "#319795" // Teal for completed goals
-            : theme === "dark" ? "#63b3ed" : "#3182ce", // Blue for incomplete goals
+          completed: subGoal.completed
+            
         });
       });
     });
     return events;
   };
+
+  
   
 
   const addGoal = async (e) => {
