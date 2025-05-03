@@ -10,9 +10,10 @@ import {
 } from "react-icons/fa";
 import { useAuth } from "../contexts/authContext";
 import Bell from "../assets/bell.mp3"; // Ensure the path is correct
+import PomodoroTimeline from "./PomodoroTimeline";
 
 const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => {
-  const [minutes, setMinutes] = useState(initialMinutes ); // Default work duration is 25 minutes
+  const [minutes, setMinutes] = useState(initialMinutes); // Default work duration is 25 minutes
   const [seconds, setSeconds] = useState(0);
   const [title, setTitle] = useState(initialTitle || "");
   const [isWorkSession, setIsWorkSession] = useState(true);
@@ -23,6 +24,16 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
   const [isDurationUpdated, setIsDurationUpdated] = useState(false); // Track if durations are updated
   const [sessionLog, setSessionLog] = useState([]); // Log of Pomodoro sessions
   const [isLogModalOpen, setIsLogModalOpen] = useState(false); // Track visibility of the session log modal
+  const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false); // Track visibility of the timeline modal
+
+  const toggleTimelineModal = () => {
+    if (sessionLog.length === 0) {
+      alert("No session logs available.");
+      return;
+    } else {
+      setIsTimelineModalOpen(!isTimelineModalOpen);
+    }// Toggle visibility of the timeline modal
+  };
 
   const nodeRef = useRef(null); // Ref for the draggable component
 
@@ -539,14 +550,26 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
               <FaWindowMinimize />
             </button>
 
-            {/* Modal Title */}
-            <h3
-              className={`text-2xl font-semibold mb-4 ${
-                theme === "dark" ? "text-teal-400" : "text-teal-600"
-              }`}
-            >
-              Pomodoro Session Log
-            </h3>
+            <div className="flex sm:justify-around sm:items-center sm:flex-row flex-col mb-4">
+              {/* Modal Title */}
+              <h3
+                className={`text-2xl font-semibold mb-4 ${
+                  theme === "dark" ? "text-teal-400" : "text-teal-600"
+                }`}
+              >
+                Pomodoro Session Log
+              </h3>
+              <button
+                onClick={toggleTimelineModal} // Open the timeline modal
+                className={`sm:px-4 sm:py-2 px-3 py-1 rounded-lg font-bold ${
+                  theme === "dark"
+                    ? "bg-teal-500 text-white hover:bg-teal-600"
+                    : "bg-teal-500 text-white hover:bg-teal-400"
+                }`}
+              >
+                View Timeline
+              </button>
+            </div>
 
             {/* Scrollable Log Container */}
             <div className="max-h-96 overflow-y-auto space-y-4">
@@ -578,6 +601,14 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
             </div>
           </div>
         </div>
+      )}
+      {/* Timeline Modal */}
+      {isTimelineModalOpen && (
+        <PomodoroTimeline
+          sessionLog={sessionLog} // Pass the session logs
+          theme={theme} // Pass the current theme
+          onClose={toggleTimelineModal} // Function to close the modal
+        />
       )}
     </>
   );
