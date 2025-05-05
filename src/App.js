@@ -13,6 +13,7 @@ import Footer from './components/Footer'
 import {useAuth} from './contexts/authContext';
 
 import SettingsPage from './pages/SettingsPage';
+import WhiteBoard from './components/WhiteBoard';
 
 
 const App = () => {
@@ -29,7 +30,8 @@ const App = () => {
           <Route path="/journal-list" element={<JournalList />} />
           <Route path="/challenges" element={<Challenges />} />
           <Route path="/community" element={<CommunityPage />} />
-          
+          <Route path="/whiteboard" element={<WhiteBoard />} />
+
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
         <Footer />

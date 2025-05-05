@@ -115,6 +115,7 @@ const Dashboard = () => {
   const [pomodoroTitle, setPomodoroTitle] = useState(""); // State to hold the Pomodoro session title
   const [isPomodoroRunning, setIsPomodoroRunning] = useState(false); // State to track if Pomodoro is running
   const [initialMinutes, setInitialMinutes] = useState(25); // Initial minutes for Pomodoro timer
+  
 
   // Redirect to login if not logged in
   if (!userLoggedIn) {
@@ -271,7 +272,45 @@ const Dashboard = () => {
           markAsImportant={markAsImportant}
         />
 
-        {/* Community Page Button */}
+        <div className="mt-8 text-center">
+          <button
+            onClick={() => navigate("/whiteboard")}
+            className={`relative group cursor-pointer inline-block px-8 py-6 rounded-lg shadow-lg font-bold transition-transform transform hover:scale-105 ${
+              theme === "dark"
+                ? "bg-gradient-to-r from-gray-800 via-gray-700 to-gray-600 text-white border border-gray-500"
+                : "bg-gradient-to-r from-white via-gray-100 to-gray-200 text-gray-800 border border-gray-300"
+            }`}
+          >
+            <div
+              onClick={() => navigate("/whiteboard")}
+              className={`absolute -top-4 -left-4 w-12 h-12 rounded-full flex items-center justify-center shadow-md ${
+                theme === "dark"
+                  ? "bg-gray-700 text-white border border-gray-500"
+                  : "bg-white text-gray-800 border border-gray-300"
+              }`}
+            >
+              🖍️
+            </div>
+
+            <span className="block text-lg">
+              <span
+                className={`block text-2xl font-extrabold ${
+                  theme === "dark" ? "text-teal-400" : "text-teal-600"
+                }`}
+              >
+                Open Whiteboard
+              </span>
+              <span
+                className={`block text-sm ${
+                  theme === "dark" ? "text-gray-300" : "text-gray-600"
+                }`}
+              >
+                Create, draw, and brainstorm!
+              </span>
+            </span>
+          </button>
+        </div>
+
         <div className="mt-8 text-center">
           <button
             onClick={() => navigate("/community")}
@@ -359,7 +398,6 @@ const Dashboard = () => {
                   toolbar: (props) => (
                     <CustomToolbar {...props} theme={theme} />
                   ), // Pass theme to CustomToolbar
-                  
                 }}
                 selectable
                 style={{ height: 500 }}
@@ -368,8 +406,6 @@ const Dashboard = () => {
                     ? "bg-gray-800 text-gray-200"
                     : "bg-gray-200 text-gray-800"
                 }`}
-                
-                
                 eventPropGetter={(event) => ({
                   style: {
                     backgroundColor: event.completed ? "#1d9a8a" : "#3182ce",
