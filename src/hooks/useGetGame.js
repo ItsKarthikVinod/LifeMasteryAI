@@ -38,11 +38,16 @@ function useGetGame() {
       const newXP = gamificationData.totalXP + points;
       const newLevel = calculateLevel(newXP);
 
+      const remainingXP =
+        newLevel === 1
+          ? xpToNextLevel(newLevel) - newXP
+          : xpToNextLevel(newLevel) - (newXP - xpToNextLevel(newLevel - 1));
+
       // Update the gamification document with the new XP and level
       await setDoc(gamificationRef, {
         totalXP: newXP,
         level: newLevel,
-        xpToNextLevel: xpToNextLevel(newLevel) - newXP,
+        xpToNextLevel: remainingXP,
         userId: userId,
       });
 
