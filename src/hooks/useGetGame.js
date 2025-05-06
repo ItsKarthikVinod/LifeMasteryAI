@@ -11,10 +11,10 @@ import { db } from "../firebase/firebase";
 
 function useGetGame() {
   // Function to calculate the user's level based on XP
-  const calculateLevel = (xp) => Math.floor(Math.sqrt(xp / 100)); 
+  const calculateLevel = (xp) => Math.floor((xp - 100) / 150); 
 
   // Function to calculate the XP required for the next level
-  const xpToNextLevel = (level) => (level + 1) ** 2 * 100;
+  const xpToNextLevel = (level) => 100 + level * 150;
 
   // Function to award XP to a user
   const awardXP = async (userId, points) => {
