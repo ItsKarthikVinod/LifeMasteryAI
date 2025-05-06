@@ -110,7 +110,7 @@ const GamificationProgress = () => {
             theme === "dark" ? "text-gray-400" : "text-gray-600"
           }`}
         >
-          Next level in {xpToNextLevel - (totalXP % xpToNextLevel)} XP
+          Next level in {xpToNextLevel  } XP
         </span>
       </div>
     </div>

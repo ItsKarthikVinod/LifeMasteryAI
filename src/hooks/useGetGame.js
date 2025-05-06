@@ -11,7 +11,7 @@ import { db } from "../firebase/firebase";
 
 function useGetGame() {
   // Function to calculate the user's level based on XP
-  const calculateLevel = (xp) => Math.floor((xp - 100) / 150); 
+  const calculateLevel = (xp) => Math.floor(Math.sqrt(xp / 100)); 
 
   // Function to calculate the XP required for the next level
   const xpToNextLevel = (level) => 100 + level * 150;
@@ -38,16 +38,11 @@ function useGetGame() {
       const newXP = gamificationData.totalXP + points;
       const newLevel = calculateLevel(newXP);
 
-      const remainingXP =
-        newLevel === 1
-          ? xpToNextLevel(newLevel) - newXP
-          : xpToNextLevel(newLevel) - (newXP - xpToNextLevel(newLevel - 1));
-
       // Update the gamification document with the new XP and level
       await setDoc(gamificationRef, {
         totalXP: newXP,
         level: newLevel,
-        xpToNextLevel: remainingXP,
+        xpToNextLevel: xpToNextLevel(newLevel) - newXP,
         userId: userId,
       });
 
