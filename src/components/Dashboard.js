@@ -10,6 +10,8 @@ import VoiceAssistant from "./VoiceAssistant";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { format, parse, startOfWeek, getDay } from "date-fns";
+import GamificationProgress from "./GamificationProgress";
+import { ToastContainer } from "react-toastify";
 
 const locales = {
   "en-US": require("date-fns/locale/en-US"),
@@ -33,6 +35,7 @@ const CustomToolbar = (toolbar) => {
     <div
       className={`flex flex-wrap md:flex-nowrap justify-between items-center p-4 rounded-lg shadow-md mb-2 ${bgColor}`}
     >
+
       {/* Navigation Buttons */}
       <div className="flex items-center gap-4 mb-2 md:mb-0">
         <button
@@ -176,42 +179,50 @@ const Dashboard = () => {
           : "bg-gradient-to-r from-teal-400 to-blue-500"
       } `}
     >
+      <ToastContainer />
       <div className="p-8 mt-12">
         <div
-          className={`text-center mb-6  shadow-lg rounded-lg p-3 mt-2 ${
+          className={`flex flex-col lg:flex-row items-center lg:items-center justify-center lg:justify-between mb-6 shadow-lg rounded-lg p-6 mt-2 ${
             theme === "dark"
-              ? " bg-gray-800/90 backdrop-blur-lg"
+              ? "bg-gray-800/50 backdrop-blur-lg"
               : "bg-white/50 backdrop-blur-lg"
           }`}
         >
-          <h1
-            className={`text-4xl font-bold ${
-              theme === "dark" ? "text-gray-100" : "text-gray-800"
-            }`}
-          >
-            Welcome to your Dashboard
-          </h1>
+          {/* Gamification Progress (Left for larger devices) */}
+          <div className="w-full lg:w-1/3 mb-6 lg:mb-0 lg:mr-6 flex justify-center lg:justify-start">
+            <GamificationProgress />
+          </div>
 
-          <p
-            className={` mt-2 text-lg flex items-center justify-center ${
-              theme === "dark" ? "text-gray-100" : "text-gray-600"
-            }`}
-          >
-            <img
-              src={
-                currentUser.photoURL
-                  ? currentUser?.photoURL
-                  : "https://www.svgrepo.com/show/213788/avatar-user.svg"
-              }
-              className="w-10 h-10 rounded-full mr-3"
-              alt="User Avatar"
-            />
-            Hi,{" "}
-            {currentUser.displayName
-              ? currentUser.displayName
-              : currentUser.email}
-            !
-          </p>
+          {/* Welcome Section */}
+          <div className="w-full lg:w-2/3 text-center lg:text-left flex flex-col items-center lg:items-start">
+            <h1
+              className={`text-4xl font-bold ${
+                theme === "dark" ? "text-gray-100" : "text-gray-800"
+              }`}
+            >
+              Welcome to your Dashboard
+            </h1>
+            <p
+              className={`mt-4 text-lg flex items-center justify-center lg:justify-start lg:ml-24 ${
+                theme === "dark" ? "text-gray-100" : "text-gray-600"
+              }`}
+            >
+              <img
+                src={
+                  currentUser.photoURL
+                    ? currentUser?.photoURL
+                    : "https://www.svgrepo.com/show/213788/avatar-user.svg"
+                }
+                className="w-12 h-12 rounded-full mr-3 shadow-lg"
+                alt="User Avatar"
+              />
+              Hi,{" "}
+              {currentUser.displayName
+                ? currentUser.displayName
+                : currentUser.email}
+              !
+            </p>
+          </div>
         </div>
 
         {/* Dashboard main section */}

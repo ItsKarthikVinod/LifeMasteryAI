@@ -14,6 +14,8 @@ import {
 import { FaThumbsUp, FaComment, FaTrash, FaTimes } from "react-icons/fa";
 import Modal from "react-modal";
 import { useAuth } from "../contexts/authContext";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css"; // Import Quill's default theme
 
 Modal.setAppElement("#root");
 
@@ -244,8 +246,9 @@ const CommunityPage = () => {
               className={`mb-4 ${
                 theme === "dark" ? "text-gray-300" : "text-gray-800"
               }`}
+              dangerouslySetInnerHTML={{ __html: post.content }}
             >
-              {post.content}
+              
             </p>
             <p
               className={`text-sm mb-4 ${
@@ -342,7 +345,12 @@ const CommunityPage = () => {
                       >
                         {comment.timestamp.toDate().toLocaleString()}
                       </span>
-                      <p className="mt-2">{comment.content}</p>
+                      <p
+                        className="mt-2"
+                        dangerouslySetInnerHTML={{ __html: comment.content }}
+                      >
+                        
+                      </p>
                       {(currentUser?.email === adminEmail ||
                         currentUser?.email === comment?.email) && (
                         <button
@@ -358,15 +366,16 @@ const CommunityPage = () => {
                   ))}
                 </div>
                 <div className="add-comment mt-6">
-                  <textarea
+                  <ReactQuill
+                    theme="snow"
                     value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    className={`w-full p-4 border rounded-md mb-4 ${
+                    onChange={setNewComment}
+                    className={`mb-4 ${
                       theme === "dark"
-                        ? "bg-gray-800 border-gray-700 text-gray-200"
-                        : "bg-white border-gray-300 text-gray-800"
+                        ? "bg-gray-800 text-gray-200"
+                        : "bg-white text-gray-800"
                     }`}
-                    placeholder="Add a comment..."
+                    placeholder="Write your comment here..."
                   />
                   <button
                     onClick={() => addComment(post.id)}
@@ -413,15 +422,16 @@ const CommunityPage = () => {
           value={newPostTitle}
           onChange={(e) => setNewPostTitle(e.target.value)}
         />
-        <textarea
-          placeholder="Post Content"
-          className={`w-full p-4 mb-4 border rounded-md ${
-            theme === "dark"
-              ? "bg-gray-800 border-gray-700 text-gray-200"
-              : "bg-white border-gray-300 text-gray-800"
-          }`}
+        <ReactQuill
+          theme="snow"
           value={newPostContent}
-          onChange={(e) => setNewPostContent(e.target.value)}
+          onChange={setNewPostContent}
+          className={`mb-4 ${
+            theme === "dark"
+              ? "bg-gray-800 text-gray-200"
+              : "bg-white text-gray-800"
+          }`}
+          placeholder="Write your post here..."
         />
         <div className="flex justify-between">
           <button

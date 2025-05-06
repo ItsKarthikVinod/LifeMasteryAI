@@ -13,6 +13,9 @@ import { Pie } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import useGetTodos from "../hooks/useGetTodos";
 import { useAuth } from "../contexts/authContext";
+import useGetGame from "../hooks/useGetGame"; // Import the awardXP function
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Register the required Chart.js elements
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -25,6 +28,7 @@ const TodoList = ({ onTriggerPomodoro }) => {
   const {  todoss } = useGetTodos();
   const { currentUser, theme } = useAuth();
   const userId = currentUser.uid;
+  const { awardXP } = useGetGame(); // Get the awardXP function
 
 
 
@@ -78,6 +82,32 @@ const TodoList = ({ onTriggerPomodoro }) => {
       await updateDoc(doc(db, "todos", todo.id), {
         isCompleted: !todo.isCompleted,
       });
+      if (!todo.isCompleted) {
+        // If the task is marked as completed, award XP
+        awardXP(userId, 10); // Award XP for completing a task
+        toast.success("+10 XP gained for completing a todo!", {
+                  position: "top-right",
+                  autoClose: 3000, // Toast lasts for 3 seconds
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                });
+      } else {
+        // If the task is marked as incomplete, deduct XP
+        awardXP(userId, -10); // Deduct XP for uncompleting a task
+        toast.error("-10 XP deducted for unchecking a todo!", {
+                  position: "top-right",
+                  autoClose: 3000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                });
+      }
+      
       
     } catch (error) {
       console.error("Error updating todo: ", error);

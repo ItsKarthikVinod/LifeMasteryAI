@@ -70,6 +70,7 @@ export function AuthProvider({ children }) {
         (provider) => provider.providerId === GoogleAuthProvider.PROVIDER_ID
       );
       setIsGoogleUser(isGoogle);
+      
 
       setUserLoggedIn(true);
     } else {

@@ -3,6 +3,9 @@ import { db } from '../firebase/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Link } from 'react-router-dom'; // Import Link from react-router-dom
 import { useAuth } from '../contexts/authContext';
+import useGetGame from '../hooks/useGetGame';
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Journal = () => {
   const [title, setTitle] = useState('');
@@ -10,6 +13,7 @@ const Journal = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { currentUser, theme } = useAuth();
   const userId = currentUser.uid;
+  const { awardXP } = useGetGame(); // Get the awardXP function
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,6 +28,18 @@ const Journal = () => {
           createdAt: serverTimestamp(),
           userId,
         });
+        // Award XP for writing a journal entry
+        await awardXP(userId, 10); // Award 10 XP for writing a journal entry
+        toast.success("+10 XP gained for completing a sub-goal!", {
+                  position: "top-right",
+                  autoClose: 3000, // Toast lasts for 3 seconds
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                });
+        // Reset the form fields
         setTitle('');
         setContent('');
         alert('Journal entry saved!');

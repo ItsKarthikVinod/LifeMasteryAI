@@ -12,12 +12,15 @@ import { FaEdit, FaTrash, FaRobot, FaVolumeUp, FaClock } from "react-icons/fa"; 
 import { useAuth } from "../contexts/authContext";
 import useGetHabits from "../hooks/useGetHabits";
 import OpenAI from "openai";
-
+import useGetGame from "../hooks/useGetGame"; // Import the custom hook for gamification
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const HabitTracker = ({ onTriggerPomodoro }) => {
   const [habitName, setHabitName] = useState("");
   const { currentUser, theme } = useAuth();
   const { fetchedHabits } = useGetHabits();
+  const {awardXP} = useGetGame(); // Import the awardXP function from useGetGame
 
   const [completionRate, setCompletionRate] = useState(0); // Completion percentage
   const [aiInsights, setAiInsights] = useState(""); // AI-generated insights
@@ -229,6 +232,17 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
           streak: streak + 1,
           lastCompleted: today,
         });
+        await awardXP(currentUser.uid, 10);
+        toast.success("+10 XP gained for completing a sub-goal!", {
+                  position: "top-right",
+                  autoClose: 3000, // Toast lasts for 3 seconds
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                });
+        
       } else {
         // If the habit is being unchecked
         if (
@@ -440,7 +454,7 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
               </div>
               <div className="flex items-center mt-3">
                 <span
-                  className={`text-sm mr-2 ${
+                  className={`text-sm  ${
                     theme === "dark" ? "text-gray-400" : "text-gray-500"
                   }`}
                 >
@@ -450,11 +464,11 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
                   {[...Array(habit.streak)].map((_, index) => (
                     <div
                       key={index}
-                      className={`w-4 h-4 rounded-full mb-1 ${
-                        theme === "dark" ? "bg-teal-500" : "bg-blue-500"
-                      }`}
+                      className={`w-4 h-4 mb-2 mr-0 `}
                       title={`Day ${index + 1}`}
-                    ></div>
+                    >
+                      🔥
+                    </div>
                   ))}
                 </div>
               </div>

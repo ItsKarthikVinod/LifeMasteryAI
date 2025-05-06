@@ -11,6 +11,9 @@ import {
 import { useAuth } from "../contexts/authContext";
 import Bell from "../assets/bell.mp3"; // Ensure the path is correct
 import PomodoroTimeline from "./PomodoroTimeline";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import useGetGame from "../hooks/useGetGame";
 
 const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => {
   const [minutes, setMinutes] = useState(initialMinutes); // Default work duration is 25 minutes
@@ -25,7 +28,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
   const [sessionLog, setSessionLog] = useState([]); // Log of Pomodoro sessions
   const [isLogModalOpen, setIsLogModalOpen] = useState(false); // Track visibility of the session log modal
   const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false); // Track visibility of the timeline modal
-
+  const { awardXP } = useGetGame(); // Get the awardXP function
   const toggleTimelineModal = () => {
     if (sessionLog.length === 0) {
       alert("No session logs available.");
@@ -146,6 +149,23 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
           saveSessionToLocalStorage(session);
 
           if (isWorkSession) {
+            const xpGained = workDuration; // 1 XP per minute
+            awardXP(xpGained); // Call the function to award XP
+            console.log(
+              `Awarded ${xpGained} XP for completing a work session.`
+            );
+            toast.success(
+              `+${xpGained} XP gained for completing a work session.`,
+              {
+                position: "top-right",
+                autoClose: 3000, // Toast lasts for 3 seconds
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+              }
+            );
             // Switch to Break Time
             setMinutes(breakDuration);
             setSeconds(0);
@@ -189,6 +209,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
     saveSessionToLocalStorage,
     title,
     setIsRunning,
+    awardXP,
   ]);
 
   const startTimer = () => {

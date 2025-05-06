@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { db } from '../firebase/firebase';
-import { collection, addDoc,  doc, updateDoc, deleteDoc, } from 'firebase/firestore';
+import { collection, addDoc,  doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import {
   FaCheck,
   FaEdit,
@@ -11,6 +11,9 @@ import {
   FaChevronRight,
 } from "react-icons/fa"; // Icons for edit, delete, and check
 import { useAuth } from "../contexts/authContext";
+import useGetGame from "../hooks/useGetGame";
+import { toast } from "react-toastify"; // Import React-Toastify
+import "react-toastify/dist/ReactToastify.css";
 
 import useGetGoals from '../hooks/useGetGoals';
 const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
@@ -24,7 +27,11 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
   const [editingDueDate, setEditingDueDate] = useState('');
   const { currentUser, theme } = useAuth();
   const userId = currentUser.uid;
-  const {  goalss } = useGetGoals();
+  const { goalss } = useGetGoals();
+  const {awardXP} = useGetGame(); 
+  
+
+  
 
  const toggleGoalExpansion = (goalId) => {
    setExpandedGoals((prev) => ({
@@ -112,9 +119,54 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
 
     try {
       await updateDoc(goalRef, { subGoals });
-
+      if (subGoals[subGoalIndex].completed) {
+        await awardXP(userId, 10); // Award XP for completing a sub-goal
+        toast.success("+10 XP gained for completing a sub-goal!", {
+          position: "top-right",
+          autoClose: 3000, // Toast lasts for 3 seconds
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+      } else {
+        await awardXP(userId, -10); 
+        toast.error("-10 XP deducted for unchecking a sub-goal!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+      }
       const allSubGoalsCompleted = subGoals.every(subGoal => subGoal.completed);
       await updateDoc(goalRef, { completed: allSubGoalsCompleted });
+      if (allSubGoalsCompleted) {
+        await awardXP(userId, 20); // Award XP for completing all sub-goals
+        toast.success("+20 XP gained for completing all sub-goals!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+      } else {
+        await awardXP(userId, -20);
+        toast.error("-20 XP deducted for unchecking ", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+      }
 
     } catch (error) {
       console.error('Error toggling sub-goal completion: ', error);
@@ -186,6 +238,7 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
 
   return (
     <div className={`goal-tracker-container `}>
+      
       <h2
         className={`text-2xl font-semibold mb-6 text-center ${
           theme === "dark" ? "text-teal-400" : ""
@@ -293,179 +346,185 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
                 {Math.round(calculateProgress(goal?.subGoals || []))}%
               </span>
             </div>
-            
-            {expandedGoals[goal.id] && <>
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mt-4">
-              <button
-                onClick={() => setCurrentGoalId(goal.id)}
-                className={`bg-teal-500 text-white px-4 py-2 rounded w-full sm:w-auto ${
-                  theme === "dark" ? "hover:bg-teal-600" : "hover:bg-teal-400"
-                }`}
-              >
-                Add Sub-goal
-              </button>
-              {currentGoalId === goal.id && (
-                <div className="flex flex-col lg:flex-row gap-4 mt-2 lg:mt-0">
-                  <input
-                    type="text"
-                    value={subGoalInput}
-                    onChange={(e) => setSubGoalInput(e.target.value)}
-                    className={`border p-2 rounded flex-grow focus:outline-none focus:ring-2 ${
-                      theme === "dark"
-                        ? "bg-gray-800 border-gray-600 text-gray-200 focus:ring-teal-500"
-                        : "bg-white border-gray-300 text-gray-800 focus:ring-teal-400"
-                    }`}
-                    placeholder="Enter sub-goal"
-                  />
-                  <input
-                    type="date"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                    className={`border p-2 rounded flex-grow focus:outline-none focus:ring-2 ${
-                      theme === "dark"
-                        ? "bg-gray-800 border-gray-600 text-white focus:ring-teal-500"
-                        : "bg-white border-gray-300 text-gray-800 focus:ring-teal-400"
-                    }`}
-                    placeholder="Due date"
-                  />
+
+            {expandedGoals[goal.id] && (
+              <>
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mt-4">
                   <button
-                    onClick={addSubGoal}
+                    onClick={() => setCurrentGoalId(goal.id)}
                     className={`bg-teal-500 text-white px-4 py-2 rounded w-full sm:w-auto ${
                       theme === "dark"
                         ? "hover:bg-teal-600"
                         : "hover:bg-teal-400"
                     }`}
                   >
-                    Add
+                    Add Sub-goal
                   </button>
-                </div>
-              )}
-            </div>
-
-            {/* Render Sub-goals */}
-            <ul className="mt-4 space-y-2">
-              {goal?.subGoals?.map((subGoal, index) => (
-                <li
-                  key={index}
-                  className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 border rounded gap-4 ${
-                    theme === "dark"
-                      ? "bg-gray-800 border-gray-700 text-gray-200"
-                      : "bg-white border-gray-300 text-gray-800"
-                  }  ${
-                    isOverdue(subGoal.dueDate)
-                      ? theme === "dark"
-                        ? "border-red-500 text-red-600"
-                        : "border-red-500 text-red-600"
-                      : ""
-                  }`}
-                >
-                  {editingSubGoalIndex === index &&
-                  currentGoalId === goal.id ? (
-                    <div className="flex flex-col sm:flex-row gap-2 items-center w-full">
+                  {currentGoalId === goal.id && (
+                    <div className="flex flex-col lg:flex-row gap-4 mt-2 lg:mt-0">
                       <input
                         type="text"
-                        value={editingSubGoalName}
-                        onChange={(e) => setEditingSubGoalName(e.target.value)}
+                        value={subGoalInput}
+                        onChange={(e) => setSubGoalInput(e.target.value)}
                         className={`border p-2 rounded flex-grow focus:outline-none focus:ring-2 ${
                           theme === "dark"
                             ? "bg-gray-800 border-gray-600 text-gray-200 focus:ring-teal-500"
                             : "bg-white border-gray-300 text-gray-800 focus:ring-teal-400"
                         }`}
-                        placeholder="Edit sub-goal"
+                        placeholder="Enter sub-goal"
                       />
                       <input
                         type="date"
-                        value={editingDueDate}
-                        onChange={(e) => setEditingDueDate(e.target.value)}
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
                         className={`border p-2 rounded flex-grow focus:outline-none focus:ring-2 ${
                           theme === "dark"
-                            ? "bg-gray-800 border-gray-600 text-gray-200 focus:ring-teal-500"
+                            ? "bg-gray-800 border-gray-600 text-white focus:ring-teal-500"
                             : "bg-white border-gray-300 text-gray-800 focus:ring-teal-400"
                         }`}
+                        placeholder="Due date"
                       />
                       <button
-                        onClick={saveSubGoalEdit}
-                        className={`${
+                        onClick={addSubGoal}
+                        className={`bg-teal-500 text-white px-4 py-2 rounded w-full sm:w-auto ${
                           theme === "dark"
-                            ? "text-teal-400 hover:text-teal-500"
-                            : "text-teal-500 hover:text-teal-600"
+                            ? "hover:bg-teal-600"
+                            : "hover:bg-teal-400"
                         }`}
                       >
-                        <FaCheck />
+                        Add
                       </button>
                     </div>
-                  ) : (
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
-                      <div className="flex items-center gap-2 flex-grow">
-                        <input
-                          type="checkbox"
-                          checked={subGoal.completed}
-                          onChange={() =>
-                            toggleSubGoalCompletion(goal.id, index)
-                          }
-                          className={`mr-2 ${
-                            theme === "dark"
-                              ? "accent-teal-500"
-                              : "accent-teal-500"
-                          }`}
-                        />
-                        <span
-                          className={`${
-                            subGoal.completed
-                              ? theme === "dark"
-                                ? "line-through text-gray-400"
-                                : "line-through text-gray-500"
-                              : ""
-                          }`}
-                        >
-                          {subGoal.name} (Due: {subGoal.dueDate})
-                        </span>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => onTriggerPomodoro(subGoal.name)}
-                          className={`${
-                            theme === "dark"
-                              ? "text-teal-400 hover:text-teal-500"
-                              : "text-teal-500 hover:text-teal-600"
-                          }`}
-                        >
-                          <FaClock />
-                        </button>
-                        <button
-                          onClick={() =>
-                            editSubGoal(
-                              goal.id,
-                              index,
-                              subGoal.name,
-                              subGoal.dueDate
-                            )
-                          }
-                          className={`${
-                            theme === "dark"
-                              ? "text-teal-400 hover:text-teal-500"
-                              : "text-teal-500 hover:text-teal-600"
-                          }`}
-                        >
-                          <FaEdit />
-                        </button>
-                        <button
-                          onClick={() => deleteSubGoal(goal.id, index)}
-                          className={`${
-                            theme === "dark"
-                              ? "text-red-400 hover:text-red-500"
-                              : "text-red-500 hover:text-red-600"
-                          }`}
-                        >
-                          <FaTrash />
-                        </button>
-                      </div>
-                    </div>
                   )}
-                </li>
-              ))}
-            </ul>
-            </>}
+                </div>
+
+                {/* Render Sub-goals */}
+                <ul className="mt-4 space-y-2">
+                  {goal?.subGoals?.map((subGoal, index) => (
+                    <li
+                      key={index}
+                      className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 border rounded gap-4 ${
+                        theme === "dark"
+                          ? "bg-gray-800 border-gray-700 text-gray-200"
+                          : "bg-white border-gray-300 text-gray-800"
+                      }  ${
+                        isOverdue(subGoal.dueDate)
+                          ? theme === "dark"
+                            ? "border-red-500 text-red-600"
+                            : "border-red-500 text-red-600"
+                          : ""
+                      }`}
+                    >
+                      {editingSubGoalIndex === index &&
+                      currentGoalId === goal.id ? (
+                        <div className="flex flex-col sm:flex-row gap-2 items-center w-full">
+                          <input
+                            type="text"
+                            value={editingSubGoalName}
+                            onChange={(e) =>
+                              setEditingSubGoalName(e.target.value)
+                            }
+                            className={`border p-2 rounded flex-grow focus:outline-none focus:ring-2 ${
+                              theme === "dark"
+                                ? "bg-gray-800 border-gray-600 text-gray-200 focus:ring-teal-500"
+                                : "bg-white border-gray-300 text-gray-800 focus:ring-teal-400"
+                            }`}
+                            placeholder="Edit sub-goal"
+                          />
+                          <input
+                            type="date"
+                            value={editingDueDate}
+                            onChange={(e) => setEditingDueDate(e.target.value)}
+                            className={`border p-2 rounded flex-grow focus:outline-none focus:ring-2 ${
+                              theme === "dark"
+                                ? "bg-gray-800 border-gray-600 text-gray-200 focus:ring-teal-500"
+                                : "bg-white border-gray-300 text-gray-800 focus:ring-teal-400"
+                            }`}
+                          />
+                          <button
+                            onClick={saveSubGoalEdit}
+                            className={`${
+                              theme === "dark"
+                                ? "text-teal-400 hover:text-teal-500"
+                                : "text-teal-500 hover:text-teal-600"
+                            }`}
+                          >
+                            <FaCheck />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
+                          <div className="flex items-center gap-2 flex-grow">
+                            <input
+                              type="checkbox"
+                              checked={subGoal.completed}
+                              onChange={() =>
+                                toggleSubGoalCompletion(goal.id, index)
+                              }
+                              className={`mr-2 ${
+                                theme === "dark"
+                                  ? "accent-teal-500"
+                                  : "accent-teal-500"
+                              }`}
+                            />
+                            <span
+                              className={`${
+                                subGoal.completed
+                                  ? theme === "dark"
+                                    ? "line-through text-gray-400"
+                                    : "line-through text-gray-500"
+                                  : ""
+                              }`}
+                            >
+                              {subGoal.name} (Due: {subGoal.dueDate})
+                            </span>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => onTriggerPomodoro(subGoal.name)}
+                              className={`${
+                                theme === "dark"
+                                  ? "text-teal-400 hover:text-teal-500"
+                                  : "text-teal-500 hover:text-teal-600"
+                              }`}
+                            >
+                              <FaClock />
+                            </button>
+                            <button
+                              onClick={() =>
+                                editSubGoal(
+                                  goal.id,
+                                  index,
+                                  subGoal.name,
+                                  subGoal.dueDate
+                                )
+                              }
+                              className={`${
+                                theme === "dark"
+                                  ? "text-teal-400 hover:text-teal-500"
+                                  : "text-teal-500 hover:text-teal-600"
+                              }`}
+                            >
+                              <FaEdit />
+                            </button>
+                            <button
+                              onClick={() => deleteSubGoal(goal.id, index)}
+                              className={`${
+                                theme === "dark"
+                                  ? "text-red-400 hover:text-red-500"
+                                  : "text-red-500 hover:text-red-600"
+                              }`}
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </li>
         ))}
       </ul>

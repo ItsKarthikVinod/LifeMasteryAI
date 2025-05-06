@@ -65,14 +65,9 @@ const Hero = () => {
   // Function to start speaking the pop-up content with counting
   const startSpeaking = () => {
     const utterances = [
-      "Take a deep breath.",
-      "Inhale deeply for 4 seconds.",
-      "1, 2, 3, 4.",
-      "Hold your breath for 4 seconds.",
-      "1, 2, 3, 4.",
-      "Exhale slowly for 4 seconds.",
-      "1, 2, 3, 4.",
-      "Remember, this is just a temporary feeling, and you're doing great!",
+      
+      `Inhale deeply for 4 seconds. Hold your breath for 4 seconds. Exhale slowly for 4 seconds.
+      Remember, this is just a temporary feeling, and you're doing great!`
     ];
 
     let index = 0;
@@ -84,13 +79,12 @@ const Hero = () => {
           .getVoices()
           .find((voice) => voice.name.includes("Google UK English Male")); // Use a calm, human-like voice
         utterance.pitch = 1; // Set pitch to a natural level
-        utterance.rate = 0.9; // Slow down the rate for a calm tone
         utterance.volume = 1; // Set volume to maximum
 
         utterance.onend = () => {
           index++;
           if (index < utterances.length) {
-            setTimeout(speakNext, 50); // Wait 1 second before speaking the next part
+            setTimeout(speakNext, 300); // Wait 500ms before speaking the next part
           }
         };
 
@@ -110,6 +104,8 @@ const Hero = () => {
   useEffect(() => {
     if (showPopup) {
       startSpeaking();
+    } else {
+      stopSpeaking(); // Stop speaking if the popup is closed
     }
   }, [showPopup]);
 
