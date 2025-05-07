@@ -30,7 +30,7 @@ const Journal = () => {
         });
         // Award XP for writing a journal entry
         await awardXP(userId, 10); // Award 10 XP for writing a journal entry
-        toast.success("+10 XP gained for completing a sub-goal!", {
+        toast.success("+10 XP gained for adding a subgoal", {
                   position: "top-right",
                   autoClose: 3000, // Toast lasts for 3 seconds
                   hideProgressBar: false,
