@@ -144,29 +144,8 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
       }
       const allSubGoalsCompleted = subGoals.every(subGoal => subGoal.completed);
       await updateDoc(goalRef, { completed: allSubGoalsCompleted });
-      if (allSubGoalsCompleted) {
-        await awardXP(userId, 20); // Award XP for completing all sub-goals
-        toast.success("+20 XP gained for completing all sub-goals!", {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-        });
-      } else {
-        await awardXP(userId, -20);
-        toast.error("-20 XP deducted for unchecking ", {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-        });
-      }
+      
+      
 
     } catch (error) {
       console.error('Error toggling sub-goal completion: ', error);
