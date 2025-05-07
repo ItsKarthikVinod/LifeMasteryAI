@@ -1,22 +1,12 @@
 import { useEffect, useState } from "react";
-import {
-  doc,
-  setDoc,
-  getDoc,
- 
-  onSnapshot,
-} from "firebase/firestore";
+import { doc, setDoc, getDoc, onSnapshot } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { db } from "../firebase/firebase";
 
 function useGetGame() {
-  // Function to calculate the user's level based on XP
-  const calculateLevel = (xp) => Math.floor(Math.sqrt(xp / 100)); 
-
   // Function to calculate the XP required for the next level
-  const xpToNextLevel = (level) => 100 + level * 150;
+  const xpToNextLevel = (level) => level * 100;
 
-  // Function to award XP to a user
   const awardXP = async (userId, points) => {
     try {
       // Reference the user's gamification document
@@ -29,21 +19,40 @@ function useGetGame() {
         await setDoc(gamificationRef, {
           totalXP: 0,
           level: 1,
-          xpToNextLevel: xpToNextLevel(1),
+          remainingXP: 100, // XP required for level 2
           userId: userId,
         });
       }
 
       const gamificationData = (await getDoc(gamificationRef)).data();
-      const newXP = gamificationData.totalXP + points;
-      const newLevel = calculateLevel(newXP);
+      let { totalXP, level, remainingXP } = gamificationData;
 
-      // Update the gamification document with the new XP and level
+      // Add the awarded XP
+      totalXP += points;
+      remainingXP -= points;
+
+      console.log(
+        `Current XP: ${totalXP}, Level: ${level}, Remaining XP: ${remainingXP}`
+      );
+
+      // Check if the user levels up
+      while (remainingXP <= 0) {
+        level += 1; // Level up
+        remainingXP += xpToNextLevel(level); // Add XP required for the next level
+      }
+
+      // Handle leveling down
+      while (remainingXP > xpToNextLevel(level)) {
+        remainingXP -= xpToNextLevel(level); // Subtract XP for the current level
+        level -= 1; // Level down
+      }
+
+      // Update the gamification document
       await setDoc(gamificationRef, {
-        totalXP: newXP,
-        level: newLevel,
-        xpToNextLevel: xpToNextLevel(newLevel) - newXP,
-        userId: userId,
+        totalXP,
+        level,
+        remainingXP,
+        userId,
       });
 
       console.log(`Awarded ${points} XP to user: ${userId}`);
@@ -56,53 +65,48 @@ function useGetGame() {
   const [gamificationData, setGamificationData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  
-    
-    useEffect(() => {
-      const auth = getAuth();
-      const user = auth.currentUser;
+  useEffect(() => {
+    const auth = getAuth();
+    const user = auth.currentUser;
 
-      if (!user) {
-        alert("User not logged in. Please log in to access gamification data.");
-        setLoading(false);
-        return;
-      }
+    if (!user) {
+      alert("User not logged in. Please log in to access gamification data.");
+      setLoading(false);
+      return;
+    }
 
-      const gamificationRef = doc(db, "gamification", user.uid);
+    const gamificationRef = doc(db, "gamification", user.uid);
 
-      // Set up Firestore listener for real-time updates
-      const unsubscribe = onSnapshot(
-        gamificationRef,
-        async (docSnapshot) => {
-          if (docSnapshot.exists()) {
-            setGamificationData(docSnapshot.data());
-          } else {
-            console.log(
+    // Set up Firestore listener for real-time updates
+    const unsubscribe = onSnapshot(
+      gamificationRef,
+      async (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          setGamificationData(docSnapshot.data());
+        } else {
+          console.log(
             "Gamification data not found. Creating a new document..."
           );
           await setDoc(gamificationRef, {
             totalXP: 0,
             level: 1,
-            xpToNextLevel: xpToNextLevel(1),
+            remainingXP: 100,
             userId: user.uid,
           });
-          }
-          setLoading(false);
-        },
-        (error) => {
-          console.error(
-            "Error fetching gamification data in real-time:",
-            error
-          );
-          setLoading(false);
         }
-      );
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching gamification data in real-time:", error);
+        setLoading(false);
+      }
+    );
 
-      // Cleanup listener on component unmount
-      return () => unsubscribe();
-    }, []);
+    // Cleanup listener on component unmount
+    return () => unsubscribe();
+  }, []);
 
-  return { calculateLevel, xpToNextLevel, awardXP, gamificationData, loading };
+  return { xpToNextLevel, awardXP, gamificationData, loading };
 }
 
 export default useGetGame;
