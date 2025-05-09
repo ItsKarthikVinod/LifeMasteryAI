@@ -29,13 +29,15 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
   const [isLogModalOpen, setIsLogModalOpen] = useState(false); // Track visibility of the session log modal
   const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false); // Track visibility of the timeline modal
   const { awardXP } = useGetGame(); // Get the awardXP function
+  const { currentUser } = useAuth();
+  const userId = currentUser?.uid; // Get the user ID from the authenticated user
   const toggleTimelineModal = () => {
     if (sessionLog.length === 0) {
       alert("No session logs available.");
       return;
     } else {
       setIsTimelineModalOpen(!isTimelineModalOpen);
-    }// Toggle visibility of the timeline modal
+    } // Toggle visibility of the timeline modal
   };
 
   const nodeRef = useRef(null); // Ref for the draggable component
@@ -150,7 +152,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
 
           if (isWorkSession) {
             const xpGained = workDuration; // 1 XP per minute
-            awardXP(xpGained); // Call the function to award XP
+            awardXP(userId, xpGained); // Pass userId first, then xpGained// Call the function to award XP
             console.log(
               `Awarded ${xpGained} XP for completing a work session.`
             );
@@ -210,6 +212,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
     title,
     setIsRunning,
     awardXP,
+    userId
   ]);
 
   const startTimer = () => {
