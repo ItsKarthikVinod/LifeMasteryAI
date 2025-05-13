@@ -35,6 +35,57 @@ const WhiteBoard = () => {
     // Scroll to the top of the page when the component is mounted
     window.scrollTo(0, 0);
   }, []);
+
+  useEffect(() => {
+    // Only run if the last added image is not already selected
+    if (images.length > 0) {
+      const lastImageId = images[images.length - 1].id;
+      if (selectedId !== lastImageId) {
+        setTool("cursor");
+        setSelectedId(lastImageId);
+      }
+    }
+    // eslint-disable-next-line
+  }, [images]);
+
+
+  useEffect(() => {
+    const handlePaste = (event) => {
+      if (event.clipboardData) {
+        const items = event.clipboardData.items;
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type.indexOf("image") !== -1) {
+            const file = items[i].getAsFile();
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+              const image = {
+                id: `img_${Date.now()}`,
+                src: evt.target.result,
+                x: 150,
+                y: 150,
+                draggable: true,
+              };
+              setImages((prev) => [...prev, image]);
+             
+              setHistory((prev) => [
+                ...prev,
+                {
+                  lines,
+                  shapes,
+                  textItems,
+                  images: [...(prev[prev.length - 1]?.images || images), image],
+                },
+              ]);
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      }
+    };
+
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [lines, shapes, textItems, images, setImages, setHistory]);
   
 
   const handleMouseDown = (e) => {
@@ -222,6 +273,7 @@ const WhiteBoard = () => {
       };
       setImages([...images, image]);
       setHistory([...history, { lines, shapes, textItems, images }]);
+      
     };
     reader.readAsDataURL(file);
   };
@@ -416,12 +468,21 @@ const WhiteBoard = () => {
         style={{
           position: "relative",
           cursor:
-            tool === "pen" || tool === "eraser" || tool === "cursor"
-              ? "default"
+            tool === "pen"
+              ? "crosshair"
+              : tool === "eraser"
+              ? "cell"
+              : tool === "rect"
+              ? "crosshair"
+              : tool === "circle"
+              ? "crosshair"
+              : tool === "line"
+              ? "crosshair"
               : tool === "text"
               ? "text"
-              : "crosshair",
+              : "default",
           touchAction: "none",
+         
         }}
       >
         <Stage
@@ -471,20 +532,17 @@ const WhiteBoard = () => {
           style={{ backgroundColor: bgColor }}
         >
           <Layer>
-            {lines.map((line, i) => (
-              <Line
-                key={i}
-                id={line.id}
-                points={line.points}
-                stroke={line.stroke}
-                strokeWidth={line.strokeWidth}
-                tension={0.5}
-                lineCap="round"
-                globalCompositeOperation={
-                  line.tool === "eraser" ? "destination-out" : "source-over"
-                }
+            {images.map((img) => (
+              <URLImage
+                key={img.id}
+                {...img}
+                id={img.id}
+                onClick={() => tool === "cursor" && setSelectedId(img.id)}
+                isSelected={selectedId === img.id}
+                tool={tool} // Pass tool as a prop
               />
             ))}
+
             {shapes.map((shape) =>
               shape.type === "rect" ? (
                 <Rect
@@ -507,7 +565,9 @@ const WhiteBoard = () => {
                     }
                   }}
                   onMouseLeave={(e) => {
-                    e.target.getStage().container().style.cursor = "default"; // Reset cursor
+                    if (tool === "cursor") {
+                      e.target.getStage().container().style.cursor = "default";
+                    } // Reset cursor
                   }}
                 />
               ) : shape.type === "circle" ? (
@@ -531,7 +591,9 @@ const WhiteBoard = () => {
                     }
                   }}
                   onMouseLeave={(e) => {
-                    e.target.getStage().container().style.cursor = "default";
+                    if (tool === "cursor") {
+                      e.target.getStage().container().style.cursor = "default";
+                    }
                   }}
                 />
               ) : (
@@ -562,7 +624,9 @@ const WhiteBoard = () => {
                     }
                   }}
                   onMouseLeave={(e) => {
-                    e.target.getStage().container().style.cursor = "default";
+                    if (tool === "cursor") {
+                      e.target.getStage().container().style.cursor = "default";
+                    }
                   }}
                 />
               )
@@ -616,14 +680,19 @@ const WhiteBoard = () => {
                 }}
               />
             ))}
-            {images.map((img) => (
-              <URLImage
-                key={img.id}
-                {...img}
-                id={img.id}
-                onClick={() => tool === "cursor" && setSelectedId(img.id)}
-                isSelected={selectedId === img.id}
-                tool={tool} // Pass tool as a prop
+
+            {lines.map((line, i) => (
+              <Line
+                key={i}
+                id={line.id}
+                points={line.points}
+                stroke={line.stroke}
+                strokeWidth={line.strokeWidth}
+                tension={0.5}
+                lineCap="round"
+                globalCompositeOperation={
+                  line.tool === "eraser" ? "destination-out" : "source-over"
+                }
               />
             ))}
             <Transformer
@@ -666,11 +735,11 @@ const URLImage = ({ src, x, y, id, isSelected, onClick, tool }) => {
   const trRef = useRef();
 
   useEffect(() => {
-    if (isSelected && trRef.current) {
+    if (isSelected && trRef.current && shapeRef.current) {
       trRef.current.nodes([shapeRef.current]);
       trRef.current.getLayer().batchDraw();
     }
-  }, [isSelected]);
+  }, [isSelected, image]);
 
   return (
     <>
@@ -688,7 +757,9 @@ const URLImage = ({ src, x, y, id, isSelected, onClick, tool }) => {
           }
         }}
         onMouseLeave={(e) => {
-          e.target.getStage().container().style.cursor = "default"; // Reset cursor
+          if (tool === "cursor") {
+            e.target.getStage().container().style.cursor = "default";
+          }
         }}
       />
       {isSelected && (

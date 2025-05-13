@@ -255,6 +255,16 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
             streak: streak > 0 ? streak - 1 : 0,
             lastCompleted: null, // Reset lastCompleted since it's unchecked
           });
+          await awardXP(currentUser.uid, -10); 
+          toast.error("-10 XP deducted for unchecking an habit!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                  });
         } else if (
           lastCompleted &&
           new Date(lastCompleted.seconds * 1000) < todayStart
@@ -436,7 +446,7 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
                   type="checkbox"
                   checked={habit.completed}
                   onChange={() =>
-                    toggleCompletion(habit.id, habit.completed, habit.streak)
+                    toggleCompletion(habit.id, habit.completed, habit.streak, habit.lastCompleted)
                   }
                   className="mr-2"
                 />

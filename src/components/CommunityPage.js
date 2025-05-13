@@ -35,6 +35,11 @@ const CommunityPage = () => {
     fetchPosts();
   }, []);
 
+  useEffect(() => {
+      // Scroll to the top of the page when the component is mounted
+      window.scrollTo(0, 0);
+    }, []);
+
   const fetchPosts = async () => {
     try {
       const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));

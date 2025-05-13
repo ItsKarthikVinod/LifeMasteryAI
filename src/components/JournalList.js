@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import useGetJournalEntries from "../hooks/useGetJournals";
 import { FaTrash, FaRobot, FaSpinner, FaVolumeUp } from "react-icons/fa"; // Import icons
@@ -17,7 +17,10 @@ const JournalList = () => {
   const { journalEntries, deleteJournalEntry } =
     useGetJournalEntries();
   const { theme } = useAuth(); // Assuming you have a theme context
-
+  useEffect(() => {
+        // Scroll to the top of the page when the component is mounted
+        window.scrollTo(0, 0);
+      }, []);
   // OpenAI Configuration
   const openai = new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",

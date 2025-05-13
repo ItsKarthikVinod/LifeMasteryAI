@@ -126,6 +126,11 @@ const Dashboard = () => {
   }
 
   useEffect(() => {
+        // Scroll to the top of the page when the component is mounted
+        window.scrollTo(0, 0);
+      }, []);
+
+  useEffect(() => {
     const storedMinutes = localStorage.getItem("pomodoroInitialMinutes");
     if (storedMinutes) {
       setInitialMinutes(parseInt(storedMinutes, 10));
