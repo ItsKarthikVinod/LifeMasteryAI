@@ -446,18 +446,18 @@ const WhiteboardGallery = () => {
             </span>
           </div>
         ))}
-        <div className="mt-10 flex justify-center w-full">
-          <button
-            onClick={() => navigate("/dashboard")}
-            className={`px-8 py-3 rounded-lg shadow-md transition-transform transform hover:scale-105 ${
-              theme === "dark"
-                ? "bg-teal-600 text-white hover:bg-teal-500"
-                : "bg-teal-500 text-white hover:bg-teal-400"
-            }`}
-          >
-            Go Back to Dashboard
-          </button>
-        </div>
+      </div>
+      <div className="mt-10 flex justify-center w-full">
+        <button
+          onClick={() => navigate("/dashboard")}
+          className={`px-8 py-3 rounded-lg shadow-md transition-transform transform hover:scale-105 ${
+            theme === "dark"
+              ? "bg-teal-600 text-white hover:bg-teal-500"
+              : "bg-teal-500 text-white hover:bg-teal-400"
+          }`}
+        >
+          Go Back to Dashboard
+        </button>
       </div>
 
       {/* Fullscreen Modal */}
