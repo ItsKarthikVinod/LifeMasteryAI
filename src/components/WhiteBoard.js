@@ -10,7 +10,9 @@ import {
   Transformer,
 } from "react-konva";
 import useImage from "use-image";
-
+import { useAuth } from "../contexts/authContext";
+import GoToGalleryButton from "./GoToGalleryOption";
+  
 
 const WhiteBoard = () => {
   const stageRef = useRef(null);
@@ -30,7 +32,8 @@ const WhiteBoard = () => {
 
   const [startPos, setStartPos] = useState(null);
   const [tempShape, setTempShape] = useState(null);
-  
+  const { currentUser } = useAuth();
+
   useEffect(() => {
     // Scroll to the top of the page when the component is mounted
     window.scrollTo(0, 0);
@@ -47,7 +50,6 @@ const WhiteBoard = () => {
     }
     // eslint-disable-next-line
   }, [images]);
-
 
   useEffect(() => {
     const handlePaste = (event) => {
@@ -66,7 +68,7 @@ const WhiteBoard = () => {
                 draggable: true,
               };
               setImages((prev) => [...prev, image]);
-             
+
               setHistory((prev) => [
                 ...prev,
                 {
@@ -86,7 +88,27 @@ const WhiteBoard = () => {
     window.addEventListener("paste", handlePaste);
     return () => window.removeEventListener("paste", handlePaste);
   }, [lines, shapes, textItems, images, setImages, setHistory]);
+
+  // ...inside your WhiteBoard component
   
+
+  const handleSaveToGallery = (imageUrl, bgColor) => {
+    if (!currentUser) {
+      alert("You must be logged in to save to gallery!");
+      return;
+    }
+    const galleryKey = `whiteboard_gallery_${currentUser.uid}`;
+    const gallery = JSON.parse(localStorage.getItem(galleryKey) || "[]");
+    gallery.push({
+      id: `whiteboard_${Date.now()}`,
+      url: imageUrl,
+      title: "Untitled",
+      createdAt: Date.now(),
+      bgColor: bgColor,
+    });
+    localStorage.setItem(galleryKey, JSON.stringify(gallery));
+    alert("Saved to gallery!");
+  };
 
   const handleMouseDown = (e) => {
     e.evt.preventDefault(); // Prevent default browser behavior
@@ -273,7 +295,6 @@ const WhiteBoard = () => {
       };
       setImages([...images, image]);
       setHistory([...history, { lines, shapes, textItems, images }]);
-      
     };
     reader.readAsDataURL(file);
   };
@@ -415,6 +436,18 @@ const WhiteBoard = () => {
           <input type="file" onChange={handleImageUpload} className="hidden" />
         </label>
         <button
+          onClick={() => {
+            // Export the whiteboard as an image and save to gallery
+            const stage = stageRef.current;
+            const dataUrl = stage.toDataURL({ pixelRatio: 2 });
+            handleSaveToGallery(dataUrl, bgColor);
+          }}
+          className="inline-flex items-center px-2 py-2 rounded-xl font-semibold text-lg bg-white text-teal-700 border border-teal-500 shadow-md hover:bg-teal-50 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-400 transition-all"
+        >
+          <span className="mr-2 text-2xl">📤</span>
+          <span>Save to Gallery</span>
+        </button>
+        <button
           onClick={handleExport}
           className="btn px-6 py-3 rounded-full shadow-xl transition-all bg-gradient-to-r from-blue-500 to-green-500 text-white font-bold text-xl hover:from-blue-600 hover:to-green-600 hover:shadow-2xl transform hover:scale-110"
         >
@@ -459,6 +492,7 @@ const WhiteBoard = () => {
             onChange={(e) => setBgColor(e.target.value)}
           />
         </div>
+        <GoToGalleryButton />
       </div>
       <p className="text-center text-gray-700 mb-4">
         To delete, select the item and press the Delete/ Backspace key.
@@ -482,7 +516,6 @@ const WhiteBoard = () => {
               ? "text"
               : "default",
           touchAction: "none",
-         
         }}
       >
         <Stage
