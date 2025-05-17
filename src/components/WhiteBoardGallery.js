@@ -1,6 +1,12 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { useAuth } from "../contexts/authContext";
 import { useNavigate } from "react-router-dom";
+import {
+  getAllWhiteboards,
+  
+  deleteWhiteboard,
+  updateWhiteboard,
+} from "../ulits/galleryDB";
 
 const PencilIcon = ({ className = "w-5 h-5" }) => (
   <svg
@@ -38,17 +44,17 @@ const WhiteboardGallery = () => {
   const { currentUser, theme } = useAuth();
   const [modalImg, setModalImg] = useState(null);
   const [editingId, setEditingId] = useState(null);
-    const [editTitle, setEditTitle] = useState("");
-    const navigate = useNavigate();
-  const [galleryState, setGalleryState] = useState(() => {
-    if (!currentUser) return [];
-    const galleryKey = `whiteboard_gallery_${currentUser?.uid}`;
-    return JSON.parse(localStorage.getItem(galleryKey) || "[]");
-  });
-  React.useEffect(() => {
-      // Scroll to the top of the page when the component is mounted
-      window.scrollTo(0, 0);
-    }, []);
+  const [editTitle, setEditTitle] = useState("");
+  const [galleryState, setGalleryState] = useState([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (currentUser) {
+      getAllWhiteboards(currentUser.uid).then(setGalleryState);
+    }
+    // eslint-disable-next-line
+  }, [currentUser]);
+
   if (!currentUser)
     return (
       <div className="text-center mt-10 text-lg">
@@ -56,25 +62,23 @@ const WhiteboardGallery = () => {
       </div>
     );
 
-  const galleryKey = `whiteboard_gallery_${currentUser.uid}`;
-
   // Delete a whiteboard
-  const handleDelete = (id) => {
-    const updatedGallery = galleryState.filter((item) => item.id !== id);
-    setGalleryState(updatedGallery);
-    localStorage.setItem(galleryKey, JSON.stringify(updatedGallery));
+  const handleDelete = async (id) => {
+    await deleteWhiteboard(currentUser.uid, id);
+    setGalleryState((prev) => prev.filter((item) => item.id !== id));
     setModalImg(null);
     setEditingId(null);
   };
 
   // Rename a whiteboard
-  const handleRename = (id, newTitle) => {
+  const handleRename = async (id, newTitle) => {
     if (newTitle && newTitle.trim()) {
-      const updatedGallery = galleryState.map((item) =>
-        item.id === id ? { ...item, title: newTitle.trim() } : item
+      await updateWhiteboard(currentUser.uid, id, { title: newTitle.trim() });
+      setGalleryState((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, title: newTitle.trim() } : item
+        )
       );
-      setGalleryState(updatedGallery);
-      localStorage.setItem(galleryKey, JSON.stringify(updatedGallery));
       if (modalImg && modalImg.id === id) {
         setModalImg({ ...modalImg, title: newTitle.trim() });
       }
@@ -457,6 +461,18 @@ const WhiteboardGallery = () => {
           }`}
         >
           Go Back to Dashboard
+        </button>
+      </div>
+      <div className="mt-10 flex justify-center w-full">
+        <button
+          onClick={() => navigate("/whiteboard")}
+          className={`px-8 py-3 rounded-lg shadow-md transition-transform transform hover:scale-105 ${
+            theme === "dark"
+              ? "bg-teal-600 text-white hover:bg-teal-500"
+              : "bg-teal-500 text-white hover:bg-teal-400"
+          }`}
+        >
+          Go Back to Whiteboard
         </button>
       </div>
 

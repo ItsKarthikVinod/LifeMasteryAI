@@ -12,6 +12,10 @@ import {
 import useImage from "use-image";
 import { useAuth } from "../contexts/authContext";
 import GoToGalleryButton from "./GoToGalleryOption";
+import { saveWhiteboard } from "../ulits/galleryDB";
+import { toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
   
 
 const WhiteBoard = () => {
@@ -92,22 +96,18 @@ const WhiteBoard = () => {
   // ...inside your WhiteBoard component
   
 
-  const handleSaveToGallery = (imageUrl, bgColor) => {
-    if (!currentUser) {
-      alert("You must be logged in to save to gallery!");
-      return;
-    }
-    const galleryKey = `whiteboard_gallery_${currentUser.uid}`;
-    const gallery = JSON.parse(localStorage.getItem(galleryKey) || "[]");
-    gallery.push({
+  const handleSaveToGallery = async (dataUrl, bgColor) => {
+    if (!currentUser) return;
+    const item = {
       id: `whiteboard_${Date.now()}`,
-      url: imageUrl,
+      url: dataUrl,
       title: "Untitled",
       createdAt: Date.now(),
-      bgColor: bgColor,
-    });
-    localStorage.setItem(galleryKey, JSON.stringify(gallery));
-    alert("Saved to gallery!");
+      bgColor,
+    };
+    await saveWhiteboard(currentUser.uid, item);
+    // Optionally show a toast or notification
+    alert("Whiteboard saved to gallery!");
   };
 
   const handleMouseDown = (e) => {
@@ -325,6 +325,7 @@ const WhiteBoard = () => {
 
   return (
     <div className="p-7 bg-gray-100 mt-24 rounded-lg shadow-md">
+      <ToastContainer />
       <h1 className="text-4xl font-bold mb-4 text-center text-teal-900">
         Whiteboard
       </h1>
@@ -435,6 +436,30 @@ const WhiteBoard = () => {
           🖼 Upload Image
           <input type="file" onChange={handleImageUpload} className="hidden" />
         </label>
+        <button
+          onClick={() => {
+            setHistory([...history, { lines, shapes, textItems, images }]);
+            setLines([]);
+            setShapes([]);
+            setTextItems([]);
+            setImages([]);
+            toast.warn(
+              "Whiteboard cleared! You can undo using the ↩️ Undo button.",
+              {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+              }
+            );
+          }}
+          className="btn px-4 py-2 rounded-lg shadow-md transition-all bg-red-200 text-red-700 hover:bg-red-300 font-bold"
+        >
+          🗑️ Clear
+        </button>
         <button
           onClick={() => {
             // Export the whiteboard as an image and save to gallery
