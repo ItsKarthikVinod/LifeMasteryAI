@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect} from "react";
 import { useAuth } from "../contexts/authContext";
 import { useNavigate } from "react-router-dom";
 import HabitTracker from "./HabitTracker";
@@ -13,6 +13,7 @@ import { format, parse, startOfWeek, getDay } from "date-fns";
 import GamificationProgress from "./GamificationProgress";
 import { ToastContainer } from "react-toastify";
 
+
 const locales = {
   "en-US": require("date-fns/locale/en-US"),
 };
@@ -24,6 +25,11 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales,
 });
+
+
+
+
+
 
 const CustomToolbar = (toolbar) => {
   const { theme } = useAuth(); // Get the theme from context
@@ -183,7 +189,9 @@ const Dashboard = () => {
           ? "bg-gradient-to-r from-gray-900 via-teal-800 to-blue-900"
           : "bg-gradient-to-r from-teal-400 to-blue-500"
       } `}
+      style={{ position: "relative", overflow: "hidden" }}
     >
+      
       <ToastContainer />
       <div className="p-8 mt-12">
         <div

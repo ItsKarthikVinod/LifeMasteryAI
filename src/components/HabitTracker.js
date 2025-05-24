@@ -6,13 +6,12 @@ import {
   updateDoc,
   doc,
   deleteDoc,
-  writeBatch
 } from "firebase/firestore";
-import { FaEdit, FaTrash, FaRobot, FaVolumeUp, FaClock } from "react-icons/fa"; // Import speaker icon
+import { FaEdit, FaTrash, FaRobot, FaVolumeUp, FaClock } from "react-icons/fa";
 import { useAuth } from "../contexts/authContext";
 import useGetHabits from "../hooks/useGetHabits";
 import OpenAI from "openai";
-import useGetGame from "../hooks/useGetGame"; // Import the custom hook for gamification
+import useGetGame from "../hooks/useGetGame";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -20,11 +19,11 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
   const [habitName, setHabitName] = useState("");
   const { currentUser, theme } = useAuth();
   const { fetchedHabits } = useGetHabits();
-  const {awardXP} = useGetGame(); // Import the awardXP function from useGetGame
+  const { awardXP } = useGetGame();
 
-  const [completionRate, setCompletionRate] = useState(0); // Completion percentage
-  const [aiInsights, setAiInsights] = useState(""); // AI-generated insights
-  const [isSpeaking, setIsSpeaking] = useState(false); // State to track if speech is active
+  const [completionRate, setCompletionRate] = useState(0);
+  const [aiInsights, setAiInsights] = useState("");
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   // OpenAI Configuration
@@ -36,92 +35,66 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
     });
   }, []);
 
-  // Function to calculate progress analytics
+  // Calculate completion rate
   const calculateProgress = useCallback(() => {
     if (fetchedHabits.length === 0) {
       setCompletionRate(0);
       return;
     }
-
+    const today = new Date().toISOString().slice(0, 10);
     const completedCount = fetchedHabits.filter(
-      (habit) => habit.completed
+      (habit) => habit.completedDates && habit.completedDates.includes(today)
     ).length;
-    setCompletionRate(
-      Math.round((completedCount / fetchedHabits.length) * 100)
-    );
+    setCompletionRate(Math.round((completedCount / fetchedHabits.length) * 100));
   }, [fetchedHabits]);
-  // Function to check and reset streaks if a day is missed
 
+  // Format AI output
   const formatAIOutput = (text) => {
-    // Split the text into parts based on `**` (bold) and `*` (italic)
-    const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/); // Match text surrounded by `**` or `*`
+    const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/);
     return parts.map((part, index) => {
       if (part.startsWith("**") && part.endsWith("**")) {
-        // Bold text
-        return <strong key={index}>{part.slice(2, -2)}</strong>; // Remove `**` and wrap in <strong>
+        return <strong key={index}>{part.slice(2, -2)}</strong>;
       } else if (part.startsWith("*") && part.endsWith("*")) {
-        // Italic text
-        return <strong key={index}>{part.slice(1, -1)}</strong>; // Remove `*` and wrap in <em>
+        return <em key={index}>{part.slice(1, -1)}</em>;
       } else {
-        // Normal text
         return part;
       }
     });
   };
 
-  const checkStreaks = useCallback(async () => {
-    const now = new Date();
-    const todayStart = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate()
-    ); // Start of today (normalized)
+  // Calculate streak for a habit
+  function calculateStreak(completedDates) {
+    if (!completedDates || completedDates.length === 0) return 0;
+    const dates = completedDates
+      .map((d) => new Date(d))
+      .sort((a, b) => b - a); // Descending
 
-    // Initialize Firestore batch
-    const batch = writeBatch(db);
+    let streak = 0;
+    let current = new Date();
+    current.setHours(0, 0, 0, 0);
 
-    fetchedHabits.forEach((habit) => {
-      const lastCompletedDate = habit.lastCompleted
-        ? new Date(habit.lastCompleted.seconds * 1000)
-        : null;
-
-      if (lastCompletedDate) {
-        // Normalize lastCompletedDate to the start of its day
-        const lastCompletedStart = new Date(
-          lastCompletedDate.getFullYear(),
-          lastCompletedDate.getMonth(),
-          lastCompletedDate.getDate()
-        );
-
-        const diffInDays = Math.floor(
-          (todayStart - lastCompletedStart) / (1000 * 60 * 60 * 24)
-        );
-
-        if (diffInDays >= 1 && habit.completed) {
-          // Reset `completed` to false but keep the streak
-          const habitRef = doc(db, "habits", habit.id);
-          batch.update(habitRef, { completed: false });
-        }
+    for (let i = 0; i < dates.length; i++) {
+      if (dates[i].toDateString() === current.toDateString()) {
+        streak++;
+        current.setDate(current.getDate() - 1);
+      } else {
+        break;
       }
-    });
-
-    try {
-      // Commit the batch update
-      await batch.commit();
-     
-    } catch (error) {
-      console.error("Error updating habits:", error);
     }
-  }, [fetchedHabits]);
-  // Function to generate AI insights using OpenAI
-  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    return streak;
+  }
 
+  // AI Insights
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const generateAIInsights = async () => {
+    const today = new Date().toISOString().slice(0, 10);
     const habitSummary = fetchedHabits
       .map(
         (habit) =>
-          `${habit.name}: ${habit.streak} day streak, ${
-            habit.completed ? "completed today" : "not completed today"
+          `${habit.name}: ${calculateStreak(habit.completedDates)} day streak, ${
+            habit.completedDates && habit.completedDates.includes(today)
+              ? "completed today"
+              : "not completed today"
           }`
       )
       .join("\n");
@@ -133,9 +106,8 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
   `;
 
     try {
-      // Add a delay to prevent hitting the rate limit
       setIsLoading(true);
-      await delay(3000); // 1-second delay
+      await delay(3000);
 
       const response = await openai.chat.completions.create({
         model: "google/gemma-3-12b-it:free",
@@ -157,154 +129,104 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
       setIsLoading(false);
     }
   };
-  // Function to toggle speech synthesis
+
+  // Speech synthesis
   const toggleSpeech = (text) => {
     if (isSpeaking) {
-      window.speechSynthesis.cancel(); // Stop speaking
+      window.speechSynthesis.cancel();
       setIsSpeaking(false);
     } else {
       const utterance = new SpeechSynthesisUtterance(text);
-
-      // Select a human-like voice (adjust based on available voices in the browser)
       const voices = window.speechSynthesis.getVoices();
       const selectedVoice = voices.find((voice) =>
         voice.name.includes("Google UK English Male")
-      ); // Example: Google UK English Female
-
+      );
       if (selectedVoice) {
         utterance.voice = selectedVoice;
       }
-
-      // Adjust speech properties for a human-like AI feel
-      utterance.pitch = 1.1; // Slightly higher pitch for a friendly tone
-      utterance.rate = 0.95; // Slightly slower rate for clarity
-      utterance.volume = 1; // Full volume
-
-      // Add event listener to reset state when speech ends
+      utterance.pitch = 1.1;
+      utterance.rate = 0.95;
+      utterance.volume = 1;
       utterance.onend = () => setIsSpeaking(false);
-
-      // Start speaking
       window.speechSynthesis.speak(utterance);
       setIsSpeaking(true);
     }
   };
 
+  // Add a new habit
   const addHabit = async (e) => {
     e.preventDefault();
     if (!habitName) return;
-
     try {
       await addDoc(collection(db, "habits"), {
         name: habitName,
-        completed: false,
-        streak: 0,
-        lastCompleted: null,
+        completedDates: [],
         timestamp: new Date(),
         userId: currentUser.uid,
       });
-
       setHabitName("");
-      
     } catch (error) {
       console.error("Error adding habit: ", error);
     }
   };
 
-  const toggleCompletion = async (id, completed, streak, lastCompleted) => {
-    try {
-      const habitRef = doc(db, "habits", id);
-      const today = new Date();
-      const todayStart = new Date(today.setHours(0, 0, 0, 0)); // Start of today
+  // Toggle completion for today
+  const toggleCompletion = async (habit) => {
+    const today = new Date().toISOString().slice(0, 10);
+    let newDates = habit.completedDates || [];
+    const habitRef = doc(db, "habits", habit.id);
 
-      if (!completed) {
-        // If the habit is being marked as completed
-        if (
-          lastCompleted &&
-          new Date(lastCompleted.seconds * 1000) >= todayStart
-        ) {
-          // If already completed today, do nothing
-          return;
-        }
-
-        // Increment streak and update lastCompleted date
-        await updateDoc(habitRef, {
-          completed: true,
-          streak: streak + 1,
-          lastCompleted: today,
-        });
-        await awardXP(currentUser.uid, 10);
-        toast.success("+10 XP gained for completing a habit!", {
-                  position: "top-right",
-                  autoClose: 3000, // Toast lasts for 3 seconds
-                  hideProgressBar: false,
-                  closeOnClick: true,
-                  pauseOnHover: true,
-                  draggable: true,
-                  progress: undefined,
-                });
-        
-      } else {
-        // If the habit is being unchecked
-        if (
-          lastCompleted &&
-          new Date(lastCompleted.seconds * 1000) >= todayStart
-        ) {
-          // If unchecking on the same day, decrement streak
-          await updateDoc(habitRef, {
-            completed: false,
-            streak: streak > 0 ? streak - 1 : 0,
-            lastCompleted: null, // Reset lastCompleted since it's unchecked
-          });
-          await awardXP(currentUser.uid, -10); 
-          toast.error("-10 XP deducted for unchecking an habit!", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                  });
-        } else if (
-          lastCompleted &&
-          new Date(lastCompleted.seconds * 1000) < todayStart
-        ) {
-          // If unchecking after a day has passed, keep streak unchanged
-          await updateDoc(habitRef, {
-            completed: false,
-          });
-        } else {
-          // If no valid lastCompleted date, just uncheck the habit
-          await updateDoc(habitRef, {
-            completed: false,
-            streak: streak > 0 ? streak - 1 : 0,
-            lastCompleted: null,
-          });
-        }
-      }
-
-      
-    } catch (error) {
-      console.error("Error updating habit completion: ", error);
+    if (newDates.includes(today)) {
+      // Uncheck: remove today
+      newDates = newDates.filter((date) => date !== today);
+      await updateDoc(habitRef, { completedDates: newDates });
+      await awardXP(currentUser.uid, -10);
+      toast.error("-10 XP deducted for unchecking a habit!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+    } else {
+      // Check: add today
+      newDates = [...newDates, today];
+      await updateDoc(habitRef, { completedDates: newDates });
+      await awardXP(currentUser.uid, 10);
+      toast.success("+10 XP gained for completing a habit!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
     }
   };
 
+  // Delete a habit
   const deleteHabit = async (id) => {
     try {
       const habitRef = doc(db, "habits", id);
-      await deleteDoc(habitRef);
       
+      if (!window.confirm("Are you sure you want to delete this habit?")) {
+        return;
+      } 
+      await deleteDoc(habitRef);
     } catch (error) {
       console.error("Error deleting habit: ", error);
     }
   };
 
+  // Edit a habit
   const editHabit = async (id, newName) => {
     if (!newName) return;
     try {
       const habitRef = doc(db, "habits", id);
       await updateDoc(habitRef, { name: newName });
-    
     } catch (error) {
       console.error("Error updating habit: ", error);
     }
@@ -312,8 +234,7 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
 
   useEffect(() => {
     calculateProgress();
-    checkStreaks();
-  }, [calculateProgress, checkStreaks]);
+  }, [calculateProgress]);
 
   return (
     <div
@@ -444,15 +365,21 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
               <div className="flex items-center">
                 <input
                   type="checkbox"
-                  checked={habit.completed}
-                  onChange={() =>
-                    toggleCompletion(habit.id, habit.completed, habit.streak, habit.lastCompleted)
+                  checked={
+                    habit.completedDates &&
+                    habit.completedDates.includes(
+                      new Date().toISOString().slice(0, 10)
+                    )
                   }
+                  onChange={() => toggleCompletion(habit)}
                   className="mr-2"
                 />
                 <span
                   className={`${
-                    habit.completed
+                    habit.completedDates &&
+                    habit.completedDates.includes(
+                      new Date().toISOString().slice(0, 10)
+                    )
                       ? theme === "dark"
                         ? "line-through text-gray-400"
                         : "line-through text-gray-500"
@@ -471,15 +398,17 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
                   Streak:
                 </span>
                 <div className="flex flex-wrap items-center space-x-1">
-                  {[...Array(habit.streak)].map((_, index) => (
-                    <div
-                      key={index}
-                      className={`w-4 h-4 mb-2 mr-0 `}
-                      title={`Day ${index + 1}`}
-                    >
-                      🔥
-                    </div>
-                  ))}
+                  {[...Array(calculateStreak(habit.completedDates))].map(
+                    (_, index) => (
+                      <div
+                        key={index}
+                        className={`w-4 h-4 mb-2 mr-0 `}
+                        title={`Day ${index + 1}`}
+                      >
+                        🔥
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
             </div>
