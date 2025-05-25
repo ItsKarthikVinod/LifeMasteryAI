@@ -14,6 +14,7 @@ import GamificationProgress from "./GamificationProgress";
 import { ToastContainer } from "react-toastify";
 
 
+
 const locales = {
   "en-US": require("date-fns/locale/en-US"),
 };
@@ -25,6 +26,10 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales,
 });
+
+
+
+
 
 
 
@@ -193,6 +198,8 @@ const Dashboard = () => {
     >
       
       <ToastContainer />
+      
+
       <div className="p-8 mt-12">
         <div
           className={`flex flex-col lg:flex-row items-center lg:items-center justify-center lg:justify-between mb-6 shadow-lg rounded-lg p-6 mt-2 ${

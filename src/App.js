@@ -15,6 +15,7 @@ import {useAuth} from './contexts/authContext';
 import SettingsPage from './pages/SettingsPage';
 import WhiteBoard from './components/WhiteBoard';
 import WhiteboardGallery from './components/WhiteBoardGallery';
+import StatusBanner from './components/StatusBanner';
 
 const App = () => {
   const {theme} = useAuth();
@@ -22,6 +23,7 @@ const App = () => {
     <div className={theme === "dark" ? "dark" : ""}>
       <Router>
         <Navbar />
+        <StatusBanner />
         <Routes>
           <Route path="/" element={<HeroPage />} />
           <Route path="/login" element={<LoginPage />} />
