@@ -12,7 +12,13 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import GamificationProgress from "./GamificationProgress";
 import { ToastContainer } from "react-toastify";
-
+import MotivationReminderWidget from "./MotivationReminderWidget";
+import useGetHabits from "../hooks/useGetHabits";
+import useGetGoals from "../hooks/useGetGoals";
+import useGetTodos from "../hooks/useGetTodos";
+import { Wheel } from "react-custom-roulette";
+import Logo from "../assets/LifeMasteryLogo.png";
+import Confetti from "react-confetti"; 
 
 
 const locales = {
@@ -26,14 +32,6 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales,
 });
-
-
-
-
-
-
-
-
 
 
 const CustomToolbar = (toolbar) => {
@@ -129,6 +127,10 @@ const Dashboard = () => {
   const [pomodoroTitle, setPomodoroTitle] = useState(""); // State to hold the Pomodoro session title
   const [isPomodoroRunning, setIsPomodoroRunning] = useState(false); // State to track if Pomodoro is running
   const [initialMinutes, setInitialMinutes] = useState(25); // Initial minutes for Pomodoro timer
+  const { fetchedHabits } = useGetHabits();
+  const { goalss } = useGetGoals(); // Replace with your actual goals fetching logic
+  
+  const { todoss } = useGetTodos(); // Replace with your actual todos fetching logic
   
 
   // Redirect to login if not logged in
@@ -137,9 +139,9 @@ const Dashboard = () => {
   }
 
   useEffect(() => {
-        // Scroll to the top of the page when the component is mounted
-        window.scrollTo(0, 0);
-      }, []);
+    // Scroll to the top of the page when the component is mounted
+    window.scrollTo(0, 0);
+  }, []);
 
   useEffect(() => {
     const storedMinutes = localStorage.getItem("pomodoroInitialMinutes");
@@ -187,6 +189,73 @@ const Dashboard = () => {
     setShowCalendarModal(!showCalendarModal); // Toggle the modal visibility
   };
 
+  const [isRoulette, setIsRoulette] = useState(false); // Modal visibility
+  const [mustSpin, setMustSpin] = useState(false); // Spin state
+  const [prizeNumber, setPrizeNumber] = useState(0); // Selected prize index
+  const [selectedItem, setSelectedItem] = useState(null); // Selected item
+
+  const items = [
+    ...(todoss || [])
+      .filter((todo) => !todo.completed && !todo.done) // Exclude completed/done todos
+      .map((todo) => ({
+        name: `Todo: ${todo.name}`,
+        option: todo.name,
+      })),
+    ...(fetchedHabits || [])
+      .filter((habit) => !habit.completed && !habit.done) // Exclude completed/done habits
+      .map((habit) => ({
+        name: `Habit: ${habit.name}`,
+        option: habit.name,
+      })),
+    ...(goalss || []).flatMap((goal) =>
+      (goal.subGoals || [])
+        .filter((subGoal) => !subGoal.completed && !subGoal.done) // Exclude completed/done subgoals
+        .map((subGoal) => ({
+          name: `SubGoal: ${subGoal.name} (Goal: ${goal.name})`,
+          option: subGoal.name,
+        }))
+    ),
+  ];
+
+  const openRouletteModal = () => {
+    setSelectedItem(null); // Reset selected item when opening
+    setIsRoulette(true);
+  };
+  const closeRouletteModal = () => {
+    setSelectedItem(null); // Reset selected item when closing
+    setIsRoulette(false);
+  };
+
+  const handleSpin = () => {
+    if (items.length === 0) {
+      setSelectedItem("No items available");
+      return;
+    }
+    const randomPrizeNumber = Math.floor(Math.random() * items.length);
+    setPrizeNumber(randomPrizeNumber);
+    setMustSpin(true);
+  };
+
+  const handleSpinComplete = () => {
+    if (prizeNumber >= 0 && prizeNumber < items.length) {
+      setSelectedItem(items[prizeNumber].name);
+    } else {
+      setSelectedItem("No items available");
+    }
+    setMustSpin(false);
+  };
+
+  const truncateText = (text, maxLength = 12) => {
+    return text.length > maxLength
+      ? text.slice(0, maxLength - 3) + "..."
+      : text;
+  };
+
+  const truncatedItems = items.map((item) => ({
+    ...item,
+    option: truncateText(item.option),
+  }));
+
   return (
     <div
       className={` min-h-screen pt-6 ${
@@ -196,25 +265,31 @@ const Dashboard = () => {
       } `}
       style={{ position: "relative", overflow: "hidden" }}
     >
-      
       <ToastContainer />
-      
 
       <div className="p-8 mt-12">
+        {/* Welcome Section */}
         <div
-          className={`flex flex-col lg:flex-row items-center lg:items-center justify-center lg:justify-between mb-6 shadow-lg rounded-lg p-6 mt-2 ${
-            theme === "dark"
-              ? "bg-gray-800/50 backdrop-blur-lg"
-              : "bg-white/50 backdrop-blur-lg"
-          }`}
+          className={`
+            flex flex-col gap-8
+            lg:flex-row lg:gap-0
+            items-center
+            justify-between
+            mb-6 shadow-lg rounded-lg p-6 mt-2
+            ${
+              theme === "dark"
+                ? "bg-gray-800/50 backdrop-blur-lg"
+                : "bg-white/50 backdrop-blur-lg"
+            }
+          `}
         >
-          {/* Gamification Progress (Left for larger devices) */}
-          <div className="w-full lg:w-1/3 mb-6 lg:mb-0 lg:mr-6 flex justify-center lg:justify-start">
+          {/* Gamification Progress (Left) */}
+          <div className="w-full lg:w-1/3 flex justify-center lg:justify-start mb-6 lg:mb-0">
             <GamificationProgress />
           </div>
 
-          {/* Welcome Section */}
-          <div className="w-full lg:w-2/3 text-center lg:text-left flex flex-col items-center lg:items-start">
+          {/* Welcome Section (Center) */}
+          <div className="w-full lg:w-1/3 flex flex-col items-center justify-center text-center px-2">
             <h1
               className={`text-4xl font-bold ${
                 theme === "dark" ? "text-gray-100" : "text-gray-800"
@@ -223,7 +298,7 @@ const Dashboard = () => {
               Welcome to your Dashboard
             </h1>
             <p
-              className={`mt-4 text-lg flex items-center justify-center lg:justify-start lg:ml-24 ${
+              className={`mt-4 text-lg flex items-center justify-center ${
                 theme === "dark" ? "text-gray-100" : "text-gray-600"
               }`}
             >
@@ -243,8 +318,12 @@ const Dashboard = () => {
               !
             </p>
           </div>
-        </div>
 
+          {/* Motivation & Reminders Widget (Right) */}
+          <div className="w-full lg:w-1/3 flex justify-center  mt-6 lg:mt-0">
+            <MotivationReminderWidget openRouletteModal={openRouletteModal} />
+          </div>
+        </div>
         {/* Dashboard main section */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* GoalTracker Component (Largest) */}
@@ -462,6 +541,160 @@ const Dashboard = () => {
             </div>
           </div>
         </>
+      )}
+      {/* Roulette Modal */}
+      {isRoulette && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-70 transition-opacity z-[-40]"></div>
+          <div
+            className={`relative z-50 p-8 rounded-lg shadow-lg w-11/12 max-w-3xl ${
+              theme === "dark"
+                ? "bg-gradient-to-br from-[#0F4F51] via-[#1A9A9D] to-[#232b2b] text-gray-100"
+                : "bg-gradient-to-br from-[#E0F7FA] via-[#B2EBF2] to-[#F5F5DC] text-gray-900"
+            }`}
+          >
+            {/* Close Button */}
+            <button
+              onClick={closeRouletteModal}
+              className="absolute top-4 right-4 text-3xl text-gray-400 hover:text-red-500 transition z-50"
+              aria-label="Close"
+            >
+              &times;
+            </button>
+            <h3
+              className={`text-2xl font-bold mb-6 text-center ${
+                theme === "dark" ? "text-teal-300" : "text-teal-700"
+              }`}
+            >
+              🎰 Spin the Wheel
+            </h3>
+            <div className="flex flex-col items-center ">
+              <Wheel
+                mustStartSpinning={mustSpin}
+                prizeNumber={prizeNumber}
+                data={truncatedItems}
+                backgroundColors={
+                  theme === "dark"
+                    ? ["#0F4F51", "#8B7349", "#4A4A3C"]
+                    : [
+                        "#1A9A9D", // Teal
+                        "#E1C38F", // Gold
+
+                        "#F5F5DC", // Beige
+                      ]
+                }
+                textColors={theme === "dark" ? ["#ffffff"] : ["#333333"]}
+                radiusLineColor={["#333333"]}
+                outerBorderColor={["#333333"]}
+                // Darker text color for better readability
+                fontSize={12} // Adjust font size for better readability
+                outerBorderWidth={10} // Add a thicker border
+                innerRadius={30} // Adjust inner radius to avoid "black hole"
+                radiusLineWidth={3} // Add a radius line for better visuals
+                onStopSpinning={handleSpinComplete}
+              />
+              <img
+                src={Logo}
+                alt="Life Mastery Logo"
+                className="absolute top-1/2 left-1/2 w-28 h-28 rounded-full shadow-lg pointer-events-none"
+                style={{ transform: "translate(-50%, -60%)" }}
+              />
+              <button
+                onClick={handleSpin}
+                className="mt-6 px-6 py-3 bg-teal-500 text-white rounded-lg shadow hover:bg-teal-600 transition"
+              >
+                Spin the Wheel
+              </button>
+            </div>
+            {selectedItem && (
+              <div className="fixed inset-0 flex flex-col items-center justify-center z-[999] pointer-events-none">
+                <Confetti
+                  width={window.innerWidth}
+                  height={window.innerHeight}
+                  recycle={false}
+                />
+                <div
+                  className={`bg-white/90 ${
+                    theme === "dark" ? "bg-gray-900/90" : ""
+                  } rounded-2xl shadow-2xl px-10 py-8 border-4 border-teal-400 flex flex-col items-center pointer-events-auto`}
+                >
+                  <span className="text-5xl mb-4">🎉</span>
+                  <div
+                    className={`text-2xl font-extrabold ${
+                      theme === "dark" ? "text-teal-300" : "text-teal-700"
+                    } text-center mb-2`}
+                  >
+                    Do this next:
+                  </div>
+                  <div
+                    className={`text-3xl font-bold ${
+                      theme === "dark" ? "text-gray-100" : "text-gray-800"
+                    } text-center mb-6`}
+                  >
+                    {selectedItem}
+                  </div>
+                  <div className="flex gap-6 mt-2">
+                    {/* OK Button */}
+                    <button
+                      onClick={closeRouletteModal}
+                      className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold shadow transition
+            ${
+              theme === "dark"
+                ? "bg-teal-700 hover:bg-teal-600 text-white"
+                : "bg-teal-500 hover:bg-teal-400 text-white"
+            }`}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                      OK
+                    </button>
+                    {/* Spin Again Button */}
+                    <button
+                      onClick={() => {
+                        setSelectedItem(null);
+                        handleSpin();
+                      }}
+                      className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold shadow transition
+            ${
+              theme === "dark"
+                ? "bg-yellow-600 hover:bg-yellow-500 text-white"
+                : "bg-yellow-400 hover:bg-yellow-300 text-gray-900"
+            }`}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 4v5h.582M20 20v-5h-.581M5.002 15A7.978 7.978 0 0112 17c1.657 0 3.182-.507 4.418-1.373M19 9a7.978 7.978 0 00-7-4c-1.657 0-3.182.507-4.418 1.373"
+                        />
+                      </svg>
+                      Spin Again
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
