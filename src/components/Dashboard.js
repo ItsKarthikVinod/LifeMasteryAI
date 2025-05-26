@@ -614,8 +614,8 @@ const Dashboard = () => {
                   recycle={false}
                 />
                 <div
-                  className={`bg-white/90 ${
-                    theme === "dark" ? "bg-gray-900/90" : ""
+                  className={` ${
+                    theme === "dark" ? "bg-gray-900/90" : "bg-white/90"
                   } rounded-2xl shadow-2xl px-10 py-8 border-4 border-teal-400 flex flex-col items-center pointer-events-auto`}
                 >
                   <span className="text-5xl mb-4">🎉</span>
@@ -627,7 +627,7 @@ const Dashboard = () => {
                     Do this next:
                   </div>
                   <div
-                    className={`text-3xl font-bold ${
+                    className={` text-3xl font-bold ${
                       theme === "dark" ? "text-gray-100" : "text-gray-800"
                     } text-center mb-6`}
                   >
