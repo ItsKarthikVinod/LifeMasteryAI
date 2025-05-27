@@ -204,7 +204,7 @@ const Dashboard = () => {
     ...(fetchedHabits || [])
       .filter(
         (habit) =>
-          !habit.completedDates.includes(new Date().toISOString().slice(0, 10))
+          !habit?.completedDates?.includes(new Date().toISOString().slice(0, 10))
       ) 
       .map((habit) => ({
         name: `Habit: ${habit.name}`,
