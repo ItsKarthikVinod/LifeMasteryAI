@@ -196,20 +196,23 @@ const Dashboard = () => {
 
   const items = [
     ...(todoss || [])
-      .filter((todo) => !todo.completed && !todo.done) // Exclude completed/done todos
+      .filter((todo) => !todo.isCompleted) // Exclude completed/done todos
       .map((todo) => ({
         name: `Todo: ${todo.name}`,
         option: todo.name,
       })),
     ...(fetchedHabits || [])
-      .filter((habit) => !habit.completed && !habit.done) // Exclude completed/done habits
+      .filter(
+        (habit) =>
+          !habit.completedDates.includes(new Date().toISOString().slice(0, 10))
+      ) 
       .map((habit) => ({
         name: `Habit: ${habit.name}`,
         option: habit.name,
       })),
     ...(goalss || []).flatMap((goal) =>
       (goal.subGoals || [])
-        .filter((subGoal) => !subGoal.completed && !subGoal.done) // Exclude completed/done subgoals
+        .filter((subGoal) => !subGoal.completed) // Exclude completed/done subgoals
         .map((subGoal) => ({
           name: `SubGoal: ${subGoal.name} (Goal: ${goal.name})`,
           option: subGoal.name,

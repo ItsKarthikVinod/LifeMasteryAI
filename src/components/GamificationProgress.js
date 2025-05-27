@@ -1,33 +1,44 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import useGetGame from "../hooks/useGetGame";
 import Confetti from "react-confetti";
 import { useAuth } from "../contexts/authContext";
 import ReactDOM from "react-dom";
+
 const GamificationProgress = () => {
   const { gamificationData, loading } = useGetGame();
   const [showConfetti, setShowConfetti] = useState(false);
-  const { theme } = useAuth(); // Get the theme from context
+  const [levelUp, setLevelUp] = useState(false);
+  const prevLevel = useRef(null);
+  const { theme } = useAuth();
 
-  // Handle level-up animation
   useEffect(() => {
     if (gamificationData) {
-      const { remainingXP, level } = gamificationData;
-      const xpToNextLevel = level * 100; // Calculate XP required for the next level
+      const { level, remainingXP } = gamificationData;
+      const xpToNextLevel = level * 100;
 
-      if (xpToNextLevel - remainingXP === 0) {
+      // Detect level up
+      if (prevLevel.current !== null && level > prevLevel.current) {
         setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 5000); // Hide confetti after 5 seconds
+        setLevelUp(true);
+        setTimeout(() => setShowConfetti(false), 5000);
+        setTimeout(() => setLevelUp(false), 5000);
       }
+      // Detect exact level up (for initial mount)
+      if (xpToNextLevel - remainingXP === 0 && prevLevel.current === null) {
+        setShowConfetti(true);
+        setLevelUp(true);
+        setTimeout(() => setShowConfetti(false), 5000);
+        setTimeout(() => setLevelUp(false), 5000);
+      }
+      prevLevel.current = level;
     }
-  }, [gamificationData]); // Dependency array includes gamificationData
+  }, [gamificationData]);
 
   if (loading) return <p>Loading...</p>;
   if (!gamificationData) return <p>No gamification data found.</p>;
 
   const { totalXP, level, remainingXP } = gamificationData;
-
-  // Calculate progress width
-  const xpToNextLevel = level * 100; // XP required for the next level
+  const xpToNextLevel = level * 100;
   const progressWidth = xpToNextLevel
     ? ((xpToNextLevel - remainingXP) / xpToNextLevel) * 100
     : 0;
@@ -48,17 +59,20 @@ const GamificationProgress = () => {
     >
       {showConfetti &&
         ReactDOM.createPortal(
-          <Confetti width={window.innerWidth-20} height={window.innerHeight}
-            numberOfPieces={1000}   />,
+          <Confetti
+            width={window.innerWidth - 20}
+            height={window.innerHeight}
+            numberOfPieces={1000}
+          />,
           document.body
         )}
-      {xpToNextLevel - remainingXP === 0 && totalXP > 0 && (
+      {(levelUp || (xpToNextLevel - remainingXP === 0 && totalXP > 0)) && (
         <div className="mb-4 animate-pulse">
           <h3 className="text-lg font-semibold">🎉 Level Up! 🎉</h3>
           <div
             className={`inline-block p-3 rounded-full ${
               theme === "dark" ? "bg-teal-500" : "bg-teal-400"
-            } text-white text-3xl font-bold shadow-md`}
+            } text-white text-3xl font-bold shadow-md animate-bounce`}
           >
             {level}
           </div>
