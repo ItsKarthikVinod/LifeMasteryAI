@@ -65,24 +65,33 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
   // Calculate streak for a habit
   function calculateStreak(completedDates) {
     if (!completedDates || completedDates.length === 0) return 0;
-    const dates = completedDates
-      .map((d) => new Date(d))
-      .sort((a, b) => b - a); // Descending
 
-    let streak = 0;
-    let current = new Date();
-    current.setHours(0, 0, 0, 0);
+    // Sort dates ascending
+    const dates = completedDates.map((d) => new Date(d)).sort((a, b) => a - b);
 
-    for (let i = 0; i < dates.length; i++) {
-      if (dates[i].toDateString() === current.toDateString()) {
+    let streak = 1;
+    for (let i = dates.length - 1; i > 0; i--) {
+      const diff = (dates[i] - dates[i - 1]) / (1000 * 60 * 60 * 24);
+      if (diff === 1) {
         streak++;
-        current.setDate(current.getDate() - 1);
-      } else {
+      } else if (diff > 1) {
         break;
       }
     }
+
+    // Check if the last completion was yesterday or today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const lastDate = dates[dates.length - 1];
+    const diffFromToday = (today - lastDate) / (1000 * 60 * 60 * 24);
+
+    if (diffFromToday > 1) {
+      return 0; // Missed a day, reset streak
+    }
+
     return streak;
   }
+  
 
   // AI Insights
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -329,7 +338,7 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
       >
         <input
           type="text"
-          value={habitName}
+          value={habitName|| ""}
           onChange={(e) => setHabitName(e.target.value)}
           className={`border p-2 rounded w-full sm:w-auto flex-grow mb-2 sm:mb-0 ${
             theme === "dark"
@@ -366,10 +375,10 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
                 <input
                   type="checkbox"
                   checked={
-                    habit.completedDates &&
+                    habit.completedDates ?
                     habit.completedDates.includes(
                       new Date().toISOString().slice(0, 10)
-                    )
+                    ) : false
                   }
                   onChange={() => toggleCompletion(habit)}
                   className="mr-2"

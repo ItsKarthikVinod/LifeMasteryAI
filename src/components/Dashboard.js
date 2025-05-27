@@ -218,17 +218,18 @@ const Dashboard = () => {
   ];
 
   const openRouletteModal = () => {
-    setSelectedItem(null); // Reset selected item when opening
+    if (!items || items.length === 0) {
+      setSelectedItem("Add some todos/goals/habits to unlock Roulette");
+      setIsRoulette(true);
+      return;
+    }
+    setSelectedItem(null);
     setIsRoulette(true);
-  };
-  const closeRouletteModal = () => {
-    setSelectedItem(null); // Reset selected item when closing
-    setIsRoulette(false);
   };
 
   const handleSpin = () => {
-    if (items.length === 0) {
-      setSelectedItem("No items available");
+    if (!items || items.length === 0) {
+      setSelectedItem("Add some todos/goals/habits to unlock Roulette");
       return;
     }
     const randomPrizeNumber = Math.floor(Math.random() * items.length);
@@ -237,24 +238,49 @@ const Dashboard = () => {
   };
 
   const handleSpinComplete = () => {
-    if (prizeNumber >= 0 && prizeNumber < items.length) {
+    if (!items || items.length === 0) {
+      setSelectedItem("Add some todos/goals/habits to unlock Roulette");
+    } else if (prizeNumber >= 0 && prizeNumber < items.length) {
       setSelectedItem(items[prizeNumber].name);
     } else {
       setSelectedItem("No items available");
     }
     setMustSpin(false);
   };
+  
 
+  
+
+  
+
+  const closeRouletteModal = () => {
+    setSelectedItem(null); // Reset selected item when closing
+    setIsRoulette(false);
+  };
+
+  
+
+  
   const truncateText = (text, maxLength = 12) => {
+    if (typeof text !== "string") {
+      if (text === null || text === undefined) return "";
+      return String(text).length > maxLength
+        ? String(text).slice(0, maxLength - 3) + "..."
+        : String(text);
+    }
     return text.length > maxLength
       ? text.slice(0, maxLength - 3) + "..."
       : text;
   };
 
-  const truncatedItems = items.map((item) => ({
-    ...item,
-    option: truncateText(item.option),
-  }));
+  const truncatedItems = (items || [])
+    .filter(
+      (item) => typeof item?.option === "string" && item.option.trim() !== ""
+    )
+    .map((item) => ({
+      ...item,
+      option: truncateText(item.option),
+    }));
 
   return (
     <div
@@ -571,8 +597,9 @@ const Dashboard = () => {
             <div className="flex flex-col items-center ">
               <Wheel
                 mustStartSpinning={mustSpin}
-                prizeNumber={prizeNumber}
-                data={truncatedItems}
+                prizeNumber={prizeNumber ? prizeNumber : 0}
+                data={truncatedItems.length > 0 ? truncatedItems : [{ name: "No items available" }]}
+                
                 backgroundColors={
                   theme === "dark"
                     ? ["#0F4F51", "#8B7349", "#4A4A3C"]
