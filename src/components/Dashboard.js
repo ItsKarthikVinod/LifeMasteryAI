@@ -21,6 +21,7 @@ import Logo from "../assets/LifeMasteryLogo.png";
 import Confetti from "react-confetti"; 
 
 
+
 const locales = {
   "en-US": require("date-fns/locale/en-US"),
 };
@@ -128,10 +129,8 @@ const Dashboard = () => {
   const [isPomodoroRunning, setIsPomodoroRunning] = useState(false); // State to track if Pomodoro is running
   const [initialMinutes, setInitialMinutes] = useState(25); // Initial minutes for Pomodoro timer
   const { fetchedHabits } = useGetHabits();
-  const { goalss } = useGetGoals(); // Replace with your actual goals fetching logic
-  
-  const { todoss } = useGetTodos(); // Replace with your actual todos fetching logic
-  
+  const { goalss} = useGetGoals();
+  const { todoss} = useGetTodos();
 
   // Redirect to login if not logged in
   if (!userLoggedIn) {
@@ -284,6 +283,8 @@ const Dashboard = () => {
       ...item,
       option: truncateText(item.option),
     }));
+  
+  
 
   return (
     <div

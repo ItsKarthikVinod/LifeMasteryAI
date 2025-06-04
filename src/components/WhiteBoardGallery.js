@@ -1,12 +1,12 @@
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../contexts/authContext";
 import { useNavigate } from "react-router-dom";
 import {
   getAllWhiteboards,
-  
   deleteWhiteboard,
   updateWhiteboard,
 } from "../ulits/galleryDB";
+import { toPng } from "html-to-image";
 
 const PencilIcon = ({ className = "w-5 h-5" }) => (
   <svg
@@ -48,6 +48,9 @@ const WhiteboardGallery = () => {
   const [galleryState, setGalleryState] = useState([]);
   const navigate = useNavigate();
 
+  // For export as PNG from gallery card
+  const cardExportRefs = useRef({});
+
   useEffect(() => {
     if (currentUser) {
       getAllWhiteboards(currentUser.uid).then(setGalleryState);
@@ -85,6 +88,21 @@ const WhiteboardGallery = () => {
     }
   };
 
+  // Export as PNG for gallery card
+  const handleCardExport = async (item) => {
+    const ref = cardExportRefs.current[item.id];
+    if (!ref) return;
+    try {
+      const dataUrl = await toPng(ref, { cacheBust: true });
+      const link = document.createElement("a");
+      link.download = `${item.title || "whiteboard"}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      alert("Failed to export image.");
+    }
+  };
+
   // Theme classes
   const isDark = theme === "dark";
   const bgMain = isDark
@@ -106,7 +124,7 @@ const WhiteboardGallery = () => {
     ? "bg-gray-800 text-teal-300"
     : "bg-white text-teal-700";
 
-  // Modal with zoom, pan, and inline editing
+  // Modal with zoom, pan, inline editing, and export as PNG
   const ModalWithZoomPan = ({
     modalImg,
     setModalImg,
@@ -125,6 +143,9 @@ const WhiteboardGallery = () => {
     const [start, setStart] = useState({ x: 0, y: 0 });
     const [editing, setEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(modalImg.title);
+
+    // Ref for export
+    const exportRef = useRef();
 
     // Pan handlers
     const handleMouseDown = (e) => {
@@ -170,8 +191,22 @@ const WhiteboardGallery = () => {
       }
     };
 
+    // Export as PNG for modal
+    const handleExport = async () => {
+      if (!exportRef.current) return;
+      try {
+        const dataUrl = await toPng(exportRef.current, { cacheBust: true });
+        const link = document.createElement("a");
+        link.download = `${modalImg.title || "whiteboard"}.png`;
+        link.href = dataUrl;
+        link.click();
+      } catch (err) {
+        alert("Failed to export image.");
+      }
+    };
+
     // Reset pan/zoom and editing on modal open/close or image change
-    React.useEffect(() => {
+    useEffect(() => {
       setZoom(1);
       setOffset({ x: 0, y: 0 });
       setEditTitle(modalImg.title);
@@ -224,8 +259,17 @@ const WhiteboardGallery = () => {
               ⟳
             </button>
           </div>
+          {/* Export as PNG button */}
+          <button
+            onClick={handleExport}
+            className="absolute bottom-4 right-4 bg-teal-600 text-white px-4 py-2 rounded shadow hover:bg-teal-700 transition z-50"
+            title="Export as PNG"
+          >
+            Export as PNG
+          </button>
           {/* Image with canvas background */}
           <div
+            ref={exportRef}
             className={`max-w-[95vw] max-h-[75vh] rounded-2xl shadow-2xl ${modalBg} p-2 flex items-center justify-center overflow-hidden`}
             style={{
               background: modalImg.bgColor || (isDark ? "#111827" : "#fff"),
@@ -358,7 +402,20 @@ const WhiteboardGallery = () => {
             >
               <TrashIcon />
             </button>
+            {/* Export as PNG button for card */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCardExport(item);
+              }}
+              className="absolute top-3 left-3 bg-teal-600 text-white px-3 py-1 rounded shadow hover:bg-teal-700 transition z-10 text-xs font-semibold"
+              title="Export as PNG"
+              aria-label="Export as PNG"
+            >
+              Export as PNG
+            </button>
             <div
+              ref={(el) => (cardExportRefs.current[item.id] = el)}
               className="w-full aspect-[4/3] rounded-xl overflow-hidden mb-4 flex items-center justify-center shadow"
               style={{
                 background: item.bgColor || (isDark ? "#374151" : "#f3f4f6"),

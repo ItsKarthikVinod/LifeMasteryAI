@@ -16,9 +16,24 @@ import SettingsPage from './pages/SettingsPage';
 import WhiteBoard from './components/WhiteBoard';
 import WhiteboardGallery from './components/WhiteBoardGallery';
 import StatusBanner from './components/StatusBanner';
+import useGetHabits from "./hooks/useGetHabits";
+import useGetGoals from "./hooks/useGetGoals";
+import useGetTodos from "./hooks/useGetTodos";
+import Loader from './components/Loader'; // Assuming you have a Loader component
+import Grocery from "./components/Grocery";
 
 const App = () => {
-  const {theme} = useAuth();
+  const { theme } = useAuth();
+  const { loading: habitsLoading } = useGetHabits();
+  const { loading: goalsLoading } = useGetGoals();
+  const { loading: todosLoading } = useGetTodos();
+  const { loading: authLoading } = useAuth(); // If your auth context provides loading
+  
+
+  // Show loader if any global data is loading
+  if (habitsLoading || goalsLoading || todosLoading || authLoading) {
+    return <Loader />;
+  }
   return (
     <div className={theme === "dark" ? "dark" : ""}>
       <Router>
@@ -35,6 +50,7 @@ const App = () => {
           <Route path="/whiteboard" element={<WhiteBoard />} />
           <Route path="/whiteboard-gallery" element={<WhiteboardGallery />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/grocery" element={<Grocery />} />
         </Routes>
         <Footer />
       </Router>

@@ -3,7 +3,9 @@ import {
   FaChalkboard,
   FaDice,
   FaSyncAlt,
-  FaImages
+  FaImages,
+  FaShoppingCart
+  
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom"; // Add this import
 import { useAuth } from "../contexts/authContext"; // Import the auth context
@@ -27,6 +29,7 @@ const MotivationReminderWidget = ({ openRouletteModal }) => {
   // Quick Access actions (replace with your actual handlers)
   const handleQuickWhiteBoard = () => navigate("/whiteboard");
   const handleQuickGallery = () => navigate("/whiteboard-gallery");
+  const handleQuickGrocery = () => navigate("/grocery");
   
 
   return (
@@ -68,7 +71,7 @@ const MotivationReminderWidget = ({ openRouletteModal }) => {
             theme === "dark" ? "text-gray-200 text-sm" : "text-gray-700 text-sm"
           }`}
         >
-         "{motivation}"
+          "{motivation}"
         </p>
       </div>
       {/* Roulette */}
@@ -107,6 +110,17 @@ const MotivationReminderWidget = ({ openRouletteModal }) => {
           title="Quick WhiteBoard"
         >
           <FaChalkboard className="mb-0.5" /> WhiteBoard
+        </button>
+        <button
+          onClick={handleQuickGrocery}
+          className={`flex flex-col items-center text-sm ${
+            theme === "dark"
+              ? "text-teal-300 hover:text-teal-100"
+              : "text-teal-700 hover:text-teal-900"
+          } `}
+          title="Grocery List"
+        >
+          <FaShoppingCart className="mb-0.5" /> Grocery
         </button>
         <button
           onClick={handleQuickGallery}
