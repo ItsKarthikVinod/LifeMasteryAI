@@ -88,20 +88,52 @@ const WhiteboardGallery = () => {
     }
   };
 
-  // Export as PNG for gallery card
+  // ...existing code...
+
   const handleCardExport = async (item) => {
-    const ref = cardExportRefs.current[item.id];
-    if (!ref) return;
     try {
-      const dataUrl = await toPng(ref, { cacheBust: true });
-      const link = document.createElement("a");
-      link.download = `${item.title || "whiteboard"}.png`;
-      link.href = dataUrl;
-      link.click();
+      // Create an image element
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.src = item.url;
+
+      img.onload = () => {
+        // Create a canvas with the image's natural size
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+
+        // Optional: Fill background if needed
+        if (item.bgColor) {
+          ctx.fillStyle = item.bgColor;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        ctx.drawImage(img, 0, 0);
+
+        // Export as PNG
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const link = document.createElement("a");
+            link.download = `${item.title  || "whiteboard"}-LifeMastery.png`;
+            link.href = URL.createObjectURL(blob);
+            link.click();
+            URL.revokeObjectURL(link.href);
+          } else {
+            alert("Failed to export image.");
+          }
+        }, "image/png");
+      };
+
+      img.onerror = () => {
+        alert("Failed to load image for export.");
+      };
     } catch (err) {
       alert("Failed to export image.");
     }
   };
+  // ...existing code...
 
   // Theme classes
   const isDark = theme === "dark";
@@ -197,7 +229,7 @@ const WhiteboardGallery = () => {
       try {
         const dataUrl = await toPng(exportRef.current, { cacheBust: true });
         const link = document.createElement("a");
-        link.download = `${modalImg.title || "whiteboard"}.png`;
+        link.download = `${modalImg.title || "whiteboard"}-LifeMastery.png`;
         link.href = dataUrl;
         link.click();
       } catch (err) {

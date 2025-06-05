@@ -19,6 +19,7 @@ import {
   deleteDoc,
   doc,
 } from "firebase/firestore";
+import { useAuth } from "../contexts/authContext"; // Import your auth context
 
 // Debounce utility to avoid too many requests
 function debounce(fn, delay) {
@@ -37,7 +38,32 @@ const Grocery = () => {
   const [showList, setShowList] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const { theme } = useAuth(); // Assuming you have a useAuth hook to get the theme
+  console.log("Current theme:", theme);
+
   const user = getAuth().currentUser;
+
+  // Theme classes
+  const isDark = theme === "dark";
+  const bgMain = isDark
+    ? "bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900"
+    : "bg-gradient-to-br from-green-100 to-teal-200";
+  const cardBg = isDark ? "bg-gray-800" : "bg-white/90";
+  const cardShadow = isDark ? "shadow-2xl" : "shadow-2xl";
+  const textMain = isDark ? "text-teal-300" : "text-teal-900";
+  const textSecondary = isDark ? "text-gray-400" : "text-gray-500";
+  const borderColor = isDark ? "border-gray-700" : "border-teal-300";
+  const inputBg = isDark ? "bg-gray-900" : "bg-white";
+  const tableHead = isDark ? "text-teal-200" : "text-teal-700";
+  const tableRow = isDark
+    ? "bg-gray-900 hover:bg-gray-800"
+    : "bg-white/80 hover:bg-teal-50";
+  const yellowBg = isDark ? "bg-yellow-900" : "bg-yellow-50";
+  const inputTextColor = isDark
+    ? "text-teal-200 placeholder-gray-400"
+    : "text-teal-900 placeholder-gray-400";
+  const cardTextColor = isDark ? "text-teal-100" : "text-teal-900";
+  const cardTitleColor = isDark ? "text-teal-300" : "text-teal-700";
 
   // Fetch groceries from Firestore for the signed-in user
   useEffect(() => {
@@ -148,8 +174,12 @@ const Grocery = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-100 to-teal-200">
-        <div className="bg-white/90 rounded-2xl shadow-2xl p-10 text-center text-base sm:text-lg text-teal-700 font-bold">
+      <div
+        className={`min-h-screen flex items-center justify-center ${bgMain}`}
+      >
+        <div
+          className={`${cardBg} ${cardShadow} rounded-2xl p-8 sm:p-10 text-center text-base sm:text-lg ${textMain} font-bold`}
+        >
           Please sign in to use the Grocery feature.
         </div>
       </div>
@@ -157,9 +187,15 @@ const Grocery = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-start justify-center bg-gradient-to-br from-green-100 to-teal-200 pt-20  sm:pt-44 px-1 sm:px-6">
-      <div className="w-full max-w-3xl bg-white/90 rounded-2xl shadow-2xl p-3 sm:p-6 flex flex-col items-center justify-center mt-20 sm:mt-10">
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-teal-700 mb-4 sm:mb-6 text-center tracking-tight">
+    <div
+      className={`min-h-screen flex items-start justify-center ${bgMain} pt-20 sm:pt-32 px-1 sm:px-6`}
+    >
+      <div
+        className={`w-full max-w-3xl ${cardBg} ${cardShadow} rounded-2xl p-3 sm:p-6 flex flex-col items-center justify-center mt-20 sm:mt-10`}
+      >
+        <h1
+          className={`text-base sm:text-xl md:text-2xl font-extrabold mb-3 sm:mb-5 text-center tracking-tight ${cardTitleColor} flex items-center gap-2`}
+        >
           🛒 Grocery Database
         </h1>
         {/* Add Grocery */}
@@ -169,42 +205,49 @@ const Grocery = () => {
         >
           <input
             type="text"
-            className="flex-1 border border-teal-300 rounded-lg px-3 py-2 text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-teal-400"
+            className={`flex-1 border ${borderColor} ${inputBg} ${inputTextColor} rounded-lg px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-teal-400 transition placeholder-opacity-80`}
             placeholder="Add a grocery item..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={loading}
+            autoComplete="off"
           />
           <button
             type="submit"
-            className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition text-sm sm:text-base"
+            className="bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded-lg font-bold flex items-center gap-2 transition text-xs sm:text-sm"
             disabled={loading}
           >
             <FaPlus /> Add
           </button>
         </form>
         {/* Notion-style Table */}
-        <div className="overflow-x-auto mb-6 w-full max-w-xl">
-          <table className="min-w-full border-separate border-spacing-y-1 sm:border-spacing-y-2 text-xs sm:text-base">
+        <div className="overflow-x-auto mb-5 w-full max-w-xl">
+          <table className="min-w-full border-separate border-spacing-y-1 sm:border-spacing-y-2 text-xs sm:text-sm">
             <thead>
               <tr>
-                <th className="text-left text-teal-700 font-bold">Item</th>
-                <th className="text-center text-teal-700 font-bold">
+                <th className={`text-left ${tableHead} font-bold`}>Item</th>
+                <th className={`text-center ${tableHead} font-bold`}>
                   Available
                 </th>
-                <th className="text-center text-teal-700 font-bold">Remove</th>
+                <th className={`text-center ${tableHead} font-bold`}>Remove</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={3} className="text-center text-gray-400 py-2">
+                  <td
+                    colSpan={3}
+                    className={`text-center ${textSecondary} py-2`}
+                  >
                     Loading...
                   </td>
                 </tr>
               ) : groceries.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="text-center text-gray-400 py-2">
+                  <td
+                    colSpan={3}
+                    className={`text-center ${textSecondary} py-2`}
+                  >
                     No groceries added yet.
                   </td>
                 </tr>
@@ -212,9 +255,11 @@ const Grocery = () => {
                 groceries.map((g) => (
                   <tr
                     key={g.id}
-                    className="bg-white/80 hover:bg-teal-50 rounded-lg shadow transition"
+                    className={`${tableRow} rounded-lg shadow transition`}
                   >
-                    <td className="py-1 px-2 sm:py-2 sm:px-4 font-medium">
+                    <td
+                      className={`py-1 px-2 sm:py-2 sm:px-4 font-medium ${cardTextColor}`}
+                    >
                       {g.name}
                     </td>
                     <td className="py-1 px-2 sm:py-2 sm:px-4 text-center">
@@ -224,9 +269,9 @@ const Grocery = () => {
                         aria-label="Toggle Available"
                       >
                         {g.available ? (
-                          <FaCheckCircle className="text-green-500 text-lg sm:text-2xl" />
+                          <FaCheckCircle className="text-green-500 text-base sm:text-xl" />
                         ) : (
-                          <FaRegCircle className="text-gray-400 text-lg sm:text-2xl" />
+                          <FaRegCircle className="text-gray-400 text-base sm:text-xl" />
                         )}
                       </button>
                     </td>
@@ -249,7 +294,7 @@ const Grocery = () => {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 w-full max-w-xl gap-2">
           <button
             onClick={() => setShowList((v) => !v)}
-            className="bg-yellow-400 hover:bg-yellow-500 text-teal-900 px-4 py-2 rounded-lg font-bold shadow transition text-sm sm:text-base"
+            className="bg-yellow-400 hover:bg-yellow-500 text-teal-900 px-4 py-2 rounded-lg font-bold shadow transition text-xs sm:text-sm"
           >
             {showList ? "Hide Grocery List" : "Generate Grocery List"}
           </button>
@@ -257,14 +302,14 @@ const Grocery = () => {
             <div className="flex flex-col xs:flex-row gap-2 w-full sm:w-auto">
               <button
                 onClick={copyList}
-                className="flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-bold shadow transition text-sm sm:text-base w-full sm:w-auto"
+                className="flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-bold shadow transition text-xs sm:text-sm w-full sm:w-auto"
                 title="Copy Grocery List"
               >
                 <FaCopy /> Copy
               </button>
               <button
                 onClick={nativeShare}
-                className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow transition text-sm sm:text-base w-full sm:w-auto"
+                className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow transition text-xs sm:text-sm w-full sm:w-auto"
                 title="Share Grocery List"
               >
                 <FaShareAlt /> Share
@@ -274,8 +319,12 @@ const Grocery = () => {
         </div>
         {/* Grocery List */}
         {showList && (
-          <div className="bg-white border-2 border-dashed border-teal-300 rounded-xl p-4 sm:p-6 shadow-lg w-full max-w-xl">
-            <h2 className="text-lg sm:text-2xl font-bold text-teal-700 mb-3 sm:mb-4 flex items-center gap-2">
+          <div
+            className={`${cardBg} border-2 border-dashed border-teal-300 rounded-xl p-4 sm:p-6 shadow-lg w-full max-w-xl`}
+          >
+            <h2
+              className={`text-base sm:text-xl font-bold ${cardTitleColor} mb-3 sm:mb-4 flex items-center gap-2`}
+            >
               <span role="img" aria-label="list">
                 📝
               </span>
@@ -283,7 +332,7 @@ const Grocery = () => {
             </h2>
             <ul className="space-y-2 sm:space-y-3">
               {groceries.filter((g) => !g.available).length === 0 && (
-                <li className="text-gray-400 italic text-sm sm:text-base">
+                <li className={`italic ${textSecondary} text-xs sm:text-base`}>
                   All items are available!
                 </li>
               )}
@@ -292,7 +341,7 @@ const Grocery = () => {
                 .map((g) => (
                   <li
                     key={g.id}
-                    className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg bg-yellow-50 rounded-lg px-3 sm:px-4 py-2 shadow-sm"
+                    className={`flex items-center gap-2 sm:gap-3 text-sm sm:text-lg ${yellowBg} rounded-lg px-3 sm:px-4 py-2 shadow-sm`}
                   >
                     <input
                       type="checkbox"
@@ -302,9 +351,7 @@ const Grocery = () => {
                     />
                     <span
                       className={`${
-                        g.checked
-                          ? "line-through text-gray-400"
-                          : "text-gray-800"
+                        g.checked ? "line-through text-gray-400" : cardTextColor
                       } font-medium`}
                     >
                       {g.name}
