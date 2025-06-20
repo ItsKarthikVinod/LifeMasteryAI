@@ -18,12 +18,24 @@
   rel="stylesheet"
   href="https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css"
 />
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<!-- Legacy SDK v2 that handles prompt automatically -->
+<script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
 <script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
+  window.OneSignal = window.OneSignal || [];
+  OneSignal.push(function () {
+    OneSignal.init({
       appId: "702b4e49-c8a5-4af7-8e99-ce0babb6706a",
+      notifyButton: {
+        enable: true
+      },
+      promptOptions: {
+        slidedown: {
+          enabled: true,
+          actionMessage: "✨ Stay on track with daily nudges and goals!",
+          acceptButtonText: "Let’s Go 💪",
+          cancelButtonText: "Maybe Later"
+        }
+      }
     });
   });
 </script>
