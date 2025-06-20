@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
+import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
 // Your Firebase config
 const firebaseConfig = {
@@ -17,6 +18,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const messaging = getMessaging(app);
 
 enableIndexedDbPersistence(db).catch((err) => {
   if (err.code === "failed-precondition") {
@@ -26,4 +28,4 @@ enableIndexedDbPersistence(db).catch((err) => {
   }
 });
 
-export { auth, db };
+export { auth, db, messaging, getToken, onMessage };

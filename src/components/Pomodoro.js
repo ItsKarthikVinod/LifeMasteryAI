@@ -15,6 +15,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import useGetGame from "../hooks/useGetGame";
 
+
 const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => {
   const [minutes, setMinutes] = useState(initialMinutes); // Default work duration is 25 minutes
   const [seconds, setSeconds] = useState(0);
@@ -39,7 +40,8 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
       setIsTimelineModalOpen(!isTimelineModalOpen);
     } // Toggle visibility of the timeline modal
   };
-
+  
+  
   const nodeRef = useRef(null); // Ref for the draggable component
 
   const audioRef = useRef(null); // Ref for the bell sound
@@ -129,8 +131,13 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
   useEffect(() => {
     let interval;
     let startTime = Date.now(); // Record the start time
+    localStorage.setItem("pomodoroStatus", "stopped");
+    
 
     if (isRunning) {
+      localStorage.setItem("pomodoroStatus", "running"); // Store the running status in Local Storage
+     
+      
       interval = setInterval(() => {
         const elapsedTime = Math.floor((Date.now() - startTime) / 1000); // Calculate elapsed time in seconds
         const totalSeconds = minutes * 60 + seconds - elapsedTime;
@@ -138,6 +145,9 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
         if (totalSeconds <= 0) {
           // Timer finished
           audioRef.current.play();
+          localStorage.setItem("pomodoroStatus", "stopped"); // Store the stopped status in Local Storage
+      
+  
 
           // Create a session log entry
           const session = {
@@ -227,6 +237,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
   };
   const pauseTimer = () => {
     setIsRunning(false);
+    localStorage.setItem("pomodoroStatus", "stopped");
 
     // Check if the `chrome` API is available
     if (typeof chrome !== "undefined" && chrome.runtime) {
@@ -242,7 +253,8 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
     setSeconds(0);
     setIsWorkSession(true);
 
-    setIsDurationUpdated(false); // Reset the updated state
+    setIsDurationUpdated(false);
+    localStorage.setItem("pomodoroStatus", "stopped");// Reset the updated state
   };
 
   const setDurations = () => {

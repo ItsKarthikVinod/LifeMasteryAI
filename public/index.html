@@ -13,11 +13,20 @@
     <!--
       This website was made by Karthik Vinod.
     -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <link rel="manifest" href="/manifest.json" />
     <link
   rel="stylesheet"
   href="https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css"
 />
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "702b4e49-c8a5-4af7-8e99-ce0babb6706a",
+    });
+  });
+</script>
     
     
     <title>Life Mastery</title>

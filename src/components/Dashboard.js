@@ -22,6 +22,7 @@ import Confetti from "react-confetti";
 
 
 
+
 const locales = {
   "en-US": require("date-fns/locale/en-US"),
 };
@@ -130,7 +131,15 @@ const Dashboard = () => {
   const [initialMinutes, setInitialMinutes] = useState(25); // Initial minutes for Pomodoro timer
   const { fetchedHabits } = useGetHabits();
   const { goalss} = useGetGoals();
-  const { todoss} = useGetTodos();
+  const { todoss } = useGetTodos();
+  // Notification.requestPermission().then((permission) => {
+  //   if (permission === "granted") {
+  //     new Notification("Time to reflect 🌱", {
+  //       body: "Take 5 minutes to journal and calm your mind.",
+  //       icon: "android-chrome-512x512.png",
+  //     });
+  //   }
+  // });
 
   // Redirect to login if not logged in
   if (!userLoggedIn) {

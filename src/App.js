@@ -21,13 +21,19 @@ import useGetGoals from "./hooks/useGetGoals";
 import useGetTodos from "./hooks/useGetTodos";
 import Loader from './components/Loader'; // Assuming you have a Loader component
 import Grocery from "./components/Grocery";
+import InstallPrompt from './components/InstallPrompt'; // Assuming you have an InstallPrompt component
 
 const App = () => {
   const { theme } = useAuth();
   const { loading: habitsLoading } = useGetHabits();
+
   const { loading: goalsLoading } = useGetGoals();
   const { loading: todosLoading } = useGetTodos();
   const { loading: authLoading } = useAuth(); // If your auth context provides loading
+  
+
+  
+  
   
 
   // Show loader if any global data is loading
@@ -54,6 +60,7 @@ const App = () => {
         </Routes>
         <Footer />
       </Router>
+      <InstallPrompt />
     </div>
   );
 };

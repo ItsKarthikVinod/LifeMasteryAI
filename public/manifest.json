@@ -1,18 +1,38 @@
+
+
 {
- "name": "LifeMastery",
- "icons": [
-  
-  {
-   "src": "\/android-chrome-512x512.png",
-   "sizes": "512x512",
-   "type": "image\/png",
-   "density": "4.0"
-  },
-  {
-   "src": "\/android-chrome-192x192.png",
-   "sizes": "192x192",
-   "type": "image\/png",
-   "density": "4.0"
-  }
- ]
+  "short_name": "LifeMastery",
+  "name": "LifeMastery – Unlock Your True Potential",
+  "icons": [
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "density": "4.0"
+    },
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "density": "4.0"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "1170x2532",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#2e3a59",
+  "background_color": "#ffffff"
 }
