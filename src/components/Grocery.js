@@ -20,6 +20,7 @@ import {
   doc,
 } from "firebase/firestore";
 import { useAuth } from "../contexts/authContext"; // Import your auth context
+import GroceryAIModal from "./GroceryAIModal";
 
 // Debounce utility to avoid too many requests
 function debounce(fn, delay) {
@@ -37,6 +38,23 @@ const Grocery = () => {
   const [input, setInput] = useState("");
   const [showList, setShowList] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [aiOpen, setAiOpen] = useState(false);
+
+  const handleAddAIItems = async (items) => {
+    for (const name of items) {
+      const newItem = {
+        name,
+        available: false,
+        checked: false,
+        uid: user.uid,
+        createdAt: Date.now(),
+      };
+      try {
+        const docRef = await addDoc(collection(db, "grocery"), newItem);
+        setGroceries((prev) => [...prev, { ...newItem, id: docRef.id }]);
+      } catch {}
+    }
+  };
 
   const { theme } = useAuth(); // Assuming you have a useAuth hook to get the theme
   console.log("Current theme:", theme);
@@ -220,6 +238,66 @@ const Grocery = () => {
             <FaPlus /> Add
           </button>
         </form>
+        <button
+          onClick={() => setAiOpen(true)}
+          className={`
+    mb-4
+    flex items-center justify-center gap-2
+    font-bold shadow transition text-xs sm:text-sm
+    px-5 py-2
+    rounded-full
+    focus:outline-none
+    focus:ring-2 focus:ring-pink-400
+    group
+    ${
+      isDark
+        ? "bg-gradient-to-r from-purple-800 via-pink-700 to-pink-600 text-white"
+        : "bg-gradient-to-r from-purple-400 via-pink-400 to-pink-500 text-white"
+    }
+    hover:scale-105 hover:shadow-2xl hover:from-pink-500 hover:to-purple-500
+    duration-200
+  `}
+          style={{
+            letterSpacing: "0.02em",
+            boxShadow: isDark
+              ? "0 4px 24px 0 rgba(236, 72, 153, 0.15)"
+              : "0 4px 24px 0 rgba(168, 85, 247, 0.12)",
+          }}
+        >
+          <span
+            className={`
+      text-lg
+      animate-pulse
+      group-hover:animate-none
+      transition
+      ${
+        isDark
+          ? "text-pink-300 drop-shadow-[0_0_6px_rgba(236,72,153,0.4)]"
+          : "text-pink-200 drop-shadow-[0_0_6px_rgba(236,72,153,0.5)]"
+      }
+    `}
+            style={{ filter: "drop-shadow(0 0 6px #ec4899aa)" }}
+            role="img"
+            aria-label="ai"
+          >
+            🤖
+          </span>
+          <span
+            className={`
+      transition
+      group-hover:text-yellow-200
+      group-hover:drop-shadow-[0_0_8px_rgba(253,224,71,0.7)]
+    `}
+          >
+            AI Add from Recipe
+          </span>
+        </button>
+        <GroceryAIModal
+          open={aiOpen}
+          onClose={() => setAiOpen(false)}
+          onAddItems={handleAddAIItems}
+          existingItems={groceries.map((g) => g.name)}
+        />
         {/* Notion-style Table */}
         <div className="overflow-x-auto mb-5 w-full max-w-xl">
           <table className="min-w-full border-separate border-spacing-y-1 sm:border-spacing-y-2 text-xs sm:text-sm">
