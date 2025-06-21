@@ -1,4 +1,4 @@
-import React from 'react';
+import React,{useEffect} from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import HeroPage from './components/HeroPage';
@@ -22,6 +22,7 @@ import useGetTodos from "./hooks/useGetTodos";
 import Loader from './components/Loader'; // Assuming you have a Loader component
 import Grocery from "./components/Grocery";
 import InstallPrompt from './components/InstallPrompt'; // Assuming you have an InstallPrompt component
+import OneSignal from "react-onesignal";
 
 const App = () => {
   const { theme } = useAuth();
@@ -33,6 +34,22 @@ const App = () => {
   
 
   
+
+
+  useEffect(() => {
+    // Ensure this code runs only on the client side
+    if (typeof window !== 'undefined') {
+      OneSignal.init({
+        appId: '702b4e49-c8a5-4af7-8e99-ce0babb6706a',
+        // You can add other initialization options here
+        notifyButton: {
+          enable: true,
+        },
+        // Uncomment the below line to run on localhost. See: https://documentation.onesignal.com/docs/local-testing
+        allowLocalhostAsSecureOrigin: true
+      });
+    }
+  }, []);
   
   
 

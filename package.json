@@ -37,6 +37,7 @@
     "react-konva": "^18.2.10",
     "react-konva-utils": "^1.1.0",
     "react-modal": "^3.16.1",
+    "react-onesignal": "^3.2.3",
     "react-quill": "^2.0.0",
     "react-roulette": "^0.0.1",
     "react-router-dom": "^6.28.0",
