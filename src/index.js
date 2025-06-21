@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css'
 import 'animate.css';
-import * as serviceWorkerRegistration from "./serviceWorkerRegistration";
 import { AuthProvider } from './contexts/authContext';
 
 
