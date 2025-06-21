@@ -21,8 +21,7 @@ import useGetGoals from "./hooks/useGetGoals";
 import useGetTodos from "./hooks/useGetTodos";
 import Loader from './components/Loader'; // Assuming you have a Loader component
 import Grocery from "./components/Grocery";
-import InstallPrompt from './components/InstallPrompt'; // Assuming you have an InstallPrompt component
-import OneSignal from "react-onesignal";
+import InstallPrompt from './components/InstallPrompt'; 
 
 const App = () => {
   const { theme } = useAuth();
@@ -39,18 +38,27 @@ const App = () => {
   
 
   useEffect(() => {
-    window.OneSignal = window.OneSignal || [];
-    OneSignal.push(function () {
-      OneSignal.init({
-        appId: '702b4e49-c8a5-4af7-8e99-ce0babb6706a', // <-- Replace with your real App ID
-        serviceWorkerPath: "/service-worker.js", // Use your custom SW
-        serviceWorkerScope: "/", // Scope must match root
-        allowLocalhostAsSecureOrigin: true, // For local testing
-        notifyButton: {
-          enable: true, // Optional: OneSignal bell UI
-        },
+    // 1. Create and inject OneSignal SDK script tag
+    const script = document.createElement("script");
+    script.src = "https://cdn.onesignal.com/sdks/OneSignalSDK.js";
+    script.async = true;
+    document.body.appendChild(script);
+
+    // 2. Initialize OneSignal after script loads
+    script.onload = () => {
+      window.OneSignal = window.OneSignal || [];
+      window.OneSignal.push(function () {
+        window.OneSignal.init({
+          appId: "702b4e49-c8a5-4af7-8e99-ce0babb6706a", // ✅ Replace with your real App ID
+          serviceWorkerPath: "/service-worker.js", // ✅ Your custom PWA SW
+          serviceWorkerScope: "/", // Optional but best practice
+          allowLocalhostAsSecureOrigin: true, // For local testing
+          notifyButton: {
+            enable: true, // Optional: OneSignal bell icon UI
+          },
+        });
       });
-    });
+    };
   }, []);
   
   
