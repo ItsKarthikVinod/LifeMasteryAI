@@ -56,6 +56,11 @@ const Grocery = () => {
     }
   };
 
+  useEffect(() => {
+        // Scroll to the top of the page when the component is mounted
+        window.scrollTo(0, 0);
+      }, []);
+
   const { theme } = useAuth(); 
 
   const user = getAuth().currentUser;

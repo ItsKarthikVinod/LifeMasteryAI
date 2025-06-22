@@ -206,11 +206,16 @@ export default function Recipes() {
         : "bg-gradient-to-br from-teal-100 via-blue-100 to-white";
     const hovercolor = isDark
         ? "hover:bg-teal-800 rounded-lg transition hover:shadow-lg" 
-        : "hover:bg-teal-50 rounded-lg";
+    : "hover:bg-teal-50 rounded-lg";
+  
+  useEffect(() => {
+        // Scroll to the top of the page when the component is mounted
+        window.scrollTo(0, 0);
+      }, []);
 
   return (
     <div
-      className={`min-h-screen flex items-center justify-center ${pageBg} py-10 px-2`}
+      className={`min-h-screen flex items-center justify-center ${pageBg} py-10 px-2 mt-10 sm:mt-0`}
       style={{ minHeight: "100vh" }}
     >
       <div
