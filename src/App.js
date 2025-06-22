@@ -22,6 +22,7 @@ import useGetTodos from "./hooks/useGetTodos";
 import Loader from './components/Loader'; // Assuming you have a Loader component
 import Grocery from "./components/Grocery";
 import InstallPrompt from './components/InstallPrompt'; 
+import Recipes from './components/Recipes';
 
 const App = () => {
   const { theme } = useAuth();
@@ -84,6 +85,7 @@ const App = () => {
           <Route path="/whiteboard-gallery" element={<WhiteboardGallery />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/grocery" element={<Grocery />} />
+          <Route path="/recipes" element={<Recipes/>} />
         </Routes>
         <Footer />
       </Router>

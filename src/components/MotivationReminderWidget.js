@@ -4,7 +4,8 @@ import {
   FaDice,
   FaSyncAlt,
   FaImages,
-  FaShoppingCart
+  FaShoppingCart,
+  FaUtensils
   
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom"; // Add this import
@@ -30,6 +31,7 @@ const MotivationReminderWidget = ({ openRouletteModal }) => {
   const handleQuickWhiteBoard = () => navigate("/whiteboard");
   const handleQuickGallery = () => navigate("/whiteboard-gallery");
   const handleQuickGrocery = () => navigate("/grocery");
+  const handleQuickRecipes = () => navigate("/recipes");
   
 
   return (
@@ -123,13 +125,24 @@ const MotivationReminderWidget = ({ openRouletteModal }) => {
           <FaShoppingCart className="mb-0.5" /> Grocery
         </button>
         <button
+          onClick={handleQuickRecipes}
+          className={`flex flex-col items-center text-sm ${
+            theme === "dark"
+              ? "text-teal-300 hover:text-teal-100"
+              : "text-teal-700 hover:text-teal-900"
+          } `}
+          title="Food Recipes"
+        >
+          <FaUtensils className="mb-0.5" /> Recipes
+        </button>
+        <button
           onClick={handleQuickGallery}
           className={`flex flex-col items-center text-sm ${
             theme === "dark"
               ? "text-teal-300 hover:text-teal-100"
               : "text-teal-700 hover:text-teal-900"
           } `}
-          title="Quick Habit"
+          title="Whiteboard Gallery"
         >
           <FaImages className="mb-0.5" /> Gallery
         </button>
