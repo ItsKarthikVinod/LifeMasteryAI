@@ -18,12 +18,12 @@ const SettingsPage = () => {
     currentUser?.providerData?.[0]?.photoURL
       ? [currentUser?.providerData?.[0]?.photoURL]
       : ""),
-    "https://avatar.iran.liara.run/public/31",
-    "https://avatar.iran.liara.run/public/17",
-    "https://avatar.iran.liara.run/public/73",
-    "https://avatar.iran.liara.run/public/98",
-    "https://avatar.iran.liara.run/public/49",
-    "https://avatar.iran.liara.run/public/85",
+    "https://raw.githubusercontent.com/ItsKarthikVinod/lifemastery-assets/refs/heads/main/av-1.png",
+    "https://raw.githubusercontent.com/ItsKarthikVinod/lifemastery-assets/refs/heads/main/av-2.png",
+    "https://raw.githubusercontent.com/ItsKarthikVinod/lifemastery-assets/refs/heads/main/av-3.png",
+    "https://raw.githubusercontent.com/ItsKarthikVinod/lifemastery-assets/refs/heads/main/av-4.png",
+    "https://raw.githubusercontent.com/ItsKarthikVinod/lifemastery-assets/refs/heads/main/av-5.png",
+    
   ];
 
   const [displayName, setDisplayName] = useState(

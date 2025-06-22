@@ -163,9 +163,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
           if (isWorkSession) {
             const xpGained = workDuration; // 1 XP per minute
             awardXP(userId, xpGained); // Pass userId first, then xpGained// Call the function to award XP
-            console.log(
-              `Awarded ${xpGained} XP for completing a work session.`
-            );
+            
             toast.success(
               `+${xpGained} XP gained for completing a work session.`,
               {

@@ -1,27 +1,50 @@
-import { useState } from "react";
+import { useState, useRef} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/authContext";
 import { doSignOut } from "../firebase/auth";
 import Logo from "../assets/LifeMasteryLogo.png";
-import { FaRobot } from "react-icons/fa"; // Import AI icon
+import {
+  FaRobot,
+  FaUserCircle,
+  FaChevronDown,
+  FaChalkboard,
+  FaListAlt,
+  FaShoppingBasket,
+  FaCog,
+  FaSignOutAlt,
+} from "react-icons/fa";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { userLoggedIn = false } = useAuth(); // Safeguard against undefined value
+  const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const { userLoggedIn = false } = useAuth();
   const navigate = useNavigate();
 
+  // Dropdown refs for click outside
+  const toolsDropdownRef = useRef();
+  const userDropdownRef = useRef();
+  
   const handleSignOut = async () => {
+    const confirmed = window.confirm("Are you sure you want to log out?");
+    if (!confirmed) return;
     try {
-      setIsMenuOpen(false); // Close the menu if it's open
-      await doSignOut(); // Handle sign-out
-      navigate("/login"); // Navigate to login page after sign out
+      setIsMenuOpen(false);
+      setUserDropdownOpen(false);
+      await doSignOut();
+      navigate("/login");
     } catch (error) {
       console.error("Error signing out: ", error);
     }
   };
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
+  // Helper to close all dropdowns and menu
+  const closeAllMenus = () => {
+    setIsMenuOpen(false);
+    setToolsDropdownOpen(false);
+    setUserDropdownOpen(false);
   };
 
   return (
@@ -41,6 +64,7 @@ const Navbar = () => {
             <Link
               to="/"
               className="text-2xl font-extrabold bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 text-transparent bg-clip-text hover:from-green-300 hover:via-green-400 hover:to-green-500 transition-all duration-500 transform hover:scale-110 font-poppins sm:text-3xl md:text-4xl"
+              onClick={closeAllMenus}
             >
               Life Mastery
             </Link>
@@ -49,7 +73,6 @@ const Navbar = () => {
             <div className="relative flex items-center bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-gray-800 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 z-20">
               <FaRobot className="text-sm sm:text-base md:text-lg mr-1 sm:mr-2 animate-pulse" />
               <span className="text-xs sm:text-sm font-semibold">AI</span>
-
               {/* Sparkle Effects */}
               <div className="absolute -top-2 lg:right-1 -right-3  w-10 sm:w-12 h-10 sm:h-12">
                 <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-yellow-400 rounded-full animate-bounce-slow absolute top-2 left-6 sm:left-9 -z-10"></div>
@@ -59,57 +82,116 @@ const Navbar = () => {
           </div>
         </div>
 
-        <div className="hidden md:flex space-x-6">
+        {/* Desktop Nav */}
+        <div className="hidden md:flex space-x-8 items-center">
           <Link
             to="/"
             className="text-2xl hover:text-gray-300 transition-all duration-300 transform hover:scale-105"
-            onClick={() => setIsMenuOpen(false)}
+            onClick={closeAllMenus}
           >
             Home
           </Link>
-          {userLoggedIn ? (
+          {userLoggedIn && (
+            <Link
+              to="/dashboard"
+              className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
+              onClick={closeAllMenus}
+            >
+              Dashboard
+            </Link>
+          )}
+
+          {/* Tools Dropdown */}
+          <div className="relative" ref={toolsDropdownRef}>
+            <button
+              onClick={() => setToolsDropdownOpen((v) => !v)}
+              className="flex items-center text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105 focus:outline-none"
+              type="button"
+            >
+              Productivity
+              <FaChevronDown className="ml-1 text-base" />
+            </button>
+            {toolsDropdownOpen && (
+              <div className="absolute left-0 mt-2 w-52 bg-white text-gray-800 rounded-lg shadow-lg py-2 z-50">
+                <Link
+                  to="/whiteboard"
+                  className="flex items-center px-4 py-2 hover:bg-teal-100 transition"
+                  onClick={closeAllMenus}
+                >
+                  <FaChalkboard className="mr-2" /> Whiteboard
+                </Link>
+                <Link
+                  to="/recipes"
+                  className="flex items-center px-4 py-2 hover:bg-teal-100 transition"
+                  onClick={closeAllMenus}
+                >
+                  <FaListAlt className="mr-2" /> Recipes
+                </Link>
+                <Link
+                  to="/grocery"
+                  className="flex items-center px-4 py-2 hover:bg-teal-100 transition"
+                  onClick={closeAllMenus}
+                >
+                  <FaShoppingBasket className="mr-2" /> Grocery List
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Community Tab */}
+          <Link
+            to="/community"
+            className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
+            onClick={closeAllMenus}
+          >
+            Community
+          </Link>
+
+          {userLoggedIn && (
             <>
-              <Link
-                to="/dashboard"
-                className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="/community"
-                className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Community
-              </Link>
-              <Link
-                to="/settings"
-                className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Settings
-              </Link>
-              <button
-                onClick={handleSignOut}
-                className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
-              >
-                Logout
-              </button>
+              {/* User Dropdown */}
+              <div className="relative" ref={userDropdownRef}>
+                <button
+                  onClick={() => setUserDropdownOpen((v) => !v)}
+                  className="flex items-center text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105 focus:outline-none"
+                  type="button"
+                >
+                  <FaUserCircle className="text-3xl mr-1" />
+                  <FaChevronDown className="ml-1 text-base" />
+                </button>
+                {userDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-44 bg-white text-gray-800 rounded-lg shadow-lg py-2 z-50">
+                    <Link
+                      to="/settings"
+                      className="flex items-center px-4 py-2 hover:bg-teal-100 transition"
+                      onClick={closeAllMenus}
+                    >
+                      <FaCog className="mr-2" /> Settings
+                    </Link>
+                    <button
+                      onClick={handleSignOut}
+                      className="flex items-center w-full px-4 py-2 hover:bg-teal-100 transition text-left"
+                    >
+                      <FaSignOutAlt className="mr-2" /> Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
-          ) : (
+          )}
+          {!userLoggedIn && (
             <>
               <Link
                 to="/login"
                 className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
-                onClick={() => setIsMenuOpen(false)}
+                onClick={closeAllMenus}
               >
                 Login
               </Link>
               <Link
                 to="/register"
                 className="text-2xl hover:text-teal-400 transition-all duration-300 transform hover:scale-105"
-                onClick={() => setIsMenuOpen(false)}
+                onClick={closeAllMenus}
               >
                 Register
               </Link>
@@ -123,6 +205,7 @@ const Navbar = () => {
             onClick={toggleMenu}
             className="text-white hover:text-teal-400 focus:outline-none"
             aria-label="Toggle Menu"
+            type="button"
           >
             <svg
               className="w-6 h-6"
@@ -148,56 +231,113 @@ const Navbar = () => {
           isMenuOpen ? "block" : "hidden"
         }`}
       >
+        <Link
+          to="/"
+          className="text-lg text-center hover:text-teal-400"
+          onClick={closeAllMenus}
+        >
+          Home
+        </Link>
+        {userLoggedIn && (
+          <Link
+            to="/dashboard"
+            className="text-lg text-center hover:text-teal-400"
+            onClick={closeAllMenus}
+          >
+            Dashboard
+          </Link>
+        )}
+        {/* Tools Dropdown for mobile */}
+        <div className="relative" ref={toolsDropdownRef}>
+          <button
+            onClick={() => setToolsDropdownOpen((v) => !v)}
+            className="flex items-center justify-center w-full text-lg hover:text-teal-400 transition focus:outline-none"
+            type="button"
+          >
+            Productivity
+            <FaChevronDown className="ml-1 text-base" />
+          </button>
+          {toolsDropdownOpen && (
+            <div className="w-full bg-white text-gray-800 rounded-lg shadow-lg py-2 mt-1 z-50">
+              <Link
+                to="/whiteboard"
+                className="flex items-center px-4 py-2 hover:bg-teal-100 transition"
+                onClick={closeAllMenus}
+              >
+                <FaChalkboard className="mr-2" /> Whiteboard
+              </Link>
+              <Link
+                to="/recipes"
+                className="flex items-center px-4 py-2 hover:bg-teal-100 transition"
+                onClick={closeAllMenus}
+              >
+                <FaListAlt className="mr-2" /> Recipes
+              </Link>
+              <Link
+                to="/grocery"
+                className="flex items-center px-4 py-2 hover:bg-teal-100 transition"
+                onClick={closeAllMenus}
+              >
+                <FaShoppingBasket className="mr-2" /> Grocery List
+              </Link>
+            </div>
+          )}
+        </div>
+        {/* Community Tab for mobile */}
+        <Link
+          to="/community"
+          className="text-lg text-center hover:text-teal-400"
+          onClick={closeAllMenus}
+        >
+          Community
+        </Link>
         {userLoggedIn ? (
           <>
-            <Link
-              to="/"
-              className="text-lg text-center hover:text-teal-400"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              to="/dashboard"
-              className="text-lg text-center hover:text-teal-400"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Dashboard
-            </Link>
-            <Link
-              to="/community"
-              className="text-lg text-center hover:text-teal-400"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Community
-            </Link>
-            <Link
-              to="/settings"
-              className="text-lg text-center hover:text-teal-400"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Settings
-            </Link>
-            <button
-              onClick={handleSignOut}
-              className="text-lg text-center hover:text-teal-400"
-            >
-              Logout
-            </button>
+            {/* User Dropdown for mobile */}
+            <div className="relative" ref={userDropdownRef}>
+              <button
+                onClick={() => setUserDropdownOpen((v) => !v)}
+                className="flex items-center justify-center w-full text-lg hover:text-teal-400 transition focus:outline-none"
+                type="button"
+              >
+                <FaUserCircle className="text-2xl mr-1" />
+                <FaChevronDown className="ml-1 text-base" />
+              </button>
+              {userDropdownOpen && (
+                <div className="w-full bg-white text-gray-800 rounded-lg shadow-lg py-2 mt-1 z-50">
+                  <Link
+                    to="/settings"
+                    className="flex items-center px-4 py-2 hover:bg-teal-100 transition"
+                    onClick={closeAllMenus}
+                  >
+                    <FaCog className="mr-2" /> Settings
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleSignOut();
+                      closeAllMenus();
+                    }}
+                    className="flex items-center w-full px-4 py-2 hover:bg-teal-100 transition text-left"
+                  >
+                    <FaSignOutAlt className="mr-2" /> Logout
+                  </button>
+                </div>
+              )}
+            </div>
           </>
         ) : (
           <>
             <Link
               to="/login"
               className="text-lg text-center hover:text-teal-400"
-              onClick={() => setIsMenuOpen(false)}
+              onClick={closeAllMenus}
             >
               Login
             </Link>
             <Link
               to="/register"
               className="text-lg text-center hover:text-teal-400"
-              onClick={() => setIsMenuOpen(false)}
+              onClick={closeAllMenus}
             >
               Register
             </Link>
@@ -207,5 +347,4 @@ const Navbar = () => {
     </nav>
   );
 };
-
 export default Navbar;

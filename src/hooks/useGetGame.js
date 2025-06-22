@@ -31,9 +31,6 @@ function useGetGame() {
       totalXP += points;
       remainingXP -= points;
 
-      console.log(
-        `Current XP: ${totalXP}, Level: ${level}, Remaining XP: ${remainingXP}`
-      );
 
       // Check if the user levels up
       while (remainingXP <= 0) {
@@ -55,7 +52,6 @@ function useGetGame() {
         userId,
       });
 
-      console.log(`Awarded ${points} XP to user: ${userId}`);
     } catch (error) {
       console.error("Error awarding XP:", error);
     }
@@ -84,9 +80,7 @@ function useGetGame() {
         if (docSnapshot.exists()) {
           setGamificationData(docSnapshot.data());
         } else {
-          console.log(
-            "Gamification data not found. Creating a new document..."
-          );
+          
           await setDoc(gamificationRef, {
             totalXP: 0,
             level: 1,

@@ -56,8 +56,7 @@ const Grocery = () => {
     }
   };
 
-  const { theme } = useAuth(); // Assuming you have a useAuth hook to get the theme
-  console.log("Current theme:", theme);
+  const { theme } = useAuth(); 
 
   const user = getAuth().currentUser;
 
