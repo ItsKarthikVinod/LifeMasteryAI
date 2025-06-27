@@ -35,7 +35,7 @@ export default function RecipeSharePage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-yellow-100 via-pink-100 to-orange-100 py-10 px-2">
-      <div className="max-w-xl w-full bg-white rounded-3xl shadow-2xl p-8 border-4 border-yellow-300 relative">
+      <div className="max-w-xl w-full mt-32 bg-white rounded-3xl shadow-2xl p-8 border-4 border-yellow-300 relative">
         <div className="absolute -top-[4rem] left-1/2 -translate-x-1/2">
           <img
             src={ChefHat}
