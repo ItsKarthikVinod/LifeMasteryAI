@@ -16,6 +16,7 @@ import { saveWhiteboard } from "../ulits/galleryDB";
 import { toast } from "react-toastify";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Link } from "react-router-dom";
   
 
 const WhiteBoard = () => {
@@ -322,7 +323,23 @@ const WhiteBoard = () => {
     window.addEventListener("keydown", handleDelete);
     return () => window.removeEventListener("keydown", handleDelete);
   }, [selectedId, lines, shapes, textItems, images, handleDelete]);
-
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
+        <div className="bg-white rounded-xl shadow-lg p-8 mt-24 flex flex-col items-center">
+          <h2 className="text-2xl font-bold mb-4 text-teal-700">
+            Please sign in to use the Whiteboard
+          </h2>
+          <Link
+            to="/login"
+            className="px-6 py-2 bg-teal-600 text-white rounded-lg font-semibold shadow hover:bg-teal-700 transition"
+          >
+            Go to Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="p-7 bg-gray-100 mt-24 rounded-lg shadow-md">
       <ToastContainer />

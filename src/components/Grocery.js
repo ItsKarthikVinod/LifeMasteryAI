@@ -21,6 +21,7 @@ import {
 } from "firebase/firestore";
 import { useAuth } from "../contexts/authContext"; // Import your auth context
 import GroceryAIModal from "./GroceryAIModal";
+import { Link } from "react-router-dom";
 
 // Debounce utility to avoid too many requests
 function debounce(fn, delay) {
@@ -200,9 +201,15 @@ const Grocery = () => {
         className={`min-h-screen flex items-center justify-center ${bgMain}`}
       >
         <div
-          className={`${cardBg} ${cardShadow} rounded-2xl p-8 sm:p-10 text-center text-base sm:text-lg ${textMain} font-bold`}
+          className={`${cardBg} ${cardShadow} rounded-2xl p-8 sm:p-10 text-center text-base sm:text-lg ${textMain} font-bold flex flex-col items-center gap-4`}
         >
           Please sign in to use the Grocery feature.
+          <Link
+            to="/login"
+            className="px-6 py-2 bg-teal-600 text-white rounded-lg font-semibold shadow hover:bg-teal-700 transition"
+          >
+            Go to Login
+          </Link>
         </div>
       </div>
     );

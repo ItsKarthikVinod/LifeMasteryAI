@@ -16,6 +16,7 @@ import Modal from "react-modal";
 import { useAuth } from "../contexts/authContext";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css"; // Import Quill's default theme
+import { Link } from "react-router-dom";
 
 Modal.setAppElement("#root");
 
@@ -179,6 +180,42 @@ const CommunityPage = () => {
   };
 
   const isAdmin = (userEmail) => userEmail === adminEmail;
+
+  if (!currentUser) {
+    return (
+      <div
+        className={`min-h-screen flex flex-col items-center justify-center ${
+          theme === "dark"
+            ? "bg-gradient-to-r from-teal-900 to-blue-900"
+            : "bg-gradient-to-r from-teal-400 to-blue-500"
+        }`}
+      >
+        <div
+          className={`rounded-xl shadow-lg p-8 mt-24 flex flex-col items-center ${
+            theme === "dark" ? "bg-gray-800" : "bg-white"
+          }`}
+        >
+          <h2
+            className={`text-2xl font-bold mb-4 ${
+              theme === "dark" ? "text-teal-400" : "text-teal-700"
+            }`}
+          >
+            Please sign in to access the Community Forum
+          </h2>
+          <Link
+            to="/login"
+            className={`px-6 py-2 rounded-lg font-semibold shadow transition ${
+              theme === "dark"
+                ? "bg-teal-600 text-white hover:bg-teal-500"
+                : "bg-teal-600 text-white hover:bg-teal-700"
+            }`}
+          >
+            Go to Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

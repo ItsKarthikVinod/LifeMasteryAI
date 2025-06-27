@@ -23,6 +23,8 @@ import Loader from './components/Loader'; // Assuming you have a Loader componen
 import Grocery from "./components/Grocery";
 import InstallPrompt from './components/InstallPrompt'; 
 import Recipes from './components/Recipes';
+import Planner from './components/Planner';
+import RecipeSharePage from './components/RecipeSharePage'; // Import your recipe share page
 
 const App = () => {
   const { theme } = useAuth();
@@ -85,7 +87,9 @@ const App = () => {
           <Route path="/whiteboard-gallery" element={<WhiteboardGallery />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/grocery" element={<Grocery />} />
-          <Route path="/recipes" element={<Recipes/>} />
+          <Route path="/recipes" element={<Recipes />} />
+          <Route path="/planner" element={<Planner />} />
+          <Route path="/recipes/share/:id" element={<RecipeSharePage />} />
         </Routes>
         <Footer />
       </Router>

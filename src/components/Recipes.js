@@ -19,17 +19,17 @@ import {
   FaList,
   FaThLarge,
   FaBan,
+  FaShareAlt,
 } from "react-icons/fa";
-
 import { useAuth } from "../contexts/authContext";
 import { getAuth } from "firebase/auth";
 import stringSimilarity from "string-similarity";
+import { Link } from "react-router-dom";
 
 function areAllIngredientsAvailable(recipeIngredients, groceries) {
   const groceryNames = groceries.map((g) => g.name.trim().toLowerCase());
   return recipeIngredients.every((ing) => {
     const ingNorm = ing.trim().toLowerCase();
-    // Use string-similarity to check if any grocery name is similar enough
     return groceryNames.some(
       (g) => stringSimilarity.compareTwoStrings(ingNorm, g) > 0.6
     );
@@ -40,17 +40,15 @@ const initialForm = { name: "", link: "", ingredients: "" };
 
 export default function Recipes() {
   const [recipes, setRecipes] = useState([]);
-  const [viewMode, setViewMode] = useState("card"); // "card" or "list"
+  const [viewMode, setViewMode] = useState("card");
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
   const [editId, setEditId] = useState(null);
-    const [error, setError] = useState("");
-  const { theme } = useAuth(); // Get the theme from context
+  const { theme } = useAuth();
   const [groceries, setGroceries] = useState([]);
-  const user = getAuth().currentUser; 
+  const user = getAuth().currentUser;
 
-  // Fetch recipes from Firestore
   useEffect(() => {
     if (!user) return;
     const fetchRecipes = async () => {
@@ -58,7 +56,7 @@ export default function Recipes() {
       try {
         const q = query(
           collection(db, "recipes"),
-          where("uid", "==", user.uid),
+          where("uid", "==", user.uid)
         );
         const snapshot = await getDocs(q);
         setRecipes(
@@ -68,7 +66,8 @@ export default function Recipes() {
           }))
         );
       } catch (err) {
-        setError("Failed to fetch recipes.");
+        console.error("Error fetching recipes:", err);
+        // Optionally handle error
       }
       setLoading(false);
     };
@@ -82,7 +81,7 @@ export default function Recipes() {
         const q = query(
           collection(db, "grocery"),
           where("uid", "==", user.uid),
-          where('available', '==', true),
+          where("available", "==", true)
         );
         const snapshot = await getDocs(q);
         setGroceries(
@@ -98,23 +97,19 @@ export default function Recipes() {
     fetchGroceries();
   }, [user]);
 
-  // Add or update recipe
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
     const ingredientsArr = form.ingredients
       .split(",")
       .map((i) => i.trim())
       .filter((i) => i);
     if (!form.name || !form.link) {
-      setError("Name and link are required.");
       setLoading(false);
       return;
     }
     try {
       if (editId) {
-        // Update
         await updateDoc(doc(db, "recipes", editId), {
           name: form.name,
           link: form.link,
@@ -133,7 +128,6 @@ export default function Recipes() {
           )
         );
       } else {
-        // Add
         const docRef = await addDoc(collection(db, "recipes"), {
           name: form.name,
           link: form.link,
@@ -155,12 +149,10 @@ export default function Recipes() {
       setForm(initialForm);
       setEditId(null);
     } catch (err) {
-      setError("Failed to save recipe.");
     }
     setLoading(false);
   };
 
-  // Delete recipe
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this recipe?")) return;
     setLoading(true);
@@ -168,12 +160,10 @@ export default function Recipes() {
       await deleteDoc(doc(db, "recipes", id));
       setRecipes((prev) => prev.filter((r) => r.id !== id));
     } catch {
-      setError("Failed to delete recipe.");
     }
     setLoading(false);
   };
 
-  // Open modal for edit
   const handleEdit = (recipe) => {
     setForm({
       name: recipe.name,
@@ -183,9 +173,8 @@ export default function Recipes() {
     setEditId(recipe.id);
     setModalOpen(true);
   };
-  console.log(error)
 
-  // Theme classes
+  // THEME
   const isDark = theme === "dark";
   const cardBg = isDark ? "bg-gray-900" : "bg-white";
   const cardText = isDark ? "text-teal-100" : "text-teal-900";
@@ -203,15 +192,34 @@ export default function Recipes() {
     : "bg-gray-300 hover:bg-gray-400 text-teal-900";
   const pageBg = isDark
     ? "bg-gradient-to-br from-gray-900 via-teal-900 to-blue-900"
-        : "bg-gradient-to-br from-teal-100 via-blue-100 to-white";
-    const hovercolor = isDark
-        ? "hover:bg-teal-800 rounded-lg transition hover:shadow-lg" 
+    : "bg-gradient-to-br from-teal-100 via-blue-100 to-white";
+  const hovercolor = isDark
+    ? "hover:bg-teal-800 rounded-lg transition hover:shadow-lg"
     : "hover:bg-teal-50 rounded-lg";
-  
+
   useEffect(() => {
-        // Scroll to the top of the page when the component is mounted
-        window.scrollTo(0, 0);
-      }, []);
+    window.scrollTo(0, 0);
+  }, []);
+
+  const websiteUrl = window.location.origin;
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
+        <div className="bg-white rounded-xl shadow-lg p-8 mt-24 flex flex-col items-center">
+          <h2 className="text-2xl font-bold mb-4 text-teal-700">
+            Please sign in to view your recipes
+          </h2>
+          <Link
+            to="/login"
+            className="px-6 py-2 bg-teal-600 text-white rounded-lg font-semibold shadow hover:bg-teal-700 transition"
+          >
+            Go to Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -329,10 +337,8 @@ export default function Recipes() {
                   disabled={loading || !form.ingredients}
                   onClick={async () => {
                     setLoading(true);
-                    setError("");
                     try {
-                      // Call Cohere API directly (NOT RECOMMENDED for production)
-                      const cohereApiKey = process.env.REACT_APP_COHERE_API_KEY; // Replace with your key for testing only!
+                      const cohereApiKey = process.env.REACT_APP_COHERE_API_KEY;
                       const prompt = `Extract a list of ingredients from this recipe text:\n${form.ingredients}\nOnly return a comma-separated list of ingredients.`;
                       const res = await fetch(
                         "https://api.cohere.ai/v1/generate",
@@ -361,10 +367,8 @@ export default function Recipes() {
                           ingredients: aiIngredients.join(", "),
                         }));
                       } else {
-                        setError("AI could not extract ingredients.");
                       }
                     } catch (err) {
-                      setError("AI extraction failed.");
                     }
                     setLoading(false);
                   }}
@@ -386,7 +390,6 @@ export default function Recipes() {
                       setModalOpen(false);
                       setForm(initialForm);
                       setEditId(null);
-                      setError("");
                     }}
                     disabled={loading}
                   >
@@ -417,6 +420,7 @@ export default function Recipes() {
                 const allAvailable =
                   hasIngredients &&
                   areAllIngredientsAvailable(recipe.ingredients, groceries);
+                const shareUrl = `${websiteUrl}/recipes/share/${recipe.id}`;
                 return (
                   <div
                     key={recipe.id}
@@ -479,7 +483,7 @@ export default function Recipes() {
                         </div>
                       )}
                     </div>
-                    <div className="flex gap-2 mt-4">
+                    <div className="flex gap-2 mt-4 flex-wrap">
                       <button
                         onClick={() => handleEdit(recipe)}
                         className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1 ${btnSecondary} hover:scale-105 transition`}
@@ -493,6 +497,24 @@ export default function Recipes() {
                         title="Delete"
                       >
                         <FaTrash /> Delete
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (navigator.share) {
+                            await navigator.share({
+                              title: `Recipe: ${recipe.name}`,
+                              text: `Check out this recipe on LifeMastery!`,
+                              url: shareUrl,
+                            });
+                          } else {
+                            await navigator.clipboard.writeText(shareUrl);
+                            alert("Shareable link copied to clipboard!");
+                          }
+                        }}
+                        className="px-3 py-1 rounded-lg font-bold flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-pink-400 text-white hover:from-yellow-500 hover:to-pink-500 hover:scale-105 transition shadow"
+                        title="Share"
+                      >
+                        <FaShareAlt /> Share
                       </button>
                     </div>
                   </div>
@@ -539,16 +561,15 @@ export default function Recipes() {
                     const allAvailable =
                       hasIngredients &&
                       areAllIngredientsAvailable(recipe.ingredients, groceries);
+                    const shareUrl = `${websiteUrl}/recipes/share/${recipe.id}`;
                     return (
                       <tr
                         key={recipe.id}
                         className={`rounded-xl transition ${hovercolor} border ${borderColor} hover:shadow-lg align-top`}
                       >
-                        {/* Serial Number */}
                         <td className="text-center font-bold py-4 px-4 align-middle hidden sm:table-cell">
                           {idx + 1}
                         </td>
-                        {/* Name */}
                         <td className=" font-semibold text-base align-middle hidden sm:table-cell max-w-xs">
                           <span className="flex items-center gap-2">
                             <span className="break-words whitespace-normal">
@@ -556,7 +577,6 @@ export default function Recipes() {
                             </span>
                           </span>
                         </td>
-                        {/* Link */}
                         <td className="py-4 px-4 align-middle hidden sm:table-cell max-w-xs">
                           <a
                             href={recipe.link}
@@ -570,7 +590,6 @@ export default function Recipes() {
                               : recipe.link}
                           </a>
                         </td>
-                        {/* Ingredients */}
                         <td className="py-4 px-4 max-w-xs align-middle hidden sm:table-cell">
                           <div className="max-h-20 overflow-y-auto text-sm space-y-1">
                             {hasIngredients ? (
@@ -612,7 +631,6 @@ export default function Recipes() {
                             )}
                           </div>
                         </td>
-                        {/* Status */}
                         <td className="py-4 px-4 text-center align-middle hidden sm:table-cell">
                           {hasIngredients && allAvailable ? (
                             <span
@@ -633,7 +651,6 @@ export default function Recipes() {
                             </span>
                           )}
                         </td>
-                        {/* Actions */}
                         <td className="py-4 px-4 text-center align-middle hidden sm:table-cell">
                           <div className="flex gap-3 justify-center flex-col">
                             <button
@@ -651,6 +668,25 @@ export default function Recipes() {
                             >
                               <FaTrash />
                               <span className="hidden sm:inline">Delete</span>
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (navigator.share) {
+                                  await navigator.share({
+                                    title: `Recipe: ${recipe.name}`,
+                                    text: `Check out this recipe on LifeMastery!`,
+                                    url: shareUrl,
+                                  });
+                                } else {
+                                  await navigator.clipboard.writeText(shareUrl);
+                                  alert("Shareable link copied to clipboard!");
+                                }
+                              }}
+                              className="px-3 py-1 rounded-lg font-bold flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-pink-400 text-white hover:from-yellow-500 hover:to-pink-500 hover:scale-105 transition shadow"
+                              title="Share"
+                            >
+                              <FaShareAlt />
+                              <span className="hidden sm:inline">Share</span>
                             </button>
                           </div>
                         </td>

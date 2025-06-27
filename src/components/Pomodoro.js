@@ -176,6 +176,28 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
                 progress: undefined,
               }
             );
+
+            if ("Notification" in window) {
+              if (Notification.permission === "granted") {
+                new Notification("Pomodoro Complete!", {
+                  body: `Great job! You finished your work session: "${
+                    title || "Session"
+                  }". Time for a break!`,
+                  icon: "/android-chrome-512x512.png", // Use your app icon or a bell icon
+                });
+              } else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then((permission) => {
+                  if (permission === "granted") {
+                    new Notification("Pomodoro Complete!", {
+                      body: `Great job! You finished your work session: "${
+                        title || "Session"
+                      }". Time for a break!`,
+                      icon: "/android-chrome-512x512.png",
+                    });
+                  }
+                });
+              }
+            }
             // Switch to Break Time
             setMinutes(breakDuration);
             setSeconds(0);
