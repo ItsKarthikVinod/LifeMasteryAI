@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../contexts/authContext";
 import { useNavigate } from "react-router-dom";
+import { db } from "../firebase/firebase";
 import {
-  getAllWhiteboards,
-  deleteWhiteboard,
-  updateWhiteboard,
-} from "../ulits/galleryDB";
+  collection,
+  query,
+  where,
+  getDocs,
+  deleteDoc,
+  doc,
+  updateDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 import { toPng } from "html-to-image";
 
 const PencilIcon = ({ className = "w-5 h-5" }) => (
@@ -51,11 +57,32 @@ const WhiteboardGallery = () => {
   // For export as PNG from gallery card
   const cardExportRefs = useRef({});
 
+  // Fetch gallery from Firestore
   useEffect(() => {
-    if (currentUser) {
-      getAllWhiteboards(currentUser.uid).then(setGalleryState);
-    }
-    // eslint-disable-next-line
+    if (!currentUser) return;
+    const fetchGallery = async () => {
+      const q = query(
+        collection(db, "whiteboard_galleries"),
+        where("userId", "==", currentUser.uid)
+      );
+      const snapshot = await getDocs(q);
+      setGalleryState(
+        snapshot.docs.map((doc) => {
+          const data = doc.data();
+          // Convert Firestore Timestamp to JS Date for display
+          let createdAt = "";
+          if (data.createdAt && data.createdAt.toDate) {
+            createdAt = data.createdAt.toDate();
+          } else if (typeof data.createdAt === "number") {
+            createdAt = new Date(data.createdAt);
+          } else {
+            createdAt = "";
+          }
+          return { id: doc.id, ...data, createdAt };
+        })
+      );
+    };
+    fetchGallery();
   }, [currentUser]);
 
   if (!currentUser)
@@ -65,18 +92,21 @@ const WhiteboardGallery = () => {
       </div>
     );
 
-  // Delete a whiteboard
+  // Delete a whiteboard from Firestore and update state
   const handleDelete = async (id) => {
-    await deleteWhiteboard(currentUser.uid, id);
+    await deleteDoc(doc(db, "whiteboard_galleries", id));
     setGalleryState((prev) => prev.filter((item) => item.id !== id));
     setModalImg(null);
     setEditingId(null);
   };
 
-  // Rename a whiteboard
+  // Rename a whiteboard in Firestore and update state
   const handleRename = async (id, newTitle) => {
     if (newTitle && newTitle.trim()) {
-      await updateWhiteboard(currentUser.uid, id, { title: newTitle.trim() });
+      await updateDoc(doc(db, "whiteboard_galleries", id), {
+        title: newTitle.trim(),
+        updatedAt: serverTimestamp(),
+      });
       setGalleryState((prev) =>
         prev.map((item) =>
           item.id === id ? { ...item, title: newTitle.trim() } : item
@@ -88,8 +118,7 @@ const WhiteboardGallery = () => {
     }
   };
 
-  // ...existing code...
-
+  // Export as PNG from card
   const handleCardExport = async (item) => {
     try {
       // Create an image element
@@ -113,17 +142,20 @@ const WhiteboardGallery = () => {
         ctx.drawImage(img, 0, 0);
 
         // Export as PNG
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const link = document.createElement("a");
-            link.download = `${item.title  || "whiteboard"}-LifeMastery.png`;
-            link.href = URL.createObjectURL(blob);
-            link.click();
-            URL.revokeObjectURL(link.href);
-          } else {
-            alert("Failed to export image.");
-          }
-        }, "image/png");
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const link = document.createElement("a");
+              link.download = `${item.title || "whiteboard"}-LifeMastery.png`;
+              link.href = URL.createObjectURL(blob);
+              link.click();
+              URL.revokeObjectURL(link.href);
+            } else {
+              alert("Failed to export image.");
+            }
+          },
+          "image/png"
+        );
       };
 
       img.onerror = () => {
@@ -133,7 +165,6 @@ const WhiteboardGallery = () => {
       alert("Failed to export image.");
     }
   };
-  // ...existing code...
 
   // Theme classes
   const isDark = theme === "dark";
@@ -530,7 +561,9 @@ const WhiteboardGallery = () => {
               )}
             </div>
             <div className={`text-sm text-center mb-2 ${textSecondary}`}>
-              {new Date(item.createdAt).toLocaleString()}
+              {item.createdAt
+                ? new Date(item.createdAt).toLocaleString()
+                : ""}
             </div>
             <span
               className={`absolute bottom-0 right-1 text-xs px-3 py-1 rounded font-medium shadow ${badgeBg}`}
@@ -582,6 +615,5 @@ const WhiteboardGallery = () => {
       )}
     </div>
   );
-};
-
+}
 export default WhiteboardGallery;

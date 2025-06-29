@@ -182,7 +182,7 @@ const TodoList = ({ onTriggerPomodoro }) => {
         {todoss.map((todo) => (
           <li
             key={todo.id}
-            className={`flex items-center p-3 rounded-md shadow-md ${
+            className={`flex flex-wrap items-center p-3 rounded-md shadow-md ${
               todo.isCompleted
                 ? theme === "dark"
                   ? "bg-teal-800 text-gray-400 line-through"
@@ -202,20 +202,21 @@ const TodoList = ({ onTriggerPomodoro }) => {
               }`}
             />
             <span
-              className={`flex-grow cursor-pointer ${
+              className={`flex-grow cursor-pointer min-w-0 break-words ${
                 todo.isCompleted
                   ? theme === "dark"
                     ? "line-through text-gray-400"
                     : "line-through text-gray-500"
                   : ""
               }`}
+              style={{ wordBreak: "break-word" }}
             >
               {editId === todo.id ? (
                 <input
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className={`border p-2 rounded mr-2 focus:outline-none focus:ring-2 ${
+                  className={`border p-2 rounded mr-2 focus:outline-none focus:ring-2 w-full sm:w-auto ${
                     theme === "dark"
                       ? "bg-gray-700 border-gray-600 text-gray-200 focus:ring-teal-500"
                       : "bg-white border-gray-300 text-gray-800 focus:ring-teal-400"
@@ -226,7 +227,7 @@ const TodoList = ({ onTriggerPomodoro }) => {
               )}
             </span>
 
-            <div className="flex space-x-2">
+            <div className="flex flex-wrap gap-2 mt-2 sm:mt-0 sm:ml-2">
               {editId === todo.id ? (
                 <button
                   onClick={saveEdit}

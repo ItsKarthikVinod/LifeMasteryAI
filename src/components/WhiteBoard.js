@@ -12,11 +12,12 @@ import {
 import useImage from "use-image";
 import { useAuth } from "../contexts/authContext";
 import GoToGalleryButton from "./GoToGalleryOption";
-import { saveWhiteboard } from "../ulits/galleryDB";
 import { toast } from "react-toastify";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Link } from "react-router-dom";
+import { db } from "../firebase/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
   
 
 const WhiteBoard = () => {
@@ -97,17 +98,35 @@ const WhiteBoard = () => {
   // ...inside your WhiteBoard component
   
 
+  const CLOUDINARY_UPLOAD_PRESET = "gallery"; // Replace with your preset
+  const CLOUDINARY_CLOUD_NAME = "dovnydco5"; // Replace with your cloud name
+
   const handleSaveToGallery = async (dataUrl, bgColor) => {
     if (!currentUser) return;
-    const item = {
-      id: `whiteboard_${Date.now()}`,
-      url: dataUrl,
+
+    // Upload to Cloudinary
+    const formData = new FormData();
+    formData.append("file", dataUrl);
+    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+    const data = await res.json();
+
+    // Save metadata to Firestore
+    await addDoc(collection(db, "whiteboard_galleries"), {
+      userId: currentUser.uid,
+      url: data.secure_url,
       title: "Untitled",
-      createdAt: Date.now(),
+      createdAt: serverTimestamp(),
       bgColor,
-    };
-    await saveWhiteboard(currentUser.uid, item);
-    // Optionally show a toast or notification
+    });
+
     alert("Whiteboard saved to gallery!");
   };
 

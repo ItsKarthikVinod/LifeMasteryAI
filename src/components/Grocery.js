@@ -22,6 +22,8 @@ import {
 import { useAuth } from "../contexts/authContext"; // Import your auth context
 import GroceryAIModal from "./GroceryAIModal";
 import { Link } from "react-router-dom";
+import {  writeBatch } from "firebase/firestore"; // Add this import
+
 
 // Debounce utility to avoid too many requests
 function debounce(fn, delay) {
@@ -54,6 +56,32 @@ const Grocery = () => {
         const docRef = await addDoc(collection(db, "grocery"), newItem);
         setGroceries((prev) => [...prev, { ...newItem, id: docRef.id }]);
       } catch {}
+    }
+  };
+
+  const handleShoppingCompleted = async () => {
+    const checkedItems = groceries.filter((g) => g.checked && !g.available);
+    if (checkedItems.length === 0) {
+      alert("No checked items to mark as available!");
+      return;
+    }
+    try {
+      const batch = writeBatch(db);
+      checkedItems.forEach((item) => {
+        const ref = doc(db, "grocery", item.id);
+        batch.update(ref, { available: true, checked: false });
+      });
+      await batch.commit();
+      setGroceries((prev) =>
+        prev.map((g) =>
+          checkedItems.some((item) => item.id === g.id)
+            ? { ...g, available: true, checked: false }
+            : g
+        )
+      );
+      alert("Checked items marked as available!");
+    } catch (err) {
+      alert("Failed to update items.");
     }
   };
 
@@ -419,6 +447,7 @@ const Grocery = () => {
               </span>
               Grocery List
             </h2>
+
             <ul className="space-y-2 sm:space-y-3">
               {groceries.filter((g) => !g.available).length === 0 && (
                 <li className={`italic ${textSecondary} text-xs sm:text-base`}>
@@ -448,6 +477,17 @@ const Grocery = () => {
                   </li>
                 ))}
             </ul>
+            <button
+              onClick={handleShoppingCompleted}
+              className={`mt-4 font-bold shadow transition text-xs sm:text-sm px-4 py-2 rounded-lg
+                ${
+                  isDark
+                    ? "bg-teal-700 hover:bg-teal-800 text-teal-100"
+                    : "bg-teal-500 hover:bg-teal-600 text-white"
+                }`}
+            >
+              Shopping Completed
+            </button>
           </div>
         )}
       </div>
