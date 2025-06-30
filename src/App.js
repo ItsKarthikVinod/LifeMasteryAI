@@ -25,6 +25,8 @@ import InstallPrompt from './components/InstallPrompt';
 import Recipes from './components/Recipes';
 import Planner from './components/Planner';
 import RecipeSharePage from './components/RecipeSharePage'; // Import your recipe share page
+import { useInactivityReminder } from './hooks/useInactivityReminder';
+
 
 const App = () => {
   const { theme } = useAuth();
@@ -64,21 +66,8 @@ const App = () => {
     };
   }, []);
   
-  // useEffect(() => {
-  //   const handler = () => {
-  //     if (currentUser?.uid) updateLastActive(user.uid);
-  //   };
-
-  //   window.addEventListener("mousemove", handler);
-  //   window.addEventListener("click", handler);
-  //   window.addEventListener("keydown", handler);
-
-  //   return () => {
-  //     window.removeEventListener("mousemove", handler);
-  //     window.removeEventListener("click", handler);
-  //     window.removeEventListener("keydown", handler);
-  //   };
-  // }, [user]);
+  useInactivityReminder(); // Start the inactivity reminder hook
+  
   
 
   // Show loader if any global data is loading

@@ -19,7 +19,7 @@ import useGetTodos from "../hooks/useGetTodos";
 import { Wheel } from "react-custom-roulette";
 import Logo from "../assets/LifeMasteryLogo.png";
 import Confetti from "react-confetti"; 
-
+import { startInactivityWatcher } from '../ulits/inactivity'; // Import the inactivity watcher
 
 
 
@@ -269,7 +269,9 @@ const Dashboard = () => {
     setIsRoulette(false);
   };
 
-  
+  useEffect(() => {
+    startInactivityWatcher(() => pomodoroRunning); // pass your pomodoro state here
+  }, []);
 
   
   const truncateText = (text, maxLength = 12) => {
