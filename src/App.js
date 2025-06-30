@@ -46,12 +46,12 @@ const App = () => {
         serviceWorkerPath: "/service-worker.js",
       });
 
-      // Directly call OneSignal API method here:
+      // Use the correct NPM API for permission and prompt
       const permission = await OneSignal.getNotificationPermission();
 
       if (permission === "default") {
         // Show the permission prompt
-        OneSignal.showSlidedownPrompt();
+        await OneSignal.showSlidedownPrompt();
       } else {
         console.log("🟡 Notification permission already granted or blocked.");
       }
