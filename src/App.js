@@ -43,19 +43,18 @@ const App = () => {
         appId: "702b4e49-c8a5-4af7-8e99-ce0babb6706a",
         notifyButton: { enable: true },
         allowLocalhostAsSecureOrigin: true,
-        serviceWorkerPath: "/service-worker.js", // Optional if you're using PWA
+        serviceWorkerPath: "/service-worker.js",
       });
 
-      // ✅ Use .push to ensure the SDK is ready
-      window.OneSignal = window.OneSignal || [];
-      window.OneSignal.push(async () => {
-        const permission = await window.OneSignal.getNotificationPermission();
-        if (permission === "default" && window.OneSignal.showSlidedownPrompt) {
-          window.OneSignal.showSlidedownPrompt();
-        } else {
-          console.log("🟡 Notification permission already granted or blocked.");
-        }
-      });
+      // Directly call OneSignal API method here:
+      const permission = await OneSignal.getNotificationPermission();
+
+      if (permission === "default") {
+        // Show the permission prompt
+        OneSignal.showSlidedownPrompt();
+      } else {
+        console.log("🟡 Notification permission already granted or blocked.");
+      }
     }
 
     setupOneSignal();
