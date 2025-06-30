@@ -43,13 +43,18 @@ const App = () => {
         appId: "702b4e49-c8a5-4af7-8e99-ce0babb6706a",
         notifyButton: { enable: true },
         allowLocalhostAsSecureOrigin: true,
-        serviceWorkerPath: "/service-worker.js", // Optional: use default if not customized
+        serviceWorkerPath: "/service-worker.js", // Optional if you're using PWA
       });
 
-      // Use window.OneSignal to trigger post-init methods
+      // ✅ Use .push to ensure the SDK is ready
       window.OneSignal = window.OneSignal || [];
-      window.OneSignal.push(() => {
-        window.OneSignal.showSlidedownPrompt(); // ask for permission
+      window.OneSignal.push(async () => {
+        const permission = await window.OneSignal.getNotificationPermission();
+        if (permission === "default" && window.OneSignal.showSlidedownPrompt) {
+          window.OneSignal.showSlidedownPrompt();
+        } else {
+          console.log("🟡 Notification permission already granted or blocked.");
+        }
       });
     }
 
