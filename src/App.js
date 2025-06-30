@@ -26,10 +26,12 @@ import Recipes from './components/Recipes';
 import Planner from './components/Planner';
 import RecipeSharePage from './components/RecipeSharePage'; // Import your recipe share page
 import { useInactivityReminder } from './hooks/useInactivityReminder';
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../firebase/firebase";
 
 
 const App = () => {
-  const { theme } = useAuth();
+  const { theme, currentUser } = useAuth();
   const { loading: habitsLoading } = useGetHabits();
 
   const { loading: goalsLoading } = useGetGoals();
@@ -66,6 +68,27 @@ const App = () => {
       document.body.removeChild(script);
     };
   }, []);
+
+  useEffect(() => {
+    // Only run if user is logged in and OneSignal is loaded
+    if (!currentUser || !window.OneSignal) return;
+
+    window.OneSignal.getUserId().then(async (playerId) => {
+      if (playerId) {
+        // Save playerId to Firestore with the user's info
+        await setDoc(
+          doc(db, "userActivity", currentUser.uid),
+          {
+            playerId,
+            lastActive: Date.now(),
+            pomodoroStatus: localStorage.getItem("pomodoroStatus") || "stopped",
+            email: currentUser.email,
+          },
+          { merge: true }
+        );
+      }
+    });
+  }, [currentUser]);
 
   useInactivityReminder();
 

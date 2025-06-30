@@ -1,0 +1,3 @@
+[[functions]]
+  schedule = "*/1 * * * *" # every 1 minute
+  path = "/.netlify/functions/sendInactivityNotifications"

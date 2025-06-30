@@ -1,56 +1,45 @@
 import { useEffect } from "react";
-
-const INACTIVITY_LIMIT = 60 * 1000; // 1 min for demo, adjust as needed
-const CHECK_INTERVAL = 5 * 60 * 1000; // 5 mins
-const NOTIFICATION_COOLDOWN = 60 * 60 * 1000; // 1 hr
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../firebase/firebase";
+import { useAuth } from "../contexts/authContext";
 
 export function useInactivityReminder() {
+  const { currentUser } = useAuth();
+
   useEffect(() => {
+    if (!currentUser) return;
     let lastActive = Date.now();
 
-    const updateActivity = () => {
+    const updateActivity = async () => {
       lastActive = Date.now();
+      if (currentUser && window.OneSignal) {
+        const playerId = await window.OneSignal.getUserId();
+        if (playerId) {
+          await setDoc(
+            doc(db, "userActivity", currentUser.uid),
+            {
+              playerId,
+              lastActive: Date.now(),
+              pomodoroStatus:
+                localStorage.getItem("pomodoroStatus") || "stopped",
+              email: currentUser.email,
+            },
+            { merge: true }
+          );
+        }
+      }
     };
 
-    // Attach activity listeners
     window.addEventListener("mousemove", updateActivity);
     window.addEventListener("keydown", updateActivity);
     window.addEventListener("touchstart", updateActivity);
 
-    const checkInterval = setInterval(() => {
-      const now = Date.now();
-      const inactiveTime = now - lastActive;
-      const pomodoroStatus = localStorage.getItem("pomodoroStatus"); // 'running' or 'stopped'
-
-      if (inactiveTime > INACTIVITY_LIMIT && pomodoroStatus !== "running") {
-        const lastSent = localStorage.getItem("lastNotificationSent");
-
-        if (!lastSent || now - parseInt(lastSent) > NOTIFICATION_COOLDOWN) {
-          // Use the browser global OneSignal SDK
-          if (
-            window.OneSignal &&
-            typeof window.OneSignal.sendSelfNotification === "function"
-          ) {
-            window.OneSignal.sendSelfNotification(
-              "💡 Need a push?",
-              "You've been inactive for a while. Spin the wheel and restart your Pomodoro!",
-              "https://lifemastery.netlify.app", // Update this with your real URL
-              "https://lifemastery.netlify.app/static/media/LifeMasteryLogo.b17f229477015849317b.png", // Optional icon
-              {
-                notification_id: "pomodoro_idle_reminder",
-              }
-            );
-            localStorage.setItem("lastNotificationSent", now.toString());
-          }
-        }
-      }
-    }, CHECK_INTERVAL);
+    // ...rest of your inactivity logic...
 
     return () => {
       window.removeEventListener("mousemove", updateActivity);
       window.removeEventListener("keydown", updateActivity);
       window.removeEventListener("touchstart", updateActivity);
-      clearInterval(checkInterval);
     };
-  }, []);
+  }, [currentUser]);
 }
