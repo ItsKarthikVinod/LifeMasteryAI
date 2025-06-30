@@ -35,40 +35,21 @@ const App = () => {
   const { loading: goalsLoading } = useGetGoals();
   const { loading: todosLoading } = useGetTodos();
   const { loading: authLoading } = useAuth(); // If your auth context provides loading
-  
-
-  
-
-
-  
 
   useEffect(() => {
-    // 1. Create and inject OneSignal SDK script tag
-    const script = document.createElement("script");
-    script.src = "https://cdn.onesignal.com/sdks/OneSignalSDK.js";
-    script.async = true;
-    document.body.appendChild(script);
+    OneSignal.init({
+      appId: "702b4e49-c8a5-4af7-8e99-ce0babb6706a",
+      notifyButton: { enable: true },
+      allowLocalhostAsSecureOrigin: true,
+      serviceWorkerPath: "/service-worker.js",
+    });
 
-    // 2. Initialize OneSignal after script loads
-    script.onload = () => {
-      window.OneSignal = window.OneSignal || [];
-      window.OneSignal.push(function () {
-        window.OneSignal.init({
-          appId: "702b4e49-c8a5-4af7-8e99-ce0babb6706a", // ✅ Replace with your real App ID
-          serviceWorkerPath: "/service-worker.js", // ✅ Your custom PWA SW
-          serviceWorkerScope: "/", // Optional but best practice
-          allowLocalhostAsSecureOrigin: true, // For local testing
-          notifyButton: {
-            enable: true, // Optional: OneSignal bell icon UI
-          },
-        });
-      });
-    };
+    OneSignal.showSlidedownPrompt(); // ask for permission
   }, []);
-  
+
+  useInactivityReminder(); // ✅ This will now work
+
   useInactivityReminder(); // Start the inactivity reminder hook
-  
-  
 
   // Show loader if any global data is loading
   if (habitsLoading || goalsLoading || todosLoading || authLoading) {
