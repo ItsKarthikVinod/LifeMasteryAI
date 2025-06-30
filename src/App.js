@@ -26,7 +26,6 @@ import Recipes from './components/Recipes';
 import Planner from './components/Planner';
 import RecipeSharePage from './components/RecipeSharePage'; // Import your recipe share page
 import { useInactivityReminder } from './hooks/useInactivityReminder';
-import OneSignal from 'react-onesignal'; // Import OneSignal for push notifications
 
 
 const App = () => {
@@ -38,28 +37,34 @@ const App = () => {
   const { loading: authLoading } = useAuth(); // If your auth context provides loading
 
   useEffect(() => {
-    async function setupOneSignal() {
-      await OneSignal.init({
-        appId: "702b4e49-c8a5-4af7-8e99-ce0babb6706a",
-        notifyButton: { enable: true },
-        allowLocalhostAsSecureOrigin: true,
-        serviceWorkerPath: "/service-worker.js",
-      });
+    // Dynamically load the OneSignal SDK script
+    const script = document.createElement("script");
+    script.src = "https://cdn.onesignal.com/sdks/OneSignalSDK.js";
+    script.async = true;
+    document.body.appendChild(script);
 
-      // Use the NPM API for permission and prompt
-      if (typeof OneSignal.getNotificationPermission === "function") {
-        const permission = await OneSignal.getNotificationPermission();
-        if (permission === "default") {
-          if (typeof OneSignal.showSlidedownPrompt === "function") {
-            await OneSignal.showSlidedownPrompt();
+    script.onload = () => {
+      window.OneSignal = window.OneSignal || [];
+      window.OneSignal.push(function () {
+        window.OneSignal.init({
+          appId: "702b4e49-c8a5-4af7-8e99-ce0babb6706a",
+          notifyButton: { enable: true },
+          allowLocalhostAsSecureOrigin: true,
+          serviceWorkerPath: "/service-worker.js",
+        });
+
+        window.OneSignal.getNotificationPermission().then((permission) => {
+          if (permission === "default") {
+            window.OneSignal.Slidedown.promptPush();
           }
-        } else {
-          console.log("🟡 Notification permission already granted or blocked.");
-        }
-      }
-    }
+        });
+      });
+    };
 
-    setupOneSignal();
+    // Optional: cleanup
+    return () => {
+      document.body.removeChild(script);
+    };
   }, []);
 
   useInactivityReminder();
