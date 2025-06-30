@@ -46,17 +46,16 @@ const App = () => {
         serviceWorkerPath: "/service-worker.js",
       });
 
-      // Use the browser global for permission and prompt
-      if (window.OneSignal) {
-        window.OneSignal.getNotificationPermission().then((permission) => {
-          if (permission === "default") {
-            window.OneSignal.Slidedown.promptPush();
-          } else {
-            console.log(
-              "🟡 Notification permission already granted or blocked."
-            );
+      // Use the NPM API for permission and prompt
+      if (typeof OneSignal.getNotificationPermission === "function") {
+        const permission = await OneSignal.getNotificationPermission();
+        if (permission === "default") {
+          if (typeof OneSignal.showSlidedownPrompt === "function") {
+            await OneSignal.showSlidedownPrompt();
           }
-        });
+        } else {
+          console.log("🟡 Notification permission already granted or blocked.");
+        }
       }
     }
 
