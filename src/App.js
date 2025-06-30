@@ -26,6 +26,7 @@ import Recipes from './components/Recipes';
 import Planner from './components/Planner';
 import RecipeSharePage from './components/RecipeSharePage'; // Import your recipe share page
 import { useInactivityReminder } from './hooks/useInactivityReminder';
+import OneSignal from 'react-onesignal'; // Import OneSignal for push notifications
 
 
 const App = () => {
@@ -37,19 +38,26 @@ const App = () => {
   const { loading: authLoading } = useAuth(); // If your auth context provides loading
 
   useEffect(() => {
-    OneSignal.init({
-      appId: "702b4e49-c8a5-4af7-8e99-ce0babb6706a",
-      notifyButton: { enable: true },
-      allowLocalhostAsSecureOrigin: true,
-      serviceWorkerPath: "/service-worker.js",
-    });
+    async function setupOneSignal() {
+      await OneSignal.init({
+        appId: "702b4e49-c8a5-4af7-8e99-ce0babb6706a",
+        notifyButton: { enable: true },
+        allowLocalhostAsSecureOrigin: true,
+        serviceWorkerPath: "/service-worker.js", // Optional: use default if not customized
+      });
 
-    OneSignal.showSlidedownPrompt(); // ask for permission
+      // Use window.OneSignal to trigger post-init methods
+      window.OneSignal = window.OneSignal || [];
+      window.OneSignal.push(() => {
+        window.OneSignal.showSlidedownPrompt(); // ask for permission
+      });
+    }
+
+    setupOneSignal();
   }, []);
 
-  useInactivityReminder(); // ✅ This will now work
+  useInactivityReminder();
 
-  useInactivityReminder(); // Start the inactivity reminder hook
 
   // Show loader if any global data is loading
   if (habitsLoading || goalsLoading || todosLoading || authLoading) {
