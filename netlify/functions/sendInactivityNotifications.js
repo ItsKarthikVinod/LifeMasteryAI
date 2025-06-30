@@ -1,7 +1,6 @@
 const fetch = require("node-fetch");
 const { initializeApp, applicationDefault } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
-const { ico } = require("@cloudinary/url-gen/qualifiers/format");
 
 // Initialize Firebase Admin SDK (only once)
 let app;
@@ -14,7 +13,7 @@ if (!global._firebaseApp) {
 const db = getFirestore();
 
 exports.handler = async function (event, context) {
-  const INACTIVITY_LIMIT = 60 * 60 * 1000; // 1 hour
+  const INACTIVITY_LIMIT =  60 * 1000; // 1 hour
   const now = Date.now();
 
   const snapshot = await db.collection("userActivity").get();
