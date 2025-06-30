@@ -5,38 +5,77 @@ import {
   FaSyncAlt,
   FaImages,
   FaShoppingCart,
-  FaUtensils
-  
+  FaUtensils,
 } from "react-icons/fa";
-import { useNavigate } from "react-router-dom"; // Add this import
-import { useAuth } from "../contexts/authContext"; // Import the auth context
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/authContext";
+import { db } from "../firebase/firebase";
+import { collection, getDocs } from "firebase/firestore";
 
 const MotivationReminderWidget = ({ openRouletteModal }) => {
-  const theme = useAuth().theme; // Get the theme from context
+  const theme = useAuth().theme;
   const navigate = useNavigate();
-  const dailyQuotes = [
-    "Every day is a new beginning.",
-    "Small steps lead to big results.",
-    "You are capable of amazing things.",
-    "Stay positive, work hard.",
-    "Progress, not perfection.",
-  ];
 
-  const getRandomQuote = () =>
-    dailyQuotes[Math.floor(Math.random() * dailyQuotes.length)];
+  const [quotes, setQuotes] = React.useState([]);
+  const [motivation, setMotivation] = React.useState("");
+  const [loading, setLoading] = React.useState(true);
 
-  const [motivation, setMotivation] = React.useState(getRandomQuote());
+  // Fetch quotes from Firestore on mount
+  React.useEffect(() => {
+    const fetchQuotes = async () => {
+      setLoading(true);
+      try {
+        const snapshot = await getDocs(collection(db, "motivation"));
+        const fetchedQuotes = snapshot.docs
+          .map((doc) => doc.data().text)
+          .filter(Boolean);
+        setQuotes(
+          fetchedQuotes.length > 0
+            ? fetchedQuotes
+            : [
+                "Every day is a new beginning.",
+                "Small steps lead to big results.",
+                "You are capable of amazing things.",
+                "Stay positive, work hard.",
+                "Progress, not perfection.",
+              ]
+        );
+      } catch (err) {
+        setQuotes([
+          "Every day is a new beginning.",
+          "Small steps lead to big results.",
+          "You are capable of amazing things.",
+          "Stay positive, work hard.",
+          "Progress, not perfection.",
+        ]);
+      }
+      setLoading(false);
+    };
+    fetchQuotes();
+  }, []);
 
-  // Quick Access actions (replace with your actual handlers)
+  // Set a random quote when quotes are loaded
+  React.useEffect(() => {
+    if (quotes.length > 0) {
+      setMotivation(quotes[Math.floor(Math.random() * quotes.length)]);
+    }
+  }, [quotes]);
+
+  const handleRefreshQuote = () => {
+    if (quotes.length > 0) {
+      setMotivation(quotes[Math.floor(Math.random() * quotes.length)]);
+    }
+  };
+
+  // Quick Access actions
   const handleQuickWhiteBoard = () => navigate("/whiteboard");
   const handleQuickGallery = () => navigate("/whiteboard-gallery");
   const handleQuickGrocery = () => navigate("/grocery");
   const handleQuickRecipes = () => navigate("/recipes");
-  
 
   return (
     <div
-      className={`p-4  rounded-lg shadow flex flex-col gap-2 ${
+      className={`p-4 rounded-lg shadow flex flex-col gap-2 ${
         theme === "dark"
           ? "bg-gray-800/30 text-gray-300"
           : "bg-teal-100/70 text-gray-700"
@@ -57,13 +96,14 @@ const MotivationReminderWidget = ({ openRouletteModal }) => {
             🌟 Motivation
           </span>
           <button
-            onClick={() => setMotivation(getRandomQuote())}
+            onClick={handleRefreshQuote}
             className={`ml-2 ${
               theme === "dark"
                 ? "text-teal-300 hover:text-teal-100"
                 : "text-teal-500 hover:text-teal-700"
             }`}
             title="Refresh Quote"
+            disabled={loading}
           >
             <FaSyncAlt />
           </button>
@@ -73,7 +113,7 @@ const MotivationReminderWidget = ({ openRouletteModal }) => {
             theme === "dark" ? "text-gray-200 text-sm" : "text-gray-700 text-sm"
           }`}
         >
-          "{motivation}"
+          {loading ? "Loading..." : `"${motivation}"`}
         </p>
       </div>
       {/* Roulette */}
@@ -150,5 +190,4 @@ const MotivationReminderWidget = ({ openRouletteModal }) => {
     </div>
   );
 };
-
 export default MotivationReminderWidget;

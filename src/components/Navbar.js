@@ -12,6 +12,7 @@ import {
   FaShoppingBasket,
   FaCog,
   FaSignOutAlt,
+  FaImages,
 } from "react-icons/fa";
 
 const Navbar = () => {
@@ -119,6 +120,13 @@ const Navbar = () => {
                   onClick={closeAllMenus}
                 >
                   <FaChalkboard className="mr-2" /> Whiteboard
+                </Link>
+                <Link
+                  to="/whiteboard-gallery"
+                  className="flex items-center px-4 py-2 hover:bg-teal-100 transition"
+                  onClick={closeAllMenus}
+                >
+                  <FaImages className="mr-2" /> Whiteboard Gallery
                 </Link>
                 <Link
                   to="/recipes"
@@ -265,6 +273,13 @@ const Navbar = () => {
                 onClick={closeAllMenus}
               >
                 <FaChalkboard className="mr-2" /> Whiteboard
+              </Link>
+              <Link
+                to="/whiteboard-gallery"
+                className="flex items-center px-4 py-2 hover:bg-teal-100 transition"
+                onClick={closeAllMenus}
+              >
+                <FaImages className="mr-2" /> Whiteboard Gallery
               </Link>
               <Link
                 to="/recipes"

@@ -22,7 +22,7 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const WhiteBoard = () => {
   const stageRef = useRef(null);
-
+  const [saving, setSaving] = useState(false);
   const [tool, setTool] = useState("pen");
   const [lines, setLines] = useState([]);
   const [shapes, setShapes] = useState([]);
@@ -103,31 +103,42 @@ const WhiteBoard = () => {
 
   const handleSaveToGallery = async (dataUrl, bgColor) => {
     if (!currentUser) return;
+    setSaving(true);
+    try {
+      // Upload to Cloudinary
+      const formData = new FormData();
+      formData.append("file", dataUrl);
+      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
 
-    // Upload to Cloudinary
-    const formData = new FormData();
-    formData.append("file", dataUrl);
-    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+      const data = await res.json();
 
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
-    const data = await res.json();
+      // Save metadata to Firestore
+      await addDoc(collection(db, "whiteboard_galleries"), {
+        userId: currentUser.uid,
+        url: data.secure_url,
+        title: "Untitled",
+        createdAt: serverTimestamp(),
+        bgColor,
+      });
 
-    // Save metadata to Firestore
-    await addDoc(collection(db, "whiteboard_galleries"), {
-      userId: currentUser.uid,
-      url: data.secure_url,
-      title: "Untitled",
-      createdAt: serverTimestamp(),
-      bgColor,
-    });
-
-    alert("Whiteboard saved to gallery!");
+      toast.success("Whiteboard saved to gallery!", {
+        position: "top-center",
+        autoClose: 2000,
+      });
+    } catch (err) {
+      toast.error("Failed to save whiteboard.", {
+        position: "top-center",
+        autoClose: 3000,
+      });
+    }
+    setSaving(false);
   };
 
   const handleMouseDown = (e) => {
@@ -362,6 +373,18 @@ const WhiteBoard = () => {
   return (
     <div className="p-7 bg-gray-100 mt-24 rounded-lg shadow-md">
       <ToastContainer />
+      {saving && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="flex flex-col items-center">
+            <div className="w-64 h-3 bg-gray-200 rounded-full overflow-hidden mb-4">
+              <div className="h-full bg-gradient-to-r from-teal-400 to-blue-400 animate-pulse w-full" />
+            </div>
+            <span className="text-lg font-semibold text-white drop-shadow">
+              Saving to gallery...
+            </span>
+          </div>
+        </div>
+      )}
       <h1 className="text-4xl font-bold mb-4 text-center text-teal-900">
         Whiteboard
       </h1>
