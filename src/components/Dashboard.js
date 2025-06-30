@@ -268,9 +268,7 @@ const Dashboard = () => {
     setIsRoulette(false);
   };
 
-  useEffect(() => {
-    startInactivityWatcher(() => pomodoroRunning); // pass your pomodoro state here
-  }, []);
+ 
 
   
   const truncateText = (text, maxLength = 12) => {
