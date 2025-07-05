@@ -19,6 +19,7 @@ import useGetTodos from "../hooks/useGetTodos";
 import { Wheel } from "react-custom-roulette";
 import Logo from "../assets/LifeMasteryLogo.png";
 import Confetti from "react-confetti"; 
+import { Link } from "react-router-dom";
 
 
 
@@ -292,7 +293,23 @@ const Dashboard = () => {
       option: truncateText(item.option),
     }));
   
-  
+  if (!currentUser) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
+          <div className="bg-white rounded-xl shadow-lg p-8 mt-24 flex flex-col items-center">
+            <h2 className="text-2xl font-bold mb-4 text-teal-700">
+              Please sign in to view your recipes
+            </h2>
+            <Link
+              to="/login"
+              className="px-6 py-2 bg-teal-600 text-white rounded-lg font-semibold shadow hover:bg-teal-700 transition"
+            >
+              Go to Login
+            </Link>
+          </div>
+        </div>
+      );
+    }
 
   return (
     <div
@@ -364,11 +381,26 @@ const Dashboard = () => {
         </div>
         {/* Dashboard main section */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* GoalTracker Component (Largest) */}
+          {/* ToDoList: order-1 on mobile, order-2 on desktop (top right) */}
           <div
-            className={` border-white col-span-1 lg:col-span-2 p-6 shadow-xl rounded-lg backdrop-blur-lg transition-transform transform hover:scale-105 hover:shadow-2xl ${
-              theme === "dark" ? "bg-gray-800/40 " : "bg-white/40"
-            } `}
+            className={`
+      order-1 md:order-2
+      col-span-1 lg:col-span-1
+      p-6 shadow-xl rounded-lg backdrop-blur-lg transition-transform transform hover:scale-105 hover:shadow-2xl
+      ${theme === "dark" ? "bg-gray-900/40 " : "bg-white/40"}
+    `}
+          >
+            <ToDoList todos={todos} onTriggerPomodoro={triggerPomodoro} />
+          </div>
+
+          {/* GoalTracker: order-2 on mobile, order-1 on desktop (top left, large) */}
+          <div
+            className={`
+      order-2 md:order-1
+      border-white col-span-1 lg:col-span-2
+      p-6 shadow-xl rounded-lg backdrop-blur-lg transition-transform transform hover:scale-105 hover:shadow-2xl
+      ${theme === "dark" ? "bg-gray-800/40 " : "bg-white/40"}
+    `}
           >
             <GoalTracker
               toggleCalendarModal={toggleCalendarModal}
@@ -376,29 +408,26 @@ const Dashboard = () => {
             />
           </div>
 
-          {/* ToDoList Component (Second largest) */}
+          {/* HabitTracker: order-3 always (bottom left on desktop) */}
           <div
-            className={`col-span-1 lg:col-span-1 p-6 shadow-xl rounded-lg backdrop-blur-lg  transition-transform transform hover:scale-105 hover:shadow-2xl ${
-              theme === "dark" ? "bg-gray-900/40 " : "bg-white/40"
-            }`}
-          >
-            <ToDoList todos={todos} onTriggerPomodoro={triggerPomodoro} />
-          </div>
-
-          {/* HabitTracker Component (Smallest) */}
-          <div
-            className={`col-span-1 lg:col-span-1 p-6 shadow-xl rounded-lg backdrop-blur-lg  transition-transform transform hover:scale-105 hover:shadow-2xl  ${
-              theme === "dark" ? "bg-gray-800/40 " : "bg-white/40"
-            }`}
+            className={`
+      order-3
+      col-span-1 lg:col-span-1
+      p-6 shadow-xl rounded-lg backdrop-blur-lg transition-transform transform hover:scale-105 hover:shadow-2xl
+      ${theme === "dark" ? "bg-gray-800/40 " : "bg-white/40"}
+    `}
           >
             <HabitTracker onTriggerPomodoro={triggerPomodoro} />
           </div>
 
-          {/* Journal Component */}
+          {/* Journal: order-4 always (bottom right on desktop) */}
           <div
-            className={`col-span-1 lg:col-span-2 p-6 shadow-xl rounded-lg backdrop-blur-lg  transition-transform transform hover:scale-105 hover:shadow-2xl ${
-              theme === "dark" ? "bg-gray-800/30 " : "bg-white/40"
-            }`}
+            className={`
+      order-4
+      col-span-1 lg:col-span-2
+      p-6 shadow-xl rounded-lg backdrop-blur-lg transition-transform transform hover:scale-105 hover:shadow-2xl
+      ${theme === "dark" ? "bg-gray-800/30 " : "bg-white/40"}
+    `}
           >
             <Journal />
           </div>
@@ -610,8 +639,11 @@ const Dashboard = () => {
               <Wheel
                 mustStartSpinning={mustSpin}
                 prizeNumber={prizeNumber ? prizeNumber : 0}
-                data={truncatedItems.length > 0 ? truncatedItems : [{ name: "No items available" }]}
-                
+                data={
+                  truncatedItems.length > 0
+                    ? truncatedItems
+                    : [{ name: "No items available" }]
+                }
                 backgroundColors={
                   theme === "dark"
                     ? ["#0F4F51", "#8B7349", "#4A4A3C"]

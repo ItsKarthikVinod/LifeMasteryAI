@@ -10,9 +10,22 @@ import {
   FaClock,
   FaQuoteLeft,
   FaUserPlus,
+  FaTrash,
+  FaEdit,
+  FaTimes,
 } from "react-icons/fa";
 import { db } from "../firebase/firebase";
-import { collection, addDoc, setDoc, doc, getDocs } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  setDoc,
+  doc,
+  getDocs,
+  deleteDoc,
+  updateDoc,
+  query,
+  orderBy,
+} from "firebase/firestore";
 
 const ADMIN_EMAILS = [];
 
@@ -47,10 +60,16 @@ const SettingsPage = () => {
   const [adminList, setAdminList] = useState(ADMIN_EMAILS);
   const [loadingAdmins, setLoadingAdmins] = useState(false);
 
+  // Motivation quotes state
+  const [motivationQuotes, setMotivationQuotes] = useState([]);
+  const [loadingQuotes, setLoadingQuotes] = useState(false);
+  const [editQuoteId, setEditQuoteId] = useState(null);
+  const [editQuoteText, setEditQuoteText] = useState("");
+
   useEffect(() => {
-      // Scroll to the top of the page when the component is mounted
-      window.scrollTo(0, 0);
-    }, []);
+    window.scrollTo(0, 0);
+  }, []);
+
   // Load initial minutes from localStorage on component mount
   useEffect(() => {
     const storedMinutes = localStorage.getItem("pomodoroInitialMinutes");
@@ -66,7 +85,10 @@ const SettingsPage = () => {
       try {
         const snapshot = await getDocs(collection(db, "admins"));
         const emails = snapshot.docs.map((doc) => doc.id);
-        setAdminList([...ADMIN_EMAILS, ...emails.filter(e => !ADMIN_EMAILS.includes(e))]);
+        setAdminList([
+          ...ADMIN_EMAILS,
+          ...emails.filter((e) => !ADMIN_EMAILS.includes(e)),
+        ]);
       } catch (err) {
         setAdminList(ADMIN_EMAILS);
       }
@@ -75,6 +97,31 @@ const SettingsPage = () => {
     fetchAdmins();
   }, []);
 
+  // Fetch motivation quotes from Firestore
+  useEffect(() => {
+    const fetchQuotes = async () => {
+      setLoadingQuotes(true);
+      try {
+        const q = query(
+          collection(db, "motivation"),
+          orderBy("createdAt", "desc")
+        );
+        const snapshot = await getDocs(q);
+        setMotivationQuotes(
+          snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+        );
+      } catch (err) {
+        setMotivationQuotes([]);
+      }
+      setLoadingQuotes(false);
+    };
+    fetchQuotes();
+  }, []);
+
+  // Helper: check if current user is admin
   const isAdmin =
     currentUser &&
     (ADMIN_EMAILS.includes(currentUser.email) ||
@@ -105,14 +152,52 @@ const SettingsPage = () => {
   const handleAddMotivation = async (e) => {
     e.preventDefault();
     if (!motivationText.trim()) return;
-    await addDoc(collection(db, "motivation"), {
+    const docRef = await addDoc(collection(db, "motivation"), {
       text: motivationText.trim(),
       createdBy: currentUser.email,
       createdAt: new Date(),
     });
+    setMotivationQuotes((prev) => [
+      {
+        id: docRef.id,
+        text: motivationText.trim(),
+        createdBy: currentUser.email,
+        createdAt: new Date(),
+      },
+      ...prev,
+    ]);
     setMotivationText("");
     setShowMotivationModal(false);
     alert("Motivation quote added!");
+  };
+
+  // Edit motivation quote
+  const handleEditQuote = (quote) => {
+    setEditQuoteId(quote.id);
+    setEditQuoteText(quote.text);
+  };
+
+  const handleUpdateQuote = async (e) => {
+    e.preventDefault();
+    if (!editQuoteText.trim()) return;
+    await updateDoc(doc(db, "motivation", editQuoteId), {
+      text: editQuoteText.trim(),
+    });
+    setMotivationQuotes((prev) =>
+      prev.map((q) =>
+        q.id === editQuoteId ? { ...q, text: editQuoteText.trim() } : q
+      )
+    );
+    setEditQuoteId(null);
+    setEditQuoteText("");
+    alert("Motivation quote updated!");
+  };
+
+  // Delete motivation quote
+  const handleDeleteQuote = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this quote?")) return;
+    await deleteDoc(doc(db, "motivation", id));
+    setMotivationQuotes((prev) => prev.filter((q) => q.id !== id));
   };
 
   // Add new admin to Firestore
@@ -126,11 +211,16 @@ const SettingsPage = () => {
     setAdminEmail("");
     setShowAdminModal(false);
     setAdminList((prev) =>
-      prev.includes(adminEmail.trim())
-        ? prev
-        : [...prev, adminEmail.trim()]
+      prev.includes(adminEmail.trim()) ? prev : [...prev, adminEmail.trim()]
     );
     alert("Admin added!");
+  };
+
+  // Delete admin
+  const handleDeleteAdmin = async (email) => {
+    if (!window.confirm("Are you sure you want to remove this admin?")) return;
+    await deleteDoc(doc(db, "admins", email));
+    setAdminList((prev) => prev.filter((e) => e !== email));
   };
 
   return (
@@ -162,96 +252,225 @@ const SettingsPage = () => {
               className="flex items-center px-4 py-2 rounded-lg bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-900 font-bold shadow hover:from-yellow-500 hover:to-yellow-600 transition"
               type="button"
             >
-              <FaQuoteLeft className="mr-2" /> Add Motivation Quote
+              <FaQuoteLeft className="mr-2" /> Manage Motivation Quotes
             </button>
             <button
               onClick={() => setShowAdminModal(true)}
               className="flex items-center px-4 py-2 rounded-lg bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-900 font-bold shadow hover:from-yellow-500 hover:to-yellow-600 transition"
               type="button"
             >
-              <FaUserPlus className="mr-2" /> Add Admin
+              <FaUserPlus className="mr-2" /> Manage Admins
             </button>
           </div>
         )}
 
-        {/* Motivation Modal */}
+        {/* Motivation Quotes Modal */}
         {showMotivationModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-            <form
-              onSubmit={handleAddMotivation}
-              className="bg-white rounded-xl shadow-lg p-8 flex flex-col items-center"
-              style={{ minWidth: 320 }}
+          <div
+            className={`fixed inset-0 ${
+              theme === "dark" ? "bg-white/80" : "bg-gray-800/70"
+            } flex items-center justify-center z-50`}
+          >
+            <div
+              className={`rounded-xl ${
+                theme === "dark" ? "bg-gray-800" : "bg-white"
+              } shadow-lg p-8 flex flex-col items-center max-h-[90vh] overflow-y-auto`}
+              style={{ minWidth: 350, width: "100%", maxWidth: 500 }}
             >
-              <h2 className="text-2xl font-bold mb-4 text-teal-700 flex items-center gap-2">
-                <FaQuoteLeft /> Add Motivation Quote
-              </h2>
-              <textarea
-                className="w-full border border-teal-300 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-teal-400 transition"
-                rows={3}
-                placeholder="Enter a motivational quote..."
-                value={motivationText}
-                onChange={(e) => setMotivationText(e.target.value)}
-                required
-              />
-              <div className="flex gap-2">
+              <div className="flex w-full justify-between items-center mb-4">
+                <h2
+                  className={`text-2xl font-bold ${
+                    theme === "dark" ? "text-teal-300" : "text-teal-700"
+                  } flex items-center gap-2`}
+                >
+                  <FaQuoteLeft /> Motivation Quotes
+                </h2>
+                <button
+                  className="ml-2 px-2 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                  onClick={() => setShowMotivationModal(false)}
+                >
+                  <FaTimes />
+                </button>
+              </div>
+              {/* Add new quote */}
+              <form
+                onSubmit={handleAddMotivation}
+                className="w-full flex flex-col gap-2 mb-4"
+              >
+                <textarea
+                  className="w-full border border-teal-300 rounded-lg px-3 text-black py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 transition"
+                  rows={2}
+                  placeholder="Enter a motivational quote..."
+                  value={motivationText}
+                  onChange={(e) => setMotivationText(e.target.value)}
+                  required
+                />
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-teal-600 text-white rounded-lg font-semibold shadow hover:bg-teal-700 transition"
+                  className="px-4 py-2 bg-teal-600 text-white rounded-lg font-semibold shadow hover:bg-teal-700 transition self-end"
                 >
                   Add
                 </button>
-                <button
-                  type="button"
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg font-semibold shadow hover:bg-gray-400 transition"
-                  onClick={() => setShowMotivationModal(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+              </form>
+              {/* Quotes list */}
+              {loadingQuotes ? (
+                <div className="text-center text-gray-500">
+                  Loading quotes...
+                </div>
+              ) : motivationQuotes.length === 0 ? (
+                <div className="text-center text-gray-500">
+                  No motivation quotes found.
+                </div>
+              ) : (
+                <ul className="space-y-4 w-full">
+                  {motivationQuotes.map((quote) => (
+                    <li
+                      key={quote.id}
+                      className={`p-3 rounded-lg shadow flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                        theme === "dark"
+                          ? "bg-gray-700 text-white"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {editQuoteId === quote.id ? (
+                        <form
+                          onSubmit={handleUpdateQuote}
+                          className="flex flex-col sm:flex-row gap-2 w-full"
+                        >
+                          <input
+                            className="flex-1 px-3 py-2 rounded border border-teal-400 text-black"
+                            value={editQuoteText}
+                            onChange={(e) => setEditQuoteText(e.target.value)}
+                            required
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              type="submit"
+                              className="px-3 py-2 bg-teal-600 text-white rounded hover:bg-teal-700"
+                            >
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              className="px-3 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                              onClick={() => setEditQuoteId(null)}
+                            >
+                              <FaTimes />
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <>
+                          <div className="flex-1">
+                            <span className="block">{quote.text}</span>
+                            <span className="block text-xs mt-1 text-gray-500">
+                              {quote.createdBy}
+                            </span>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                              onClick={() => handleEditQuote(quote)}
+                            >
+                              <FaEdit />
+                            </button>
+                            <button
+                              className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                              onClick={() => handleDeleteQuote(quote.id)}
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Add Admin Modal */}
+        {/* Admins Modal */}
         {showAdminModal && (
           <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-            <form
-              onSubmit={handleAddAdmin}
-              className="bg-white rounded-xl shadow-lg p-8 flex flex-col items-center"
-              style={{ minWidth: 320 }}
+            <div
+              className="bg-white rounded-xl shadow-lg p-8 flex flex-col items-center max-h-[90vh] overflow-y-auto"
+              style={{ minWidth: 350, width: "100%", maxWidth: 500 }}
             >
-              <h2 className="text-2xl font-bold mb-4 text-teal-700 flex items-center gap-2">
-                <FaUserPlus /> Add Admin
-              </h2>
-              <input
-                className="w-full border border-teal-300 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-teal-400 transition"
-                type="email"
-                placeholder="Enter admin email"
-                value={adminEmail}
-                onChange={(e) => setAdminEmail(e.target.value)}
-                required
-              />
-              <div className="flex gap-2">
+              <div className="flex w-full justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-teal-700 flex items-center gap-2">
+                  <FaUserPlus /> Admins
+                </h2>
+                <button
+                  className="ml-2 px-2 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                  onClick={() => setShowAdminModal(false)}
+                >
+                  <FaTimes />
+                </button>
+              </div>
+              {/* Add new admin */}
+              <form
+                onSubmit={handleAddAdmin}
+                className="w-full flex flex-col gap-2 mb-4"
+              >
+                <input
+                  className="w-full border border-teal-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 transition text-black"
+                  type="email"
+                  placeholder="Enter admin email"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                  required
+                />
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-teal-600 text-white rounded-lg font-semibold shadow hover:bg-teal-700 transition"
+                  className="px-4 py-2 bg-teal-600 text-white rounded-lg font-semibold shadow hover:bg-teal-700 transition self-end"
                   disabled={loadingAdmins}
                 >
                   Add
                 </button>
-                <button
-                  type="button"
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg font-semibold shadow hover:bg-gray-400 transition"
-                  onClick={() => setShowAdminModal(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+              </form>
+              {/* Admins list */}
+              {loadingAdmins ? (
+                <div className="text-center text-gray-500">
+                  Loading admins...
+                </div>
+              ) : adminList.length === 0 ? (
+                <div className="text-center text-gray-500">
+                  No admins found.
+                </div>
+              ) : (
+                <ul className="space-y-2 w-full">
+                  {adminList.map((email) => (
+                    <li
+                      key={email}
+                      className={`p-3 rounded flex items-center justify-between ${
+                        theme === "dark"
+                          ? "bg-gray-700 text-white"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      <span>{email}</span>
+                      <button
+                        className="ml-2 px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                        onClick={() => handleDeleteAdmin(email)}
+                        disabled={email === currentUser.email}
+                        title={
+                          email === currentUser.email
+                            ? "You can't remove yourself"
+                            : "Remove admin"
+                        }
+                      >
+                        <FaTrash />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         )}
 
-        {/* ...rest of your settings page... */}
         {/* Display Name Section */}
         <div className="mb-8">
           <label className="text-lg font-medium mb-2 flex items-center">

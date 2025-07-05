@@ -1,4 +1,4 @@
-import React,{useEffect} from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import HeroPage from './components/HeroPage';
@@ -8,7 +8,7 @@ import Dashboard from './components/Dashboard';
 import JournalList from './components/JournalList';
 import Challenges from './components/Challenges/Challenges';
 import CommunityPage from './components/CommunityPage';
-
+import './App.css'; // Import your CSS file
 import Footer from './components/Footer'
 import {useAuth} from './contexts/authContext';
 
@@ -25,72 +25,70 @@ import InstallPrompt from './components/InstallPrompt';
 import Recipes from './components/Recipes';
 import Planner from './components/Planner';
 import RecipeSharePage from './components/RecipeSharePage'; // Import your recipe share page
-import { useInactivityReminder } from './hooks/useInactivityReminder';
-import { doc, setDoc } from "firebase/firestore";
-import { db } from "../firebase/firebase";
+//import { useInactivityReminder } from './hooks/useInactivityReminder';
 
 
 const App = () => {
-  const { theme, currentUser } = useAuth();
+  const { theme } = useAuth();
   const { loading: habitsLoading } = useGetHabits();
 
   const { loading: goalsLoading } = useGetGoals();
   const { loading: todosLoading } = useGetTodos();
   const { loading: authLoading } = useAuth(); // If your auth context provides loading
 
-  useEffect(() => {
-    // Dynamically load the OneSignal SDK script
-    const script = document.createElement("script");
-    script.src = "https://cdn.onesignal.com/sdks/OneSignalSDK.js";
-    script.async = true;
-    document.body.appendChild(script);
+  // useEffect(() => {
+  //   // Dynamically load the OneSignal SDK script
+  //   const script = document.createElement("script");
+  //   script.src = "https://cdn.onesignal.com/sdks/OneSignalSDK.js";
+  //   script.async = true;
+  //   document.body.appendChild(script);
 
-    script.onload = () => {
-      window.OneSignal = window.OneSignal || [];
-      window.OneSignal.push(function () {
-        window.OneSignal.init({
-          appId: "702b4e49-c8a5-4af7-8e99-ce0babb6706a",
-          notifyButton: { enable: true },
-          allowLocalhostAsSecureOrigin: true,
-          serviceWorkerPath: "/service-worker.js",
-        });
+  //   script.onload = () => {
+  //     window.OneSignal = window.OneSignal || [];
+  //     window.OneSignal.push(function () {
+  //       window.OneSignal.init({
+  //         appId: "702b4e49-c8a5-4af7-8e99-ce0babb6706a",
+  //         notifyButton: { enable: true },
+  //         allowLocalhostAsSecureOrigin: true,
+  //         serviceWorkerPath: "/service-worker.js",
+  //       });
 
-        window.OneSignal.getNotificationPermission().then((permission) => {
-          if (permission === "default") {
-            window.OneSignal.Slidedown.promptPush();
-          }
-        });
-      });
-    };
+  //       window.OneSignal.getNotificationPermission().then((permission) => {
+  //         if (permission === "default") {
+  //           window.OneSignal.Slidedown.promptPush();
+  //         }
+  //       });
+  //     });
+  //   };
 
-    // Optional: cleanup
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
+  //   // Optional: cleanup
+  //   return () => {
+  //     document.body.removeChild(script);
+  //   };
+  // }, []);
 
-  useEffect(() => {
-    // Only run if user is logged in and OneSignal is loaded
-    if (!currentUser || !window.OneSignal) return;
+  // useEffect(() => {
+  //   // Only run if user is logged in and OneSignal is loaded
+  //   if (!currentUser || !window.OneSignal) return;
 
-    window.OneSignal.getUserId().then(async (playerId) => {
-      if (playerId) {
-        // Save playerId to Firestore with the user's info
-        await setDoc(
-          doc(db, "userActivity", currentUser.uid),
-          {
-            playerId,
-            lastActive: Date.now(),
-            pomodoroStatus: localStorage.getItem("pomodoroStatus") || "stopped",
-            email: currentUser.email,
-          },
-          { merge: true }
-        );
-      }
-    });
-  }, [currentUser]);
+  //   window.OneSignal.getUserId().then(async (playerId) => {
+  //     if (playerId) {
+  //       // Save playerId to Firestore with the user's info
+  //       await setDoc(
+  //         doc(db, "userActivity", currentUser.uid),
+  //         {
+  //           playerId,
+  //           lastActive: Date.now(),
+  //           pomodoroStatus: localStorage.getItem("pomodoroStatus") || "stopped",
+  //           email: currentUser.email,
+  //         },
+  //         { merge: true }
+  //       );
+  //     }
+  //   });
+  // }, [currentUser]);
 
-  useInactivityReminder();
+  // useInactivityReminder();
 
 
   // Show loader if any global data is loading

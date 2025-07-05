@@ -28,6 +28,22 @@
   color: #61dafb;
 }
 
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-16px); }
+}
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1 }
+  50% { opacity: 0 }
+}
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
