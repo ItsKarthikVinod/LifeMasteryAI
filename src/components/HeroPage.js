@@ -317,7 +317,7 @@ const features = [
     title: "Responsive on All Devices",
     desc: "Enjoy a seamless experience whether you're using a phone, tablet, or desktop. Life Mastery adapts perfectly to any screen size.",
     icon: <FaMobileAlt className="text-4xl text-sky-400 mb-2 drop-shadow-lg" />,
-    video: "/videos/gresponsive.mp4",
+    video: "/videos/responsive.mp4",
     color: "from-sky-100 to-sky-300",
     border: "border-sky-300",
     shadow: "shadow-sky-200",
