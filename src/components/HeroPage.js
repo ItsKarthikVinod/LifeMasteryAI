@@ -33,7 +33,6 @@ import {
   FaGamepad
 } from "react-icons/fa";
 import { motion, useAnimation, useInView } from "framer-motion";
-import karthikHero from "../assets/karthik_hero.png";
 import { useTypewriter } from "../hooks/useTypewriter";
 import Particles from "react-tsparticles";
 import { loadFull } from "tsparticles";
@@ -706,7 +705,7 @@ const Hero = () => {
           style={{ perspective: 1200 }}
         >
           <motion.img
-            src={karthikHero}
+            src='/karthik_hero.png'
             alt="Karthik Lifemastery"
             className="w-2/3 max-w-xs sm:w-full sm:max-w-none h-auto "
             initial={{
