@@ -4,12 +4,15 @@ export function useIsTouchDevice() {
   const [isTouch, setIsTouch] = useState(false);
 
   useEffect(() => {
-    const check = () =>
-      setIsTouch(
-        "ontouchstart" in window ||
-          navigator.maxTouchPoints > 0 ||
-          navigator.msMaxTouchPoints > 0
-      );
+    const check = () => {
+      const ua = navigator.userAgent;
+      // Checks for Android, iPhone, iPad, iPod, Opera Mini, IEMobile, etc.
+      const isMobileOrTablet =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(
+          ua
+        );
+      setIsTouch(isMobileOrTablet);
+    };
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);

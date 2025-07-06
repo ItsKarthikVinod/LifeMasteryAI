@@ -326,6 +326,38 @@ const features = [
 
 const FeatureCard = ({ feature, idx, cardVariants, isInView, isTouchDevice }) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef(null);
+
+  // Desktop: hover to play/pause
+  const handleMouseOver = async () => {
+    if (!isTouchDevice && videoRef.current) {
+      try {
+        await videoRef.current.play();
+        setIsPlaying(true);
+      } catch {}
+    }
+  };
+  const handleMouseOut = () => {
+    if (!isTouchDevice && videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+      setIsPlaying(false);
+    }
+  };
+
+  // Mobile: tap to toggle play/pause
+  const handleTap = () => {
+    if (isTouchDevice && videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0;
+        setIsPlaying(false);
+      } else {
+        videoRef.current.play();
+        setIsPlaying(true);
+      }
+    }
+  };
   return (
     <motion.div
       key={feature.title}
@@ -412,11 +444,12 @@ const FeatureCard = ({ feature, idx, cardVariants, isInView, isTouchDevice }) =>
         {!isPlaying && (
           <div className="absolute inset-0 flex items-center justify-center z-[100] bg-white/70 rounded-xl pointer-events-none select-none text-blue-900 font-semibold text-center text-base sm:text-lg">
             {isTouchDevice
-              ? "Touch to watch the feature in action"
+              ? "Tap to watch the feature in action"
               : "Hover to watch the feature in action"}
           </div>
         )}
         <motion.video
+          ref={videoRef}
           src={feature.video}
           alt={feature.title}
           preload="none"
@@ -430,32 +463,9 @@ const FeatureCard = ({ feature, idx, cardVariants, isInView, isTouchDevice }) =>
           whileHover={{ opacity: 1, scale: 1.03 }}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
-          onMouseOver={async (e) => {
-            try {
-              await e.currentTarget.play();
-            } catch (err) {
-              // Ignore play interruption errors
-            }
-          }}
-          onMouseOut={(e) => {
-            try {
-              e.currentTarget.pause();
-              e.currentTarget.currentTime = 0;
-            } catch (err) {
-              // Ignore pause interruption errors
-            }
-          }}
-          onTouchStart={async (e) => {
-            try {
-              await e.currentTarget.play();
-            } catch (err) {}
-          }}
-          onTouchEnd={(e) => {
-            try {
-              e.currentTarget.pause();
-              e.currentTarget.currentTime = 0;
-            } catch (err) {}
-          }}
+          onMouseOver={handleMouseOver}
+          onMouseOut={handleMouseOut}
+          onClick={handleTap}
           style={{ transition: "opacity 0.3s, transform 0.3s" }}
         />
       </motion.div>
@@ -684,7 +694,7 @@ const Hero = () => {
 
   return (
     <div
-      className={`relative min-h-screen flex flex-col items-center justify-center ${backgroundColor} overflow-x-hidden sm:pt-44 `}
+      className={`relative min-h-screen flex flex-col items-center justify-center ${backgroundColor} overflow-x-hidden sm:pt-44 pt-32 `}
     >
       <CustomCursor />
       {/* Hero Section Container */}
