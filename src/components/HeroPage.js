@@ -694,7 +694,7 @@ const Hero = () => {
 
   return (
     <div
-      className={`relative min-h-screen flex flex-col items-center justify-center ${backgroundColor} overflow-x-hidden sm:pt-44 pt-32 `}
+      className={`relative min-h-screen flex flex-col items-center justify-center ${backgroundColor} overflow-x-hidden sm:pt-36 pt-32 `}
     >
       <CustomCursor />
       {/* Hero Section Container */}
