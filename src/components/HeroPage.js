@@ -30,13 +30,13 @@ import {
   FaShoppingCart,
   FaDice,
   FaRocket,
-  FaGamepad
+  FaGamepad,
 } from "react-icons/fa";
 import { motion, useAnimation, useInView } from "framer-motion";
 import { useTypewriter } from "../hooks/useTypewriter";
 import Particles from "react-tsparticles";
 import { loadFull } from "tsparticles";
-import {useIsTouchDevice} from "../hooks/useIsTouchDevice";
+import { useIsTouchDevice } from "../hooks/useIsTouchDevice";
 
 const CustomCursor = () => {
   const [pos, setPos] = useState({
@@ -106,8 +106,8 @@ const CustomCursor = () => {
         position: "fixed",
         left: pos.x,
         top: pos.y,
-        width: hovered ? 40:25,
-        height: hovered ? 40:25,
+        width: hovered ? 40 : 25,
+        height: hovered ? 40 : 25,
         borderRadius: "50%",
         background: "#fff",
         pointerEvents: "none",
@@ -323,7 +323,13 @@ const features = [
   },
 ];
 
-const FeatureCard = ({ feature, idx, cardVariants, isInView, isTouchDevice }) => {
+const FeatureCard = ({
+  feature,
+  idx,
+  cardVariants,
+  isInView,
+  isTouchDevice,
+}) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef(null);
 
@@ -470,7 +476,7 @@ const FeatureCard = ({ feature, idx, cardVariants, isInView, isTouchDevice }) =>
       </motion.div>
     </motion.div>
   );
-}
+};
 
 const Hero = () => {
   const navigate = useNavigate();
@@ -485,8 +491,6 @@ const Hero = () => {
   const heroImgRef = useRef(null);
 
   const isTouchDevice = useIsTouchDevice();
-
-  
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -621,8 +625,6 @@ const Hero = () => {
   }, []);
   const particlesLoaded = useCallback(async () => {}, []);
 
-  
-
   // Animation for learn more section
   const learnMoreRef = useRef(null);
   const isInView = useInView(learnMoreRef, { once: true, amount: 0.05 });
@@ -690,7 +692,6 @@ const Hero = () => {
     },
   };
 
-
   return (
     <div
       className={`relative min-h-screen flex flex-col items-center justify-center ${backgroundColor} overflow-x-hidden sm:pt-44 pt-32 `}
@@ -705,7 +706,7 @@ const Hero = () => {
           style={{ perspective: 1200 }}
         >
           <motion.img
-            src='/karthik_hero.png'
+            src="/karthik_hero.png"
             alt="Karthik Lifemastery"
             className="w-2/3 max-w-xs sm:w-full sm:max-w-none h-auto "
             initial={{
@@ -835,28 +836,38 @@ const Hero = () => {
 
       {/* Pop-Up Widget */}
       {showPopup && (
-        <div className="absolute top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-30">
-          <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full relative">
-            <FaTimes
-              onClick={closePopup}
-              className="absolute top-2 right-2 text-xl cursor-pointer text-gray-600"
-            />
-            <h3 className="text-xl font-bold mb-4">Take a Deep Breath</h3>
-            <p className="mb-4">
-              Let's take a moment to calm down. Here are some breathing
-              exercises:
-            </p>
-            <ol className="list-decimal pl-4 mb-4">
-              <li>Inhale deeply for 4 seconds.</li>
-              <li>Hold your breath for 4 seconds.</li>
-              <li>Exhale slowly for 4 seconds.</li>
-            </ol>
-            <p className="italic text-gray-600">
-              Remember, this is just a temporary feeling, and you're doing
-              great!
-            </p>
+        <>
+          {/* Fullscreen background overlay */}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-60 z-40 transition-opacity duration-300"
+            onClick={closePopup}
+          />
+          {/* Centered modal, top-middle */}
+          <div className="fixed left-1/2 top-24 sm:top-60 transform -translate-x-1/2 z-50 flex justify-center w-full pointer-events-none">
+            <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full relative pointer-events-auto border border-blue-100 animate__animated animate__fadeInDown">
+              <FaTimes
+                onClick={closePopup}
+                className="absolute top-2 right-2 text-xl cursor-pointer text-gray-600 hover:text-red-400 transition"
+              />
+              <h3 className="text-xl font-bold mb-4 text-blue-700">
+                Take a Deep Breath
+              </h3>
+              <p className="mb-4 text-blue-900">
+                Let's take a moment to calm down. Here are some breathing
+                exercises:
+              </p>
+              <ol className="list-decimal pl-4 mb-4 text-blue-800">
+                <li>Inhale deeply for 4 seconds.</li>
+                <li>Hold your breath for 4 seconds.</li>
+                <li>Exhale slowly for 4 seconds.</li>
+              </ol>
+              <p className="italic text-gray-600">
+                Remember, this is just a temporary feeling, and you're doing
+                great!
+              </p>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Decorative Bubbles */}
