@@ -37,9 +37,9 @@ const CommunityPage = () => {
   }, []);
 
   useEffect(() => {
-      // Scroll to the top of the page when the component is mounted
-      window.scrollTo(0, 0);
-    }, []);
+    // Scroll to the top of the page when the component is mounted
+    window.scrollTo(0, 0);
+  }, []);
 
   const fetchPosts = async () => {
     try {
@@ -180,6 +180,7 @@ const CommunityPage = () => {
   };
 
   const isAdmin = (userEmail) => userEmail === adminEmail;
+  const isGuest = currentUser && currentUser.isAnonymous;
 
   if (!currentUser) {
     return (
@@ -188,7 +189,7 @@ const CommunityPage = () => {
           theme === "dark"
             ? "bg-gradient-to-r from-teal-900 to-blue-900"
             : "bg-gradient-to-r from-teal-400 to-blue-500"
-        }`}
+        }  `}
       >
         <div
           className={`rounded-xl shadow-lg p-8 mt-24 flex flex-col items-center ${
@@ -223,7 +224,7 @@ const CommunityPage = () => {
         theme === "dark"
           ? "bg-gradient-to-r from-teal-900 to-blue-900 text-gray-200"
           : "bg-gradient-to-r from-teal-400 to-blue-500 text-gray-800"
-      }`}
+      } ${isGuest === true ? "pt-[7rem] lg:pt-16" : "pt-0"}`}
     >
       <h2
         className={`text-3xl sm:text-4xl font-extrabold mb-8 lg:mt-20 mt-28 text-center ${
@@ -289,9 +290,7 @@ const CommunityPage = () => {
                 theme === "dark" ? "text-gray-300" : "text-gray-800"
               }`}
               dangerouslySetInnerHTML={{ __html: post.content }}
-            >
-              
-            </p>
+            ></p>
             <p
               className={`text-sm mb-4 ${
                 theme === "dark" ? "text-gray-400" : "text-gray-600"
@@ -390,9 +389,7 @@ const CommunityPage = () => {
                       <p
                         className="mt-2"
                         dangerouslySetInnerHTML={{ __html: comment.content }}
-                      >
-                        
-                      </p>
+                      ></p>
                       {(currentUser?.email === adminEmail ||
                         currentUser?.email === comment?.email) && (
                         <button

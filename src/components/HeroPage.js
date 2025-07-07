@@ -37,7 +37,6 @@ import { useTypewriter } from "../hooks/useTypewriter";
 import Particles from "react-tsparticles";
 import { loadFull } from "tsparticles";
 import { useIsTouchDevice } from "../hooks/useIsTouchDevice";
-
 const CustomCursor = () => {
   const [pos, setPos] = useState({
     x: window.innerWidth / 2,
@@ -363,6 +362,8 @@ const FeatureCard = ({
       }
     }
   };
+
+  const [loading, setLoading] = useState(true);
   return (
     <motion.div
       key={feature.title}
@@ -446,6 +447,30 @@ const FeatureCard = ({
         className="relative w-full flex justify-center items-center my-2"
         style={{ minHeight: 120 }}
       >
+        {loading && isPlaying && (
+          <div className="absolute inset-0 flex items-center justify-center z-[200] bg-white/70 rounded-xl pointer-events-none select-none">
+            <svg
+              className="animate-spin h-8 w-8 text-blue-400"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v8z"
+              />
+            </svg>
+          </div>
+        )}
         {!isPlaying && (
           <div className="absolute inset-0 flex items-center justify-center z-[100] bg-white/70 rounded-xl pointer-events-none select-none text-blue-900 font-semibold text-center text-base sm:text-lg">
             {isTouchDevice
@@ -471,6 +496,7 @@ const FeatureCard = ({
           onMouseOver={handleMouseOver}
           onMouseOut={handleMouseOut}
           onClick={handleTap}
+          onCanPlay={() => setLoading(false)}
           style={{ transition: "opacity 0.3s, transform 0.3s" }}
         />
       </motion.div>
@@ -692,9 +718,10 @@ const Hero = () => {
     },
   };
 
+
   return (
     <div
-      className={`relative min-h-screen flex flex-col items-center justify-center ${backgroundColor} overflow-x-hidden sm:pt-36 pt-32 `}
+      className={`relative min-h-screen flex flex-col items-center justify-center ${backgroundColor} overflow-x-hidden sm:pt-36 pt-32  `}
     >
       <CustomCursor />
       {/* Hero Section Container */}

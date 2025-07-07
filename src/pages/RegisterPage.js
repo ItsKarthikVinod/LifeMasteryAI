@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/authContext'
 import { doCreateUserWithEmailAndPassword, doSignInWithGoogle } from '../firebase/auth'
+import { doSignInAnonymously } from "../firebase/auth";
+import GuestButton from "../components/guestButton";
 
 const RegisterPage = () => {
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -9,10 +11,23 @@ const RegisterPage = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setconfirmPassword] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isGuestSigningIn, setIsGuestSigningIn] = useState(false);
 
   // Validation state
   const [error, setError] = useState([]);
   const [success, setSuccess] = useState("");
+
+  const onGuestSignIn = async (e) => {
+    e.preventDefault();
+    setIsGuestSigningIn(true);
+    try {
+      await doSignInAnonymously();
+      setSuccess("Signed in as Guest! Redirecting...");
+    } catch (err) {
+      setError([err.message || "Guest sign-in failed. Please try again."]);
+    }
+    setIsGuestSigningIn(false);
+  };
 
   const { userLoggedIn } = useAuth();
 
@@ -244,6 +259,7 @@ const RegisterPage = () => {
             </svg>
             {isSigningIn ? "Signing In..." : "Continue with Google"}
           </button>
+          <GuestButton onClick={onGuestSignIn} loading={isGuestSigningIn} />
         </div>
       </main>
     </>

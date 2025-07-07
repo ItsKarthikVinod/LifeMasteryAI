@@ -216,6 +216,8 @@ const SettingsPage = () => {
     alert("Admin added!");
   };
 
+  const isGuest = currentUser && currentUser.isAnonymous;
+
   // Delete admin
   const handleDeleteAdmin = async (email) => {
     if (!window.confirm("Are you sure you want to remove this admin?")) return;
@@ -226,6 +228,8 @@ const SettingsPage = () => {
   return (
     <div
       className={`min-h-screen flex items-center justify-center pt-28 sm:pt-32 px-2 sm:px-4 ${
+        isGuest === true ? "pt-[7rem] lg:pt-16" : "pt-0"
+      }  ${
         theme === "dark"
           ? "bg-gradient-to-br from-gray-900 via-teal-900 to-gray-800 text-white"
           : "bg-gradient-to-br from-teal-100 via-teal-300 to-blue-200 text-gray-800"

@@ -25,11 +25,13 @@ import InstallPrompt from './components/InstallPrompt';
 import Recipes from './components/Recipes';
 import Planner from './components/Planner';
 import RecipeSharePage from './components/RecipeSharePage'; // Import your recipe share page
+import DemoModeBanner from './components/demoModeBanner'; // Import your demo mode banner
 //import { useInactivityReminder } from './hooks/useInactivityReminder';
 
 
 const App = () => {
-  const { theme } = useAuth();
+  const { theme, currentUser } = useAuth();
+  const isGuest = currentUser && currentUser.isAnonymous;
   const { loading: habitsLoading } = useGetHabits();
 
   const { loading: goalsLoading } = useGetGoals();
@@ -91,6 +93,8 @@ const App = () => {
   // useInactivityReminder();
 
 
+
+
   // Show loader if any global data is loading
   if (habitsLoading || goalsLoading || todosLoading || authLoading) {
     return <Loader />;
@@ -99,7 +103,10 @@ const App = () => {
     <div className={theme === "dark" ? "dark" : ""}>
       <Router>
         <Navbar />
+        {isGuest && <Navbar  />}
+        {isGuest && <DemoModeBanner />}
         <StatusBanner />
+
         <Routes>
           <Route path="/" element={<HeroPage />} />
           <Route path="/login" element={<LoginPage />} />

@@ -1,13 +1,17 @@
 import React, { useState } from 'react'
 import { Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/authContext'
-import { doSignInWithEmailAndPassword, doSignInWithGoogle } from '../firebase/auth'
+import { doSignInWithEmailAndPassword, doSignInWithGoogle, doSignInAnonymously } from '../firebase/auth'
+import GuestButton from '../components/guestButton'
 
 const LoginPage = () => {
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // Guest mode state
+  const [isGuestSigningIn, setIsGuestSigningIn] = useState(false);
 
   // Validation state
   const [error, setError] = useState([]);
@@ -63,6 +67,21 @@ const LoginPage = () => {
         setError(["Google sign-in failed. Please try again."]);
       });
     }
+  };
+
+  // Guest sign-in handler
+  const onGuestSignIn = async (e) => {
+    e.preventDefault();
+    setError([]);
+    setSuccess("");
+    setIsGuestSigningIn(true);
+    try {
+      await doSignInAnonymously();
+      setSuccess("Signed in as Guest! Redirecting...");
+    } catch (err) {
+      setError([err.message || "Guest sign-in failed. Please try again."]);
+    }
+    setIsGuestSigningIn(false);
   };
 
   return (
@@ -210,6 +229,7 @@ const LoginPage = () => {
             </svg>
             {isSigningIn ? "Signing In..." : "Continue with Google"}
           </button>
+          <GuestButton onClick={onGuestSignIn} loading={isGuestSigningIn} />
         </div>
       </main>
     </>

@@ -267,6 +267,9 @@ const WhiteboardGallery = () => {
         alert("Failed to export image.");
       }
     };
+    
+
+    
 
     // Reset pan/zoom and editing on modal open/close or image change
     useEffect(() => {
@@ -279,7 +282,7 @@ const WhiteboardGallery = () => {
     return (
       <div
         onClick={() => setModalImg(null)}
-        className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 cursor-zoom-out"
+        className={`fixed inset-0 bg-black/80 flex items-center justify-center z-50 cursor-zoom-out  `}
         style={{ transition: "background 0.2s" }}
       >
         <div className="relative" onClick={(e) => e.stopPropagation()}>
@@ -425,9 +428,13 @@ const WhiteboardGallery = () => {
     );
   };
 
+  const isGuest = currentUser && currentUser.isAnonymous;
+
   return (
     <div
-      className={`min-h-screen py-8 mt-24 transition-colors duration-300 ${bgMain}`}
+      className={`min-h-screen py-8 mt-24 transition-colors duration-300 ${bgMain} ${
+        isGuest === true ? "pt-[7rem] lg:pt-16" : "pt-0"
+      }`}
     >
       <h2
         className={`text-center text-4xl font-bold mb-8 tracking-wide drop-shadow ${textMain}`}
@@ -561,9 +568,7 @@ const WhiteboardGallery = () => {
               )}
             </div>
             <div className={`text-sm text-center mb-2 ${textSecondary}`}>
-              {item.createdAt
-                ? new Date(item.createdAt).toLocaleString()
-                : ""}
+              {item.createdAt ? new Date(item.createdAt).toLocaleString() : ""}
             </div>
             <span
               className={`absolute bottom-0 right-1 text-xs px-3 py-1 rounded font-medium shadow ${badgeBg}`}

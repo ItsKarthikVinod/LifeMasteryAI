@@ -42,6 +42,7 @@ const Grocery = () => {
   const [showList, setShowList] = useState(false);
   const [loading, setLoading] = useState(true);
   const [aiOpen, setAiOpen] = useState(false);
+  const { currentUser } = useAuth(); // Get current user from auth context
 
   const handleAddAIItems = async (items) => {
     for (const name of items) {
@@ -91,6 +92,7 @@ const Grocery = () => {
       }, []);
 
   const { theme } = useAuth(); 
+  const isGuest = currentUser && currentUser.isAnonymous;
 
   const user = getAuth().currentUser;
 
@@ -245,7 +247,9 @@ const Grocery = () => {
 
   return (
     <div
-      className={`min-h-screen flex items-start justify-center ${bgMain} pt-20 sm:pt-32 px-1 sm:px-6`}
+      className={`min-h-screen flex items-start justify-center ${bgMain} pt-20 sm:pt-32 px-1 sm:px-6 ${
+        isGuest === true ? "pt-[7rem] lg:pt-32" : "pt-0"
+      } `}
     >
       <div
         className={`w-full max-w-3xl ${cardBg} ${cardShadow} rounded-2xl p-3 sm:p-6 flex flex-col items-center justify-center mt-20 sm:mt-10`}

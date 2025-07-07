@@ -330,6 +330,8 @@ const WhiteBoard = () => {
     reader.readAsDataURL(file);
   };
 
+  const isGuest = currentUser && currentUser.isAnonymous;
+
   const handleDelete = useCallback(
     (e) => {
       if (e.key === "Delete" || e.key === "Backspace") {
@@ -371,7 +373,7 @@ const WhiteBoard = () => {
     );
   }
   return (
-    <div className="p-7 bg-gray-100 mt-24 rounded-lg shadow-md">
+    <div className={`p-7 bg-gray-100 mt-24 rounded-lg shadow-md ${ isGuest===true ? 'pt-[7rem] lg:pt-16':'pt-0'} `}>
       <ToastContainer />
       {saving && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">

@@ -132,6 +132,7 @@ const Dashboard = () => {
   const { fetchedHabits } = useGetHabits();
   const { goalss} = useGetGoals();
   const { todoss } = useGetTodos();
+  const isGuest = currentUser && currentUser.isAnonymous;
   // Notification.requestPermission().then((permission) => {
   //   if (permission === "granted") {
   //     new Notification("Time to reflect 🌱", {
@@ -298,7 +299,7 @@ const Dashboard = () => {
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
           <div className="bg-white rounded-xl shadow-lg p-8 mt-24 flex flex-col items-center">
             <h2 className="text-2xl font-bold mb-4 text-teal-700">
-              Please sign in to view your recipes
+              Please sign in to access your dashboard
             </h2>
             <Link
               to="/login"
@@ -317,7 +318,7 @@ const Dashboard = () => {
         theme === "dark"
           ? "bg-gradient-to-r from-gray-900 via-teal-800 to-blue-900"
           : "bg-gradient-to-r from-teal-400 to-blue-500"
-      } `}
+      } ${ isGuest===true ? 'pt-[7rem] lg:pt-16':'pt-0'} `}
       style={{ position: "relative", overflow: "hidden" }}
     >
       <ToastContainer />
@@ -367,7 +368,9 @@ const Dashboard = () => {
                 alt="User Avatar"
               />
               Hi,{" "}
-              {currentUser.displayName
+              {currentUser.isAnonymous
+                ? "Guest"
+                : currentUser.displayName
                 ? currentUser.displayName
                 : currentUser.email}
               !
