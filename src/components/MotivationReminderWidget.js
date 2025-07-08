@@ -109,7 +109,7 @@ const MotivationReminderWidget = ({ openRouletteModal }) => {
           </button>
         </div>
         <p
-          className={`mb-1 mt-1 text-center truncate w-full ${
+          className={`mb-1 mt-1 text-center w-full break-words ${
             theme === "dark" ? "text-gray-200 text-sm" : "text-gray-700 text-sm"
           }`}
         >
