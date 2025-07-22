@@ -96,11 +96,20 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
   // AI Insights
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const generateAIInsights = async () => {
+    if (!fetchedHabits || fetchedHabits.length === 0) {
+      setAiInsights(
+        "You haven't added any habits yet. Start by adding a habit to begin tracking and receive personalized AI insights!"
+      );
+      return;
+    }
+
     const today = new Date().toISOString().slice(0, 10);
     const habitSummary = fetchedHabits
       .map(
         (habit) =>
-          `${habit.name}: ${calculateStreak(habit.completedDates)} day streak, ${
+          `${habit.name}: ${calculateStreak(
+            habit.completedDates
+          )} day streak, ${
             habit.completedDates && habit.completedDates.includes(today)
               ? "completed today"
               : "not completed today"

@@ -6,6 +6,8 @@ import { useAuth } from '../contexts/authContext';
 import useGetGame from '../hooks/useGetGame';
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 const Journal = () => {
   const [title, setTitle] = useState('');
@@ -93,17 +95,28 @@ const Journal = () => {
           >
             Content
           </label>
-          <textarea
+          
+          <ReactQuill
             value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className={`w-full px-4 py-2 border border-gray-300 rounded-md ${
+            onChange={setContent}
+            placeholder='Write your journal entry here...'
+            theme="snow"
+            className={`w-full border border-gray-300 rounded-md  ${
               theme === "dark"
-                ? "bg-gray-700 text-white"
-                : "bg-white text-black"
+                ? ""
+                : " text-black"
             }`}
-            rows="6"
-            placeholder="Write your thoughts here..."
-            required
+            style={{
+              minHeight: "200px",
+              maxHeight: "400px",
+              overflowY: "auto",
+              background: theme === "dark" ? "#374151" : "#fff",
+              color: theme === "dark" ? "#fff" : "#000",
+              borderRadius: "0.375rem",
+              border: "1px solid #d1d5db",
+              padding: "0.5rem 1rem",
+              
+            }}
           />
         </div>
         <button

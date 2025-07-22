@@ -437,7 +437,7 @@ const CommunityPage = () => {
       <Modal
         isOpen={modalIsOpen}
         onRequestClose={closeModal}
-        className={`w-full sm:w-3/4 lg:w-1/2 mx-auto my-20 p-6 sm:p-12 rounded-lg shadow-lg ${
+        className={`w-full sm:w-3/4 lg:w-1/2 mx-auto my-20 p-6  rounded-lg shadow-lg pt-32 ${
           theme === "dark"
             ? "bg-gray-800 text-gray-200"
             : "bg-white text-gray-800"

@@ -15,7 +15,6 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import useGetGame from "../hooks/useGetGame";
 
-
 const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => {
   const [minutes, setMinutes] = useState(initialMinutes); // Default work duration is 25 minutes
   const [seconds, setSeconds] = useState(0);
@@ -40,11 +39,12 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
       setIsTimelineModalOpen(!isTimelineModalOpen);
     } // Toggle visibility of the timeline modal
   };
-  
-  
-  const nodeRef = useRef(null); // Ref for the draggable component
 
+  const nodeRef = useRef(null); // Ref for the draggable component
   const audioRef = useRef(null); // Ref for the bell sound
+
+  // For accurate timer
+  const [endTime, setEndTime] = useState(null);
 
   useEffect(() => {
     const storedMinutes = localStorage.getItem("pomodoroInitialMinutes");
@@ -128,26 +128,28 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
     fetchSessionLogsFromLocalStorage();
   }, [fetchSessionLogsFromLocalStorage]);
 
+  // Accurate timer logic
   useEffect(() => {
     let interval;
-    let startTime = Date.now(); // Record the start time
-    localStorage.setItem("pomodoroStatus", "stopped");
-    
 
     if (isRunning) {
-      localStorage.setItem("pomodoroStatus", "running"); // Store the running status in Local Storage
-     
-      
-      interval = setInterval(() => {
-        const elapsedTime = Math.floor((Date.now() - startTime) / 1000); // Calculate elapsed time in seconds
-        const totalSeconds = minutes * 60 + seconds - elapsedTime;
+      // Set endTime if not already set
+      if (!endTime) {
+        setEndTime(Date.now() + (minutes * 60 + seconds) * 1000);
+        return; // Wait for endTime to be set before starting interval
+      }
 
-        if (totalSeconds <= 0) {
-          // Timer finished
+      localStorage.setItem("pomodoroStatus", "running");
+
+      interval = setInterval(() => {
+        const now = Date.now();
+        const remainingMs = endTime - now;
+        if (remainingMs <= 0) {
+          setMinutes(0);
+          setSeconds(0);
+
           audioRef.current.play();
-          localStorage.setItem("pomodoroStatus", "stopped"); // Store the stopped status in Local Storage
-      
-  
+          localStorage.setItem("pomodoroStatus", "stopped");
 
           // Create a session log entry
           const session = {
@@ -162,13 +164,13 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
 
           if (isWorkSession) {
             const xpGained = workDuration; // 1 XP per minute
-            awardXP(userId, xpGained); // Pass userId first, then xpGained// Call the function to award XP
-            
+            awardXP(userId, xpGained);
+
             toast.success(
               `+${xpGained} XP gained for completing a work session.`,
               {
                 position: "top-right",
-                autoClose: 3000, // Toast lasts for 3 seconds
+                autoClose: 3000,
                 hideProgressBar: false,
                 closeOnClick: true,
                 pauseOnHover: true,
@@ -183,7 +185,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
                   body: `Great job! You finished your work session: "${
                     title || "Session"
                   }". Time for a break!`,
-                  icon: "/android-chrome-512x512.png", // Use your app icon or a bell icon
+                  icon: "/android-chrome-512x512.png",
                 });
               } else if (Notification.permission !== "denied") {
                 Notification.requestPermission().then((permission) => {
@@ -202,39 +204,41 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
             setMinutes(breakDuration);
             setSeconds(0);
             setIsWorkSession(false);
+            setEndTime(Date.now() + breakDuration * 60 * 1000);
           } else {
             // End the Pomodoro session after the break
             setIsRunning(false);
             setMinutes(workDuration);
             setSeconds(0);
             setIsWorkSession(true);
-            document.title = "Life Mastery"; // Reset title when session ends
+            setEndTime(null);
+            document.title = "Life Mastery";
           }
 
           clearInterval(interval);
         } else {
-          const remainingMinutes = Math.floor(totalSeconds / 60);
-          const remainingSeconds = totalSeconds % 60;
+          const remainingSeconds = Math.ceil(remainingMs / 1000);
+          const remainingMinutes = Math.floor(remainingSeconds / 60);
+          const secondsLeft = remainingSeconds % 60;
           setMinutes(remainingMinutes);
-          setSeconds(remainingSeconds);
+          setSeconds(secondsLeft);
 
           // Update the document title with the timer
           document.title = `Life Mastery - ${String(remainingMinutes).padStart(
             2,
             "0"
-          )}:${String(remainingSeconds).padStart(2, "0")}`;
+          )}:${String(secondsLeft).padStart(2, "0")}`;
         }
       }, 1000);
     } else {
-      // Reset the title when the timer is paused or stopped
+      setEndTime(null);
       document.title = "Life Mastery";
     }
 
     return () => clearInterval(interval);
   }, [
     isRunning,
-    minutes,
-    seconds,
+    endTime,
     isWorkSession,
     breakDuration,
     workDuration,
@@ -242,11 +246,14 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
     title,
     setIsRunning,
     awardXP,
-    userId
+    userId,
+    minutes,
+    seconds,
   ]);
 
   const startTimer = () => {
     setIsRunning(true);
+    setEndTime(Date.now() + (minutes * 60 + seconds) * 1000);
 
     // Check if the `chrome` API is available
     if (typeof chrome !== "undefined" && chrome.runtime) {
@@ -258,6 +265,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
   const pauseTimer = () => {
     setIsRunning(false);
     localStorage.setItem("pomodoroStatus", "stopped");
+    setEndTime(null);
 
     // Check if the `chrome` API is available
     if (typeof chrome !== "undefined" && chrome.runtime) {
@@ -274,6 +282,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
     setIsWorkSession(true);
 
     setIsDurationUpdated(false);
+    setEndTime(null);
     localStorage.setItem("pomodoroStatus", "stopped");// Reset the updated state
   };
 
@@ -281,6 +290,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
     setMinutes(workDuration);
     setSeconds(0);
     setIsDurationUpdated(false); // Reset the updated state
+    setEndTime(null);
   };
 
   const handleWorkDurationChange = (e) => {
@@ -669,5 +679,4 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
     </>
   );
 };
-
 export default Pomodoro;

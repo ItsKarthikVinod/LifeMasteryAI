@@ -76,6 +76,10 @@ const JournalList = () => {
 
   // Function to analyze emotions and provide feedback
   const analyzeEmotions = async () => {
+    if (!journalEntries || journalEntries.length === 0) {
+      setAiFeedback("No journal entries available to analyze.");
+      return;
+    }
     setLoadinga(true); // Start loading
     const journalContent = journalEntries
       .map((entry) => entry.content)
@@ -113,6 +117,10 @@ const JournalList = () => {
 
   // Function to summarize monthly reflections
   const summarizeMonthlyReflections = async () => {
+    if (!journalEntries || journalEntries.length === 0) {
+      setMonthlySummary("No journal entries available to summarize.");
+      return;
+    }
     setLoadings(true); // Start loading
     const journalContent = journalEntries
       .map((entry) => entry.content)
@@ -264,7 +272,11 @@ const JournalList = () => {
                     >
                       {entry.title}
                     </h3>
-                    <p className="mt-2">{entry.content}</p>
+                    <p
+                      className="mt-2"
+                      dangerouslySetInnerHTML={{ __html: entry.content }}
+                    >
+                    </p>
                     <p
                       className={`text-sm mt-4 ${
                         theme === "dark" ? "text-gray-400" : "text-gray-500"
@@ -304,7 +316,10 @@ const JournalList = () => {
                   >
                     {entry.title}
                   </h3>
-                  <p className="mt-2">{entry.content}</p>
+                  <p
+                    className="mt-2"
+                    dangerouslySetInnerHTML={{ __html: entry.content }}
+                  ></p>
                   <p
                     className={`text-sm mt-4 ${
                       theme === "dark" ? "text-gray-400" : "text-gray-500"
