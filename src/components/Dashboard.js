@@ -20,7 +20,8 @@ import { Wheel } from "react-custom-roulette";
 import Logo from "../assets/LifeMasteryLogo.png";
 import Confetti from "react-confetti"; 
 import { Link } from "react-router-dom";
-
+import { getDocs, collection } from "firebase/firestore";
+import { db } from "../firebase/firebase";
 
 
 const locales = {
@@ -133,6 +134,26 @@ const Dashboard = () => {
   const { goalss} = useGetGoals();
   const { todoss } = useGetTodos();
   const isGuest = currentUser && currentUser.isAnonymous;
+
+  const [adminEmails, setAdminEmails] = useState([]);
+  useEffect(() => {
+      const fetchAdmins = async () => {
+        try {
+          const snapshot = await getDocs(collection(db, "admins"));
+          if (snapshot.empty) {
+            console.warn("No admins found in the database.");
+            return;
+          }
+          const emails = snapshot.docs.map((doc) => doc.id);
+          setAdminEmails(emails);
+        } catch (err) {
+          console.error("Error fetching admins:", err);
+        }
+      };
+      fetchAdmins();
+    }, []);
+
+  const isAdmin = (email) => adminEmails.includes(email);
   // Notification.requestPermission().then((permission) => {
   //   if (permission === "granted") {
   //     new Notification("Time to reflect 🌱", {
@@ -318,7 +339,7 @@ const Dashboard = () => {
         theme === "dark"
           ? "bg-gradient-to-r from-gray-900 via-teal-800 to-blue-900"
           : "bg-gradient-to-r from-teal-400 to-blue-500"
-      } ${ isGuest===true ? 'pt-[7rem] lg:pt-16':'pt-0'} `}
+      } ${isGuest === true ? "pt-[7rem] lg:pt-16" : "pt-0"} `}
       style={{ position: "relative", overflow: "hidden" }}
     >
       <ToastContainer />
@@ -374,6 +395,26 @@ const Dashboard = () => {
                 ? currentUser.displayName
                 : currentUser.email}
               !
+              {isAdmin(currentUser.email) && (
+                <span
+                  className={`px-2 py-1 ml-2 rounded-full font-bold shadow
+      ${
+        theme === "dark"
+          ? "bg-yellow-600 text-gray-900 border border-yellow-400"
+          : "bg-yellow-300 text-gray-900 border border-yellow-400"
+      }`}
+                  style={{
+                    letterSpacing: "0.5px",
+                    fontSize: "0.85em",
+                    boxShadow:
+                      theme === "dark"
+                        ? "0 2px 8px rgba(255, 255, 0, 0.08)"
+                        : "0 2px 8px rgba(255, 200, 0, 0.10)",
+                  }}
+                >
+                  Admin
+                </span>
+              )}
             </p>
           </div>
 

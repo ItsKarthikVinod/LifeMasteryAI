@@ -31,9 +31,27 @@ const CommunityPage = () => {
   const userName = currentUser?.displayName;
   const userId = currentUser?.uid;
   const adminEmail = "karthivinu1122@gmail.com";
+  const [adminEmails, setAdminEmails] = useState([]);
 
   useEffect(() => {
     fetchPosts();
+  }, []);
+
+  useEffect(() => {
+    const fetchAdmins = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, "admins"));
+        if (snapshot.empty) {
+          console.warn("No admins found in the database.");
+          return;
+        }
+        const emails = snapshot.docs.map((doc) => doc.id);
+        setAdminEmails(emails);
+      } catch (err) {
+        console.error("Error fetching admins:", err);
+      }
+    };
+    fetchAdmins();
   }, []);
 
   useEffect(() => {
@@ -179,7 +197,8 @@ const CommunityPage = () => {
     setSelectedPostId(selectedPostId === postId ? null : postId);
   };
 
-  const isAdmin = (userEmail) => userEmail === adminEmail;
+  const isAdmin = (email) => adminEmails.includes(email);
+  
   const isGuest = currentUser && currentUser.isAnonymous;
 
   if (!currentUser) {

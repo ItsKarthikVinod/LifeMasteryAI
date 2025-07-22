@@ -32,9 +32,48 @@ function normalizeIngredient(name) {
   return name.trim().toLowerCase();
 }
 
+// Synonym groups for deduplication
+const synonymGroups = [
+  ["bell pepper", "capsicum"],
+  ["chilli powder", "red chili powder", "red chilli powder", "kashmiri chilli powder", "kashmiri chilly powder"],
+  ["garlic", "garlic cloves", "garlic powder"],
+  ["onion", "red onion", "onion powder", "spring onion", "spring onion greens"],
+  ["yogurt", "curd", "high protein yogurt"],
+  ["soya sauce", "soy sauce", "sweet soya sauce"],
+  ["paprika", "smoked paprika", "sweet paprika"],
+  ["lemon", "lemon juice", "lime juice", "fresh limes"],
+  ["coriander", "coriander leaves", "ground coriander"],
+  ["cumin seeds", "ground cumin"],
+  // Add more as needed
+];
+
+// Returns the canonical name for a synonym
+function getCanonicalName(name) {
+  name = name.trim().toLowerCase();
+  for (const group of synonymGroups) {
+    if (group.some((syn) => name.includes(syn))) {
+      return group[0];
+    }
+  }
+  return name;
+}
+
+// Remove duplicates and group synonyms
+function deduplicateIngredients(ingredients) {
+  const seen = new Set();
+  const result = [];
+  for (let ing of ingredients) {
+    const canonical = getCanonicalName(ing);
+    if (!seen.has(canonical)) {
+      seen.add(canonical);
+      result.push(canonical);
+    }
+  }
+  return result;
+}
+
 // Find missing ingredients (not available in groceries)
 function getMissingIngredients(recipeIngredients, groceries) {
-  // Only consider groceries that are marked as available === true
   const groceryNames = groceries
     .filter((g) => g.available)
     .map((g) => normalizeIngredient(g.name));
@@ -71,6 +110,7 @@ export default function Recipes() {
   const { theme } = useAuth();
   const [groceries, setGroceries] = useState([]);
   const user = getAuth().currentUser;
+  const [addingIngredientsId, setAddingIngredientsId] = useState(null);
 
   // Fetch recipes
   useEffect(() => {
@@ -122,10 +162,12 @@ export default function Recipes() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const ingredientsArr = form.ingredients
+    let ingredientsArr = form.ingredients
       .split(",")
       .map((i) => i.trim())
       .filter((i) => i);
+    // Deduplicate and group synonyms before saving
+    ingredientsArr = deduplicateIngredients(ingredientsArr);
     if (!form.name || !form.link) {
       setLoading(false);
       return;
@@ -196,16 +238,19 @@ export default function Recipes() {
     setModalOpen(true);
   };
 
-  // Add missing ingredients to grocery
-  const addMissingIngredientsToGrocery = async (missingIngredients) => {
+  // Add missing ingredients to grocery (with loader per recipe)
+  const addMissingIngredientsToGrocery = async (
+    missingIngredients,
+    recipeId
+  ) => {
     if (!user) return;
     if (!missingIngredients || missingIngredients.length === 0) {
       alert("No missing ingredients to add!");
       return;
     }
+    setAddingIngredientsId(recipeId); // Start loading for this recipe
     let added = 0;
     for (const name of missingIngredients) {
-      // Prevent duplicate items (case-insensitive, trimmed)
       const alreadyExists = groceries.some(
         (g) => normalizeIngredient(g.name) === normalizeIngredient(name)
       );
@@ -223,6 +268,7 @@ export default function Recipes() {
         added++;
       } catch {}
     }
+    setAddingIngredientsId(null); // End loading
     if (added > 0) {
       alert(`${added} missing ingredient(s) added to your grocery list!`);
     } else {
@@ -395,7 +441,7 @@ export default function Recipes() {
                     setLoading(true);
                     try {
                       const cohereApiKey = process.env.REACT_APP_COHERE_API_KEY;
-                      const prompt = `Extract a list of ingredients from this recipe text:\n${form.ingredients}\nOnly return a comma-separated list of ingredients. Remove all measurements and quantities. Group synonyms (e.g., bell pepper/capsicum) as one item.`;
+                      const prompt = `Extract a list of ingredients from this recipe text:\n${form.ingredients}\nOnly return a comma-separated list of ingredients. Remove all measurements and quantities. `;
                       const res = await fetch(
                         "https://api.cohere.ai/v1/generate",
                         {
@@ -413,10 +459,12 @@ export default function Recipes() {
                         }
                       );
                       const data = await res.json();
-                      const aiIngredients = data.generations?.[0]?.text
+                      let aiIngredients = data.generations?.[0]?.text
                         ?.split(",")
                         .map((i) => i.trim())
                         .filter(Boolean);
+                      // Deduplicate and group synonyms
+                      aiIngredients = deduplicateIngredients(aiIngredients);
                       if (aiIngredients && aiIngredients.length > 0) {
                         setForm((f) => ({
                           ...f,
@@ -483,6 +531,19 @@ export default function Recipes() {
                     key={recipe.id}
                     className={`${cardBg} ${cardText} ${cardShadow} rounded-xl p-5 relative border ${borderColor} transition-transform transform hover:scale-105 hover:shadow-2xl duration-200`}
                   >
+                    {/* Loader overlay for adding ingredients */}
+                    {addingIngredientsId === recipe.id && (
+                      <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+                        <div className="flex flex-col items-center">
+                          <div className="w-64 h-3 bg-gray-200 rounded-full overflow-hidden mb-4">
+                            <div className="h-full bg-gradient-to-r from-teal-400 to-blue-400 animate-pulse w-full" />
+                          </div>
+                          <span className="text-lg font-semibold text-white drop-shadow">
+                            Adding missing ingredients to grocery...
+                          </span>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-lg font-bold">{recipe.name}</h3>
                       {hasIngredients && allAvailable && (
@@ -508,7 +569,6 @@ export default function Recipes() {
                         <ul className="list-none ml-0 mt-1 max-h-20 overflow-y-auto pr-2">
                           {recipe.ingredients.map((ing, idx) => {
                             const ingNorm = normalizeIngredient(ing);
-                            // Only consider groceries that are available
                             const available = groceries.some(
                               (g) =>
                                 g.available &&
@@ -544,16 +604,24 @@ export default function Recipes() {
                     </div>
                     {/* Add missing ingredients to grocery */}
                     {hasIngredients && missingIngredients.length > 0 && (
-                      <button
-                        onClick={() =>
-                          addMissingIngredientsToGrocery(missingIngredients)
-                        }
-                        className={`mt-3 px-3 py-2 rounded-lg font-bold flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white transition shadow`}
-                        title="Add missing ingredients to grocery"
-                      >
-                        <FaCartPlus />
-                        Add Missing Ingredients to Grocery
-                      </button>
+                      <>
+                        <button
+                          onClick={() =>
+                            addMissingIngredientsToGrocery(
+                              missingIngredients,
+                              recipe.id
+                            )
+                          }
+                          className={`mt-3 px-3 py-2 rounded-lg font-bold flex items-center gap-2 ${btnPrimary} transition shadow`}
+                          title="Add missing ingredients to grocery"
+                          disabled={addingIngredientsId === recipe.id}
+                        >
+                          <FaCartPlus />
+                          {addingIngredientsId === recipe.id
+                            ? "Adding..."
+                            : "Add Missing Ingredients to Grocery"}
+                        </button>
+                      </>
                     )}
                     <div className="flex gap-2 mt-4 flex-wrap">
                       <button
@@ -642,6 +710,21 @@ export default function Recipes() {
                         key={recipe.id}
                         className={`rounded-xl transition ${hovercolor} border ${borderColor} hover:shadow-lg align-top`}
                       >
+                        {/* Loader overlay for adding ingredients */}
+                        {addingIngredientsId === recipe.id && (
+                          <td colSpan={6} className="relative">
+                            <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+                              <div className="flex flex-col items-center">
+                                <div className="w-64 h-3 bg-gray-200 rounded-full overflow-hidden mb-4">
+                                  <div className="h-full bg-gradient-to-r from-teal-400 to-blue-400 animate-pulse w-full" />
+                                </div>
+                                <span className="text-lg font-semibold text-white drop-shadow">
+                                  Adding missing ingredients to grocery...
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                        )}
                         <td className="text-center font-bold py-4 px-4 align-middle hidden sm:table-cell">
                           {idx + 1}
                         </td>
@@ -671,7 +754,6 @@ export default function Recipes() {
                               <ul className="list-none ml-0">
                                 {(recipe.ingredients || []).map((ing, idx2) => {
                                   const ingNorm = normalizeIngredient(ing);
-                                  // Only consider groceries that are available
                                   const available = groceries.some(
                                     (g) =>
                                       g.available &&
@@ -709,18 +791,24 @@ export default function Recipes() {
                           </div>
                           {/* Add missing ingredients to grocery */}
                           {hasIngredients && missingIngredients.length > 0 && (
-                            <button
-                              onClick={() =>
-                                addMissingIngredientsToGrocery(
-                                  missingIngredients
-                                )
-                              }
-                              className={`mt-2 px-3 py-2 rounded-lg font-bold flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white transition shadow`}
-                              title="Add missing ingredients to grocery"
-                            >
-                              <FaCartPlus />
-                              Add Missing Ingredients to Grocery
-                            </button>
+                            <>
+                              <button
+                                onClick={() =>
+                                  addMissingIngredientsToGrocery(
+                                    missingIngredients,
+                                    recipe.id
+                                  )
+                                }
+                                className={`mt-3 px-3 py-2 rounded-lg font-bold flex items-center gap-2 ${btnPrimary} transition shadow`}
+                                title="Add missing ingredients to grocery"
+                                disabled={addingIngredientsId === recipe.id}
+                              >
+                                <FaCartPlus />
+                                {addingIngredientsId === recipe.id
+                                  ? "Adding..."
+                                  : "Add Missing Ingredients to Grocery"}
+                              </button>
+                            </>
                           )}
                         </td>
                         <td className="py-4 px-4 text-center align-middle hidden sm:table-cell">
@@ -790,7 +878,7 @@ export default function Recipes() {
             </table>
           </div>
         )}
+      </div>
     </div>
-    </div>  
   );
-};
+}
