@@ -19,11 +19,10 @@ import {
   deleteDoc,
   doc,
 } from "firebase/firestore";
-import { useAuth } from "../contexts/authContext"; // Import your auth context
+import { useAuth } from "../contexts/authContext";
 import GroceryAIModal from "./GroceryAIModal";
 import { Link } from "react-router-dom";
-import {  writeBatch } from "firebase/firestore"; // Add this import
-
+import { writeBatch } from "firebase/firestore";
 
 // Debounce utility to avoid too many requests
 function debounce(fn, delay) {
@@ -42,10 +41,15 @@ const Grocery = () => {
   const [showList, setShowList] = useState(false);
   const [loading, setLoading] = useState(true);
   const [aiOpen, setAiOpen] = useState(false);
-  const { currentUser } = useAuth(); // Get current user from auth context
+  const { currentUser } = useAuth();
 
   const handleAddAIItems = async (items) => {
     for (const name of items) {
+      // Prevent duplicate items (case-insensitive, trimmed)
+      const alreadyExists = groceries.some(
+        (g) => g.name.trim().toLowerCase() === name.trim().toLowerCase()
+      );
+      if (alreadyExists) continue;
       const newItem = {
         name,
         available: false,
@@ -87,11 +91,10 @@ const Grocery = () => {
   };
 
   useEffect(() => {
-        // Scroll to the top of the page when the component is mounted
-        window.scrollTo(0, 0);
-      }, []);
+    window.scrollTo(0, 0);
+  }, []);
 
-  const { theme } = useAuth(); 
+  const { theme } = useAuth();
   const isGuest = currentUser && currentUser.isAnonymous;
 
   const user = getAuth().currentUser;
@@ -156,6 +159,15 @@ const Grocery = () => {
   const addGrocery = async (e) => {
     e.preventDefault();
     if (!input.trim() || !user) return;
+    // Prevent duplicate items (case-insensitive, trimmed)
+    const alreadyExists = groceries.some(
+      (g) => g.name.trim().toLowerCase() === input.trim().toLowerCase()
+    );
+    if (alreadyExists) {
+      alert("Item already exists in your grocery list!");
+      setInput("");
+      return;
+    }
     const newItem = {
       name: input.trim(),
       available: false,
@@ -201,6 +213,7 @@ const Grocery = () => {
   const copyList = () => {
     const text = groceries
       .filter((g) => !g.available)
+      .sort((a, b) => a.name.localeCompare(b.name))
       .map((g) => `- [ ] ${g.name}`)
       .join("\n");
     navigator.clipboard.writeText(text);
@@ -211,6 +224,7 @@ const Grocery = () => {
   const nativeShare = () => {
     const text = groceries
       .filter((g) => !g.available)
+      .sort((a, b) => a.name.localeCompare(b.name))
       .map((g) => `- ${g.name}`)
       .join("\n");
     if (navigator.share) {
@@ -373,40 +387,43 @@ const Grocery = () => {
                   </td>
                 </tr>
               ) : (
-                groceries.map((g) => (
-                  <tr
-                    key={g.id}
-                    className={`${tableRow} rounded-lg shadow transition`}
-                  >
-                    <td
-                      className={`py-1 px-2 sm:py-2 sm:px-4 font-medium ${cardTextColor}`}
+                groceries
+                  .slice()
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((g) => (
+                    <tr
+                      key={g.id}
+                      className={`${tableRow} rounded-lg shadow transition`}
                     >
-                      {g.name}
-                    </td>
-                    <td className="py-1 px-2 sm:py-2 sm:px-4 text-center">
-                      <button
-                        onClick={() => toggleAvailable(g.id)}
-                        className="focus:outline-none"
-                        aria-label="Toggle Available"
+                      <td
+                        className={`py-1 px-2 sm:py-2 sm:px-4 font-medium ${cardTextColor}`}
                       >
-                        {g.available ? (
-                          <FaCheckCircle className="text-green-500 text-base sm:text-xl" />
-                        ) : (
-                          <FaRegCircle className="text-gray-400 text-base sm:text-xl" />
-                        )}
-                      </button>
-                    </td>
-                    <td className="py-1 px-2 sm:py-2 sm:px-4 text-center">
-                      <button
-                        onClick={() => removeGrocery(g.id)}
-                        className="text-red-500 hover:text-red-700 text-base sm:text-xl"
-                        aria-label="Remove"
-                      >
-                        <FaTrash />
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                        {g.name}
+                      </td>
+                      <td className="py-1 px-2 sm:py-2 sm:px-4 text-center">
+                        <button
+                          onClick={() => toggleAvailable(g.id)}
+                          className="focus:outline-none"
+                          aria-label="Toggle Available"
+                        >
+                          {g.available ? (
+                            <FaCheckCircle className="text-green-500 text-base sm:text-xl" />
+                          ) : (
+                            <FaRegCircle className="text-gray-400 text-base sm:text-xl" />
+                          )}
+                        </button>
+                      </td>
+                      <td className="py-1 px-2 sm:py-2 sm:px-4 text-center">
+                        <button
+                          onClick={() => removeGrocery(g.id)}
+                          className="text-red-500 hover:text-red-700 text-base sm:text-xl"
+                          aria-label="Remove"
+                        >
+                          <FaTrash />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
               )}
             </tbody>
           </table>
@@ -460,6 +477,7 @@ const Grocery = () => {
               )}
               {groceries
                 .filter((g) => !g.available)
+                .sort((a, b) => a.name.localeCompare(b.name))
                 .map((g) => (
                   <li
                     key={g.id}
@@ -494,9 +512,9 @@ const Grocery = () => {
             </button>
           </div>
         )}
+
       </div>
     </div>
   );
-};
-
+}
 export default Grocery;

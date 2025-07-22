@@ -8,7 +8,7 @@ import {
   doc,
   serverTimestamp,
   query,
-  where
+  where,
 } from "firebase/firestore";
 import { db } from "../firebase/firebase";
 import {
@@ -20,16 +20,39 @@ import {
   FaThLarge,
   FaBan,
   FaShareAlt,
+  FaCartPlus,
 } from "react-icons/fa";
 import { useAuth } from "../contexts/authContext";
 import { getAuth } from "firebase/auth";
 import stringSimilarity from "string-similarity";
 import { Link } from "react-router-dom";
 
+// Utility: Normalize ingredient names for matching
+function normalizeIngredient(name) {
+  return name.trim().toLowerCase();
+}
+
+// Find missing ingredients (not available in groceries)
+function getMissingIngredients(recipeIngredients, groceries) {
+  // Only consider groceries that are marked as available === true
+  const groceryNames = groceries
+    .filter((g) => g.available)
+    .map((g) => normalizeIngredient(g.name));
+  return recipeIngredients.filter((ing) => {
+    const ingNorm = normalizeIngredient(ing);
+    return !groceryNames.some(
+      (g) => stringSimilarity.compareTwoStrings(ingNorm, g) > 0.6
+    );
+  });
+}
+
+// Check if all ingredients are available
 function areAllIngredientsAvailable(recipeIngredients, groceries) {
-  const groceryNames = groceries.map((g) => g.name.trim().toLowerCase());
+  const groceryNames = groceries
+    .filter((g) => g.available)
+    .map((g) => normalizeIngredient(g.name));
   return recipeIngredients.every((ing) => {
-    const ingNorm = ing.trim().toLowerCase();
+    const ingNorm = normalizeIngredient(ing);
     return groceryNames.some(
       (g) => stringSimilarity.compareTwoStrings(ingNorm, g) > 0.6
     );
@@ -49,6 +72,7 @@ export default function Recipes() {
   const [groceries, setGroceries] = useState([]);
   const user = getAuth().currentUser;
 
+  // Fetch recipes
   useEffect(() => {
     if (!user) return;
     const fetchRecipes = async () => {
@@ -67,21 +91,20 @@ export default function Recipes() {
         );
       } catch (err) {
         console.error("Error fetching recipes:", err);
-        // Optionally handle error
       }
       setLoading(false);
     };
     fetchRecipes();
   }, [user]);
 
+  // Fetch groceries (all, not just available)
   useEffect(() => {
     if (!user) return;
     const fetchGroceries = async () => {
       try {
         const q = query(
           collection(db, "grocery"),
-          where("uid", "==", user.uid),
-          where("available", "==", true)
+          where("uid", "==", user.uid)
         );
         const snapshot = await getDocs(q);
         setGroceries(
@@ -90,13 +113,12 @@ export default function Recipes() {
             ...doc.data(),
           }))
         );
-      } catch (err) {
-        // Optionally handle error
-      }
+      } catch (err) {}
     };
     fetchGroceries();
   }, [user]);
 
+  // Add or edit recipe
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -148,22 +170,22 @@ export default function Recipes() {
       setModalOpen(false);
       setForm(initialForm);
       setEditId(null);
-    } catch (err) {
-    }
+    } catch (err) {}
     setLoading(false);
   };
 
+  // Delete recipe
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this recipe?")) return;
     setLoading(true);
     try {
       await deleteDoc(doc(db, "recipes", id));
       setRecipes((prev) => prev.filter((r) => r.id !== id));
-    } catch {
-    }
+    } catch {}
     setLoading(false);
   };
 
+  // Edit recipe
   const handleEdit = (recipe) => {
     setForm({
       name: recipe.name,
@@ -172,6 +194,40 @@ export default function Recipes() {
     });
     setEditId(recipe.id);
     setModalOpen(true);
+  };
+
+  // Add missing ingredients to grocery
+  const addMissingIngredientsToGrocery = async (missingIngredients) => {
+    if (!user) return;
+    if (!missingIngredients || missingIngredients.length === 0) {
+      alert("No missing ingredients to add!");
+      return;
+    }
+    let added = 0;
+    for (const name of missingIngredients) {
+      // Prevent duplicate items (case-insensitive, trimmed)
+      const alreadyExists = groceries.some(
+        (g) => normalizeIngredient(g.name) === normalizeIngredient(name)
+      );
+      if (alreadyExists) continue;
+      const newItem = {
+        name: name.trim(),
+        available: false,
+        checked: false,
+        uid: user.uid,
+        createdAt: Date.now(),
+      };
+      try {
+        const docRef = await addDoc(collection(db, "grocery"), newItem);
+        setGroceries((prev) => [...prev, { ...newItem, id: docRef.id }]);
+        added++;
+      } catch {}
+    }
+    if (added > 0) {
+      alert(`${added} missing ingredient(s) added to your grocery list!`);
+    } else {
+      alert("No new ingredients were added (all already present).");
+    }
   };
 
   // THEME
@@ -339,7 +395,7 @@ export default function Recipes() {
                     setLoading(true);
                     try {
                       const cohereApiKey = process.env.REACT_APP_COHERE_API_KEY;
-                      const prompt = `Extract a list of ingredients from this recipe text:\n${form.ingredients}\nOnly return a comma-separated list of ingredients.`;
+                      const prompt = `Extract a list of ingredients from this recipe text:\n${form.ingredients}\nOnly return a comma-separated list of ingredients. Remove all measurements and quantities. Group synonyms (e.g., bell pepper/capsicum) as one item.`;
                       const res = await fetch(
                         "https://api.cohere.ai/v1/generate",
                         {
@@ -366,10 +422,8 @@ export default function Recipes() {
                           ...f,
                           ingredients: aiIngredients.join(", "),
                         }));
-                      } else {
                       }
-                    } catch (err) {
-                    }
+                    } catch (err) {}
                     setLoading(false);
                   }}
                 >
@@ -420,6 +474,9 @@ export default function Recipes() {
                 const allAvailable =
                   hasIngredients &&
                   areAllIngredientsAvailable(recipe.ingredients, groceries);
+                const missingIngredients = hasIngredients
+                  ? getMissingIngredients(recipe.ingredients, groceries)
+                  : [];
                 const shareUrl = `${websiteUrl}/recipes/share/${recipe.id}`;
                 return (
                   <div
@@ -450,12 +507,14 @@ export default function Recipes() {
                       {hasIngredients ? (
                         <ul className="list-none ml-0 mt-1 max-h-20 overflow-y-auto pr-2">
                           {recipe.ingredients.map((ing, idx) => {
-                            const ingNorm = ing.trim().toLowerCase();
+                            const ingNorm = normalizeIngredient(ing);
+                            // Only consider groceries that are available
                             const available = groceries.some(
                               (g) =>
+                                g.available &&
                                 stringSimilarity.compareTwoStrings(
                                   ingNorm,
-                                  g.name.trim().toLowerCase()
+                                  normalizeIngredient(g.name)
                                 ) > 0.6
                             );
                             return (
@@ -483,6 +542,19 @@ export default function Recipes() {
                         </div>
                       )}
                     </div>
+                    {/* Add missing ingredients to grocery */}
+                    {hasIngredients && missingIngredients.length > 0 && (
+                      <button
+                        onClick={() =>
+                          addMissingIngredientsToGrocery(missingIngredients)
+                        }
+                        className={`mt-3 px-3 py-2 rounded-lg font-bold flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white transition shadow`}
+                        title="Add missing ingredients to grocery"
+                      >
+                        <FaCartPlus />
+                        Add Missing Ingredients to Grocery
+                      </button>
+                    )}
                     <div className="flex gap-2 mt-4 flex-wrap">
                       <button
                         onClick={() => handleEdit(recipe)}
@@ -561,6 +633,9 @@ export default function Recipes() {
                     const allAvailable =
                       hasIngredients &&
                       areAllIngredientsAvailable(recipe.ingredients, groceries);
+                    const missingIngredients = hasIngredients
+                      ? getMissingIngredients(recipe.ingredients, groceries)
+                      : [];
                     const shareUrl = `${websiteUrl}/recipes/share/${recipe.id}`;
                     return (
                       <tr
@@ -595,12 +670,14 @@ export default function Recipes() {
                             {hasIngredients ? (
                               <ul className="list-none ml-0">
                                 {(recipe.ingredients || []).map((ing, idx2) => {
-                                  const ingNorm = ing.trim().toLowerCase();
+                                  const ingNorm = normalizeIngredient(ing);
+                                  // Only consider groceries that are available
                                   const available = groceries.some(
                                     (g) =>
+                                      g.available &&
                                       stringSimilarity.compareTwoStrings(
                                         ingNorm,
-                                        g.name.trim().toLowerCase()
+                                        normalizeIngredient(g.name)
                                       ) > 0.6
                                   );
                                   return (
@@ -630,6 +707,21 @@ export default function Recipes() {
                               </span>
                             )}
                           </div>
+                          {/* Add missing ingredients to grocery */}
+                          {hasIngredients && missingIngredients.length > 0 && (
+                            <button
+                              onClick={() =>
+                                addMissingIngredientsToGrocery(
+                                  missingIngredients
+                                )
+                              }
+                              className={`mt-2 px-3 py-2 rounded-lg font-bold flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white transition shadow`}
+                              title="Add missing ingredients to grocery"
+                            >
+                              <FaCartPlus />
+                              Add Missing Ingredients to Grocery
+                            </button>
+                          )}
                         </td>
                         <td className="py-4 px-4 text-center align-middle hidden sm:table-cell">
                           {hasIngredients && allAvailable ? (
@@ -698,7 +790,7 @@ export default function Recipes() {
             </table>
           </div>
         )}
-      </div>
     </div>
+    </div>  
   );
-}
+};
