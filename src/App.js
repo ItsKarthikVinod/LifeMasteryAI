@@ -48,7 +48,7 @@ const App = () => {
         notifyButton: {
           enable: true,
         },
-        serviceWorkerPath: "/service-worker.js",
+        serviceWorkerPath: "service-worker.js",
       }).then(() => {
         OneSignal.Slidedown.promptPush();
       });
