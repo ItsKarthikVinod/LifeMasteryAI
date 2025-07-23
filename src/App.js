@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import HeroPage from './components/HeroPage';
@@ -27,6 +27,7 @@ import Planner from './components/Planner';
 import RecipeSharePage from './components/RecipeSharePage'; // Import your recipe share page
 import DemoModeBanner from './components/demoModeBanner'; // Import your demo mode banner
 //import { useInactivityReminder } from './hooks/useInactivityReminder';
+import OneSignal from "react-onesignal";
 
 
 const App = () => {
@@ -37,6 +38,23 @@ const App = () => {
   const { loading: goalsLoading } = useGetGoals();
   const { loading: todosLoading } = useGetTodos();
   const { loading: authLoading } = useAuth(); // If your auth context provides loading
+
+  useEffect(() => {
+    // Ensure this code runs only on the client side
+    if (typeof window !== "undefined") {
+      OneSignal.init({
+        appId: "47c26c0f-d61b-4716-9f62-f1f84ac305bc",
+        // You can add other initialization options here
+        notifyButton: {
+          enable: true,
+        },
+      }).then(() => {
+        
+            OneSignal.Slidedown.promptPush();
+          
+      });
+    }
+  }, []);
 
   // useEffect(() => {
   //   // Dynamically load the OneSignal SDK script
