@@ -78,6 +78,17 @@ code {
   }
 }
 
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #38b2ac;
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .loader {
   display: inline-block;
   border-width: 2px;

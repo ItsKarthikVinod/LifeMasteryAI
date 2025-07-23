@@ -542,7 +542,7 @@ const SettingsPage = () => {
 
         {/* Theme Section */}
         <div className="mb-8">
-          <label className="block text-lg font-medium mb-4 flex items-center">
+          <label className="text-lg font-medium mb-4 flex items-center">
             <FaPalette className="mr-2" />
             Theme
           </label>

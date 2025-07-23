@@ -1,6 +1,7 @@
 import { useState, useRef} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/authContext";
+
 import { doSignOut } from "../firebase/auth";
 import Logo from "../assets/LifeMasteryLogo.png";
 import {
@@ -14,18 +15,22 @@ import {
   FaSignOutAlt,
   FaImages,
 } from "react-icons/fa";
+import NotificationBell from "./NotificationBell";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const { userLoggedIn = false } = useAuth();
+  
   const navigate = useNavigate();
 
+  const {  userLoggedIn } = useAuth();
+
+  
   // Dropdown refs for click outside
   const toolsDropdownRef = useRef();
   const userDropdownRef = useRef();
-  
+
   const handleSignOut = async () => {
     const confirmed = window.confirm("Are you sure you want to log out?");
     if (!confirmed) return;
@@ -64,7 +69,7 @@ const Navbar = () => {
             {/* Website Name */}
             <Link
               to="/"
-              className="text-2xl font-extrabold bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 text-transparent bg-clip-text hover:from-green-300 hover:via-green-400 hover:to-green-500 transition-all duration-500 transform hover:scale-110 font-poppins sm:text-3xl md:text-4xl"
+              className="text-2xl  font-extrabold bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 text-transparent bg-clip-text hover:from-green-300 hover:via-green-400 hover:to-green-500 transition-all duration-500 transform hover:scale-110 font-poppins sm:text-3xl md:text-4xl"
               onClick={closeAllMenus}
             >
               Life Mastery
@@ -205,6 +210,9 @@ const Navbar = () => {
               </Link>
             </>
           )}
+          {userLoggedIn && (<div className="text-gray-500">
+            <NotificationBell />
+          </div> )}
         </div>
 
         {/* Mobile Hamburger Menu */}
@@ -230,6 +238,10 @@ const Navbar = () => {
               ></path>
             </svg>
           </button>
+          { userLoggedIn &&  <div className="text-gray-500 text-xs ">
+            <NotificationBell
+            />
+          </div>}
         </div>
       </div>
 

@@ -14,6 +14,7 @@ import OpenAI from "openai";
 import useGetGame from "../hooks/useGetGame";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { sendNotification } from "../hooks/useSendNotification";
 
 const HabitTracker = ({ onTriggerPomodoro }) => {
   const [habitName, setHabitName] = useState("");
@@ -91,6 +92,7 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
 
     return streak;
   }
+  
   
 
   // AI Insights
@@ -200,13 +202,7 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
       await updateDoc(habitRef, { completedDates: newDates });
       await awardXP(currentUser.uid, -10);
       toast.error("-10 XP deducted for unchecking a habit!", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
+        /* ... */
       });
     } else {
       // Check: add today
@@ -214,17 +210,45 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
       await updateDoc(habitRef, { completedDates: newDates });
       await awardXP(currentUser.uid, 10);
       toast.success("+10 XP gained for completing a habit!", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
+        /* ... */
       });
+
+      // --- Notification logic ---
+      // Notify on completion
+      await sendNotification(
+        currentUser.uid,
+        `You completed your habit: '${habit.name}'.`,
+        "habit"
+      );
+
+      // Calculate streak after update
+      const streak = calculateStreak(newDates);
+      // Notify on streak milestone (e.g., 7 days)
+      
+      if (streak === 7) {
+        await sendNotification(
+          currentUser.uid,
+          `Congrats! You’ve maintained your habit '${habit.name}' for 7 days! 🔥`,
+          "habit"
+        );
+      }
+      if (streak === 14) {
+        await sendNotification(
+          currentUser.uid,
+          `Congrats! You’ve maintained your habit '${habit.name}' for 14 days! 🔥`,
+          "habit"
+        );
+      }
+      if (streak === 30) {
+        await sendNotification(
+          currentUser.uid,
+          `Congrats! You’ve maintained your habit '${habit.name}' for a month! 🔥`,
+          "habit"
+        );
+      }
+      // You can add more milestones (14, 30, etc.) similarly
     }
   };
-
   // Delete a habit
   const deleteHabit = async (id) => {
     try {
@@ -425,8 +449,11 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
                       >
                         🔥
                       </div>
+                      
                     )
-                  )}
+                  )
+                  }
+                  
                 </div>
               </div>
             </div>

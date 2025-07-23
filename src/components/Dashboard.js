@@ -315,6 +315,7 @@ const Dashboard = () => {
       option: truncateText(item.option),
     }));
   
+  
   if (!currentUser) {
       return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">

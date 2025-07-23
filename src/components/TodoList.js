@@ -16,6 +16,7 @@ import { useAuth } from "../contexts/authContext";
 import useGetGame from "../hooks/useGetGame"; // Import the awardXP function
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { sendNotification } from "../hooks/useSendNotification"; // Import the notification function
 
 // Register the required Chart.js elements
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -93,7 +94,8 @@ const TodoList = ({ onTriggerPomodoro }) => {
                   pauseOnHover: true,
                   draggable: true,
                   progress: undefined,
-                });
+        });
+        await sendNotification(userId,`Task Completed: ${todo.name}`, 'task');
       } else {
         // If the task is marked as incomplete, deduct XP
         awardXP(userId, -10); // Deduct XP for uncompleting a task

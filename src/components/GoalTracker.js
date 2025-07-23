@@ -1,6 +1,15 @@
-import React, { useState } from 'react';
-import { db } from '../firebase/firebase';
-import { collection, addDoc,  doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import React, { useState, useEffect } from "react";
+import { db } from "../firebase/firebase";
+import {
+  collection,
+  addDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
 import {
   FaCheck,
   FaEdit,
@@ -9,41 +18,85 @@ import {
   FaClock,
   FaChevronDown,
   FaChevronRight,
-} from "react-icons/fa"; // Icons for edit, delete, and check
+} from "react-icons/fa";
 import { useAuth } from "../contexts/authContext";
 import useGetGame from "../hooks/useGetGame";
-import { toast } from "react-toastify"; // Import React-Toastify
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { sendNotification } from "../hooks/useSendNotification";
+import { isSameDay } from "date-fns";
 
-import useGetGoals from '../hooks/useGetGoals';
-const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
-  const [goalName, setGoalName] = useState('');
+import useGetGoals from "../hooks/useGetGoals";
+
+const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
+  const [goalName, setGoalName] = useState("");
   const [expandedGoals, setExpandedGoals] = useState({});
-  const [subGoalInput, setSubGoalInput] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const [subGoalInput, setSubGoalInput] = useState("");
+  const [dueDate, setDueDate] = useState("");
   const [currentGoalId, setCurrentGoalId] = useState(null);
   const [editingSubGoalIndex, setEditingSubGoalIndex] = useState(null);
-  const [editingSubGoalName, setEditingSubGoalName] = useState('');
-  const [editingDueDate, setEditingDueDate] = useState('');
+  const [editingSubGoalName, setEditingSubGoalName] = useState("");
+  const [editingDueDate, setEditingDueDate] = useState("");
   const { currentUser, theme } = useAuth();
   const userId = currentUser.uid;
   const { goalss } = useGetGoals();
-  const {awardXP} = useGetGame(); 
-  
+  const { awardXP } = useGetGame();
 
-  
+  // Only send reminder if not already sent for this subgoal today
+  useEffect(() => {
+    if (!goalss || !currentUser?.uid) return;
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
- const toggleGoalExpansion = (goalId) => {
-   setExpandedGoals((prev) => ({
-     ...prev,
-     [goalId]: !prev[goalId], // Toggle the expanded state for the specific goal
-   }));
- };
+    const checkAndSendReminders = async () => {
+      for (const goal of goalss) {
+        for (const subGoal of goal.subGoals) {
+          if (
+            subGoal.dueDate &&
+            isSameDay(new Date(subGoal.dueDate), tomorrow) &&
+            !subGoal.completed
+          ) {
+            // Check if notification already sent today for this subgoal
+            const notifQuery = query(
+              collection(db, "notifications"),
+              where("userId", "==", currentUser.uid),
+              where("type", "==", "reminder"),
+              where(
+                "text",
+                "==",
+                `Your goal '${goal.name}: ${subGoal.name}' is due tomorrow.`
+              )
+            );
+            const notifSnap = await getDocs(notifQuery);
+            // If no notification exists, send one
+            if (notifSnap.empty) {
+              sendNotification(
+                currentUser.uid,
+                `Your goal '${goal.name}: ${subGoal.name}' is due tomorrow.`,
+                "reminder"
+              );
+            }
+          }
+        }
+      }
+    };
+    checkAndSendReminders();
+  }, [goalss, currentUser?.uid]);
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const toggleGoalExpansion = (goalId) => {
+    setExpandedGoals((prev) => ({
+      ...prev,
+      [goalId]: !prev[goalId],
+    }));
+  };
 
   const isOverdue = (dueDate) => {
     const today = new Date();
     const due = new Date(dueDate);
-    return due < today && !isNaN(due); // Check if due date is in the past
+    return due < today && !isNaN(due);
   };
 
   const getCalendarEvents = () => {
@@ -55,23 +108,19 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
           start: new Date(subGoal.dueDate),
           end: new Date(subGoal.dueDate),
           allDay: true,
-          completed: subGoal.completed
-            
+          completed: subGoal.completed,
         });
       });
     });
     return events;
   };
 
-  
-  
-
   const addGoal = async (e) => {
     e.preventDefault();
     if (!goalName) return;
 
     try {
-      const goalRef = collection(db, 'goals');
+      const goalRef = collection(db, "goals");
       await addDoc(goalRef, {
         name: goalName,
         timestamp: new Date(),
@@ -79,17 +128,16 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
         subGoals: [],
         userId: userId,
       });
-      setGoalName('');
-      
+      setGoalName("");
     } catch (error) {
-      console.error('Error adding goal: ', error);
+      console.error("Error adding goal: ", error);
     }
   };
 
   const addSubGoal = async () => {
     if (!subGoalInput || !currentGoalId || !dueDate) return;
 
-    const goalRef = doc(db, 'goals', currentGoalId);
+    const goalRef = doc(db, "goals", currentGoalId);
     const newSubGoal = {
       name: subGoalInput,
       completed: false,
@@ -97,33 +145,32 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
     };
 
     try {
-      const goal = goalss.find(goal => goal.id === currentGoalId);
+      const goal = goalss.find((goal) => goal.id === currentGoalId);
       const updatedSubGoals = [...goal.subGoals, newSubGoal];
 
       await updateDoc(goalRef, { subGoals: updatedSubGoals });
 
-      setSubGoalInput('');
-      setDueDate('');
+      setSubGoalInput("");
+      setDueDate("");
       setCurrentGoalId(null);
-      
     } catch (error) {
-      console.error('Error adding sub-goal: ', error);
+      console.error("Error adding sub-goal: ", error);
     }
   };
 
   const toggleSubGoalCompletion = async (goalId, subGoalIndex) => {
-    const goalRef = doc(db, 'goals', goalId);
-    const goal = goalss.find(g => g.id === goalId);
+    const goalRef = doc(db, "goals", goalId);
+    const goal = goalss.find((g) => g.id === goalId);
     const subGoals = [...goal.subGoals];
     subGoals[subGoalIndex].completed = !subGoals[subGoalIndex].completed;
 
     try {
       await updateDoc(goalRef, { subGoals });
       if (subGoals[subGoalIndex].completed) {
-        await awardXP(userId, 10); // Award XP for completing a sub-goal
+        await awardXP(userId, 10);
         toast.success("+10 XP gained for completing a sub-goal!", {
           position: "top-right",
-          autoClose: 3000, // Toast lasts for 3 seconds
+          autoClose: 3000,
           hideProgressBar: false,
           closeOnClick: true,
           pauseOnHover: true,
@@ -131,7 +178,7 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
           progress: undefined,
         });
       } else {
-        await awardXP(userId, -10); 
+        await awardXP(userId, -10);
         toast.error("-10 XP deducted for unchecking a sub-goal!", {
           position: "top-right",
           autoClose: 3000,
@@ -142,37 +189,34 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
           progress: undefined,
         });
       }
-      const allSubGoalsCompleted = subGoals.every(subGoal => subGoal.completed);
+      const allSubGoalsCompleted = subGoals.every(
+        (subGoal) => subGoal.completed
+      );
       await updateDoc(goalRef, { completed: allSubGoalsCompleted });
-      
-      
-
     } catch (error) {
-      console.error('Error toggling sub-goal completion: ', error);
+      console.error("Error toggling sub-goal completion: ", error);
     }
   };
 
   const deleteSubGoal = async (goalId, subGoalIndex) => {
-    const goalRef = doc(db, 'goals', goalId);
-    const goal = goalss.find(g => g.id === goalId);
+    const goalRef = doc(db, "goals", goalId);
+    const goal = goalss.find((g) => g.id === goalId);
     const subGoals = [...goal.subGoals];
     subGoals.splice(subGoalIndex, 1);
 
     try {
       await updateDoc(goalRef, { subGoals });
-      
     } catch (error) {
-      console.error('Error deleting sub-goal: ', error);
+      console.error("Error deleting sub-goal: ", error);
     }
   };
 
   const deleteGoal = async (goalId) => {
-    const goalRef = doc(db, 'goals', goalId);
+    const goalRef = doc(db, "goals", goalId);
     try {
       await deleteDoc(goalRef);
-     
     } catch (error) {
-      console.error('Error deleting goal: ', error);
+      console.error("Error deleting goal: ", error);
     }
   };
 
@@ -186,8 +230,8 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
   const saveSubGoalEdit = async () => {
     if (currentGoalId === null || editingSubGoalIndex === null) return;
 
-    const goalRef = doc(db, 'goals', currentGoalId);
-    const goal = goalss.find(g => g.id === currentGoalId);
+    const goalRef = doc(db, "goals", currentGoalId);
+    const goal = goalss.find((g) => g.id === currentGoalId);
     const subGoals = [...goal.subGoals];
     subGoals[editingSubGoalIndex] = {
       ...subGoals[editingSubGoalIndex],
@@ -198,26 +242,25 @@ const GoalTracker = ({toggleCalendarModal, onTriggerPomodoro}) => {
     try {
       await updateDoc(goalRef, { subGoals });
       setEditingSubGoalIndex(null);
-      setEditingSubGoalName('');
-      setEditingDueDate('');
-   
+      setEditingSubGoalName("");
+      setEditingDueDate("");
     } catch (error) {
-      console.error('Error saving sub-goal edit: ', error);
+      console.error("Error saving sub-goal edit: ", error);
     }
   };
 
   const calculateProgress = (subGoals) => {
     if (subGoals.length === 0) return 0;
     else {
-      const completedSubGoals = subGoals.filter(subGoal => subGoal.completed).length;
+      const completedSubGoals = subGoals.filter(
+        (subGoal) => subGoal.completed
+      ).length;
       return (completedSubGoals / subGoals.length) * 100;
     }
-    
   };
 
   return (
     <div className={`goal-tracker-container `}>
-      
       <h2
         className={`text-2xl font-semibold mb-6 text-center ${
           theme === "dark" ? "text-teal-400" : ""
