@@ -49,6 +49,7 @@ const App = () => {
           enable: true,
         },
         serviceWorkerPath: "service-worker.js",
+        serviceWorkerUpdaterPath: "service-worker-updater.js",
       }).then(() => {
         OneSignal.Slidedown.promptPush();
       });
