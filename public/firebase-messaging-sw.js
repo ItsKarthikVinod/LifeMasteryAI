@@ -30,3 +30,49 @@ messaging.onBackgroundMessage(function (payload) {
 
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
+
+const CACHE_NAME = "lifemastery-cache-v1";
+const urlsToCache = [
+  "/",
+  "/index.html",
+  "/manifest.json",
+  "/favicon.ico",
+  "/android-chrome-192x192.png",
+  "/android-chrome-512x512.png",
+  // Add other static assets you want to cache
+];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(urlsToCache);
+    })
+  );
+  console.log("✅ LifeMastery Service Worker Installed");
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((cacheNames) =>
+        Promise.all(
+          cacheNames
+            .filter((name) => name !== CACHE_NAME)
+            .map((name) => caches.delete(name))
+        )
+      )
+  );
+  console.log("✅ LifeMastery Service Worker Activated");
+});
+
+self.addEventListener("fetch", (event) => {
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      return (
+        response ||
+        fetch(event.request).catch(() => caches.match("/index.html"))
+      );
+    })
+  );
+});
