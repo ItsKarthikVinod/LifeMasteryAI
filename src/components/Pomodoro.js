@@ -7,41 +7,62 @@ import {
   FaGripLines,
   FaBell,
   FaListAlt,
+  FaMusic,
+  FaVolumeUp,
+  FaVolumeMute,
 } from "react-icons/fa";
 import { useAuth } from "../contexts/authContext";
-import Bell from "../assets/bell.mp3"; // Ensure the path is correct
+import Bell from "../assets/bell.mp3";
 import PomodoroTimeline from "./PomodoroTimeline";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import useGetGame from "../hooks/useGetGame";
 
+const MUSIC_TRACKS = [
+  { name: "Lo-fi Chillhop", src: "/jazzy-focus-1-lofi-jazz-371178.mp3" },
+  {
+    name: "Focus Ambient",
+    src: "/ambient-background-music-for-focus-and-relaxation-342438.mp3",
+  },
+  {
+    name: "Relaxing Piano",
+    src: "/peaceful-piano-instrumental-for-studying-and-focus-232535.mp3",
+  },
+];
+
 const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => {
-  const [minutes, setMinutes] = useState(initialMinutes); // Default work duration is 25 minutes
+  const [minutes, setMinutes] = useState(initialMinutes);
   const [seconds, setSeconds] = useState(0);
   const [title, setTitle] = useState(initialTitle || "");
   const [isWorkSession, setIsWorkSession] = useState(true);
   const { theme } = useAuth();
-  const [isMaximized, setIsMaximized] = useState(false); // Track if the Pomodoro is in modal view
-  const [workDuration, setWorkDuration] = useState(25); // Adjustable work duration
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [workDuration, setWorkDuration] = useState(25);
   const [breakDuration, setBreakDuration] = useState(5);
-  const [isDurationUpdated, setIsDurationUpdated] = useState(false); // Track if durations are updated
-  const [sessionLog, setSessionLog] = useState([]); // Log of Pomodoro sessions
-  const [isLogModalOpen, setIsLogModalOpen] = useState(false); // Track visibility of the session log modal
-  const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false); // Track visibility of the timeline modal
-  const { awardXP } = useGetGame(); // Get the awardXP function
+  const [isDurationUpdated, setIsDurationUpdated] = useState(false);
+  const [sessionLog, setSessionLog] = useState([]);
+  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
+  const { awardXP } = useGetGame();
   const { currentUser } = useAuth();
-  const userId = currentUser?.uid; // Get the user ID from the authenticated user
+  const userId = currentUser?.uid;
   const toggleTimelineModal = () => {
     if (sessionLog.length === 0) {
       alert("No session logs available.");
       return;
     } else {
       setIsTimelineModalOpen(!isTimelineModalOpen);
-    } // Toggle visibility of the timeline modal
+    }
   };
 
-  const nodeRef = useRef(null); // Ref for the draggable component
-  const audioRef = useRef(null); // Ref for the bell sound
+  const nodeRef = useRef(null);
+  const audioRef = useRef(null);
+  const musicRef = useRef(null);
+
+  // Music player state
+  const [isMuted, setIsMuted] = useState(false);
+  const [selectedTrack, setSelectedTrack] = useState(MUSIC_TRACKS[0].src);
+  const [musicVolume, setMusicVolume] = useState(0.3);
 
   // For accurate timer
   const [endTime, setEndTime] = useState(null);
@@ -59,15 +80,15 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
   }, [initialMinutes]);
 
   useEffect(() => {
-    setTitle(initialTitle); // Update the title when the prop changes
+    setTitle(initialTitle);
   }, [initialTitle]);
 
   const toggleVisibility = () => {
-    setIsVisible(!isVisible); // Toggle visibility of the widget
+    setIsVisible(!isVisible);
   };
 
   const toggleLogModal = () => {
-    setIsLogModalOpen(!isLogModalOpen); // Toggle visibility of the session log modal
+    setIsLogModalOpen(!isLogModalOpen);
   };
 
   let bool = false;
@@ -76,7 +97,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
   } else {
     bool = false;
   }
-  const [isVisible, setIsVisible] = useState(bool); // Track visibility of the widget
+  const [isVisible, setIsVisible] = useState(bool);
 
   // Fetch session logs from Local Storage
   const fetchSessionLogsFromLocalStorage = useCallback(() => {
@@ -92,13 +113,12 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
       setSessionLog(updatedLogs);
       localStorage.setItem("pomodoroSessionLogs", JSON.stringify(updatedLogs));
     },
-    [sessionLog] // Dependency: sessionLog
+    [sessionLog]
   );
 
   const [blockedSites, setBlockedSites] = useState([]);
   const [isBlockingEnabled, setIsBlockingEnabled] = useState(false);
 
-  // Fetch blocked sites and blocking status from localStorage
   useEffect(() => {
     const storedSites = JSON.parse(localStorage.getItem("blockedSites")) || [];
     setBlockedSites(storedSites);
@@ -108,23 +128,21 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
     setIsBlockingEnabled(blockingStatus);
   }, []);
 
-  // Block sites when the timer starts
   useEffect(() => {
     if (isRunning && isBlockingEnabled) {
       const interval = setInterval(() => {
         blockedSites.forEach((site) => {
           if (window.location.href.includes(site)) {
-            window.location.href = "about:blank"; // Redirect to a blank page
+            window.location.href = "about:blank";
           }
         });
       }, 1000);
 
-      return () => clearInterval(interval); // Cleanup interval when timer stops
+      return () => clearInterval(interval);
     }
   }, [isRunning, isBlockingEnabled, blockedSites]);
 
   useEffect(() => {
-    // Fetch logs from Local Storage on component mount
     fetchSessionLogsFromLocalStorage();
   }, [fetchSessionLogsFromLocalStorage]);
 
@@ -133,10 +151,9 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
     let interval;
 
     if (isRunning) {
-      // Set endTime if not already set
       if (!endTime) {
         setEndTime(Date.now() + (minutes * 60 + seconds) * 1000);
-        return; // Wait for endTime to be set before starting interval
+        return;
       }
 
       localStorage.setItem("pomodoroStatus", "running");
@@ -148,10 +165,10 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
           setMinutes(0);
           setSeconds(0);
 
+          audioRef.current.volume = 0.2;
           audioRef.current.play();
           localStorage.setItem("pomodoroStatus", "stopped");
 
-          // Create a session log entry
           const session = {
             title: title ? title : "Session",
             type: isWorkSession ? "Work" : "Break",
@@ -159,11 +176,10 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
             timestamp: new Date().toLocaleString(),
           };
 
-          // Save the session log to Local Storage
           saveSessionToLocalStorage(session);
 
           if (isWorkSession) {
-            const xpGained = workDuration; // 1 XP per minute
+            const xpGained = workDuration;
             awardXP(userId, xpGained);
 
             toast.success(
@@ -200,13 +216,11 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
                 });
               }
             }
-            // Switch to Break Time
             setMinutes(breakDuration);
             setSeconds(0);
             setIsWorkSession(false);
             setEndTime(Date.now() + breakDuration * 60 * 1000);
           } else {
-            // End the Pomodoro session after the break
             setIsRunning(false);
             setMinutes(workDuration);
             setSeconds(0);
@@ -223,7 +237,6 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
           setMinutes(remainingMinutes);
           setSeconds(secondsLeft);
 
-          // Update the document title with the timer
           document.title = `Life Mastery - ${String(remainingMinutes).padStart(
             2,
             "0"
@@ -251,11 +264,24 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
     seconds,
   ]);
 
+  // Music player logic
+  useEffect(() => {
+    if (musicRef.current) {
+      musicRef.current.muted = isMuted;
+      musicRef.current.volume = musicVolume;
+      if (isRunning) {
+        musicRef.current.play();
+      } else {
+        musicRef.current.pause();
+        musicRef.current.currentTime = 0;
+      }
+    }
+  }, [isRunning, selectedTrack, isMuted, musicVolume]);
+
   const startTimer = () => {
     setIsRunning(true);
     setEndTime(Date.now() + (minutes * 60 + seconds) * 1000);
 
-    // Check if the `chrome` API is available
     if (typeof chrome !== "undefined" && chrome.runtime) {
       chrome.runtime.sendMessage({ action: "startPomodoro" }, (response) => {
         console.log(response?.status || "No response from extension");
@@ -267,7 +293,6 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
     localStorage.setItem("pomodoroStatus", "stopped");
     setEndTime(null);
 
-    // Check if the `chrome` API is available
     if (typeof chrome !== "undefined" && chrome.runtime) {
       chrome.runtime.sendMessage({ action: "stopPomodoro" }, (response) => {
         console.log(response?.status || "No response from extension");
@@ -283,34 +308,42 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
 
     setIsDurationUpdated(false);
     setEndTime(null);
-    localStorage.setItem("pomodoroStatus", "stopped");// Reset the updated state
+    localStorage.setItem("pomodoroStatus", "stopped");
   };
 
   const setDurations = () => {
     setMinutes(workDuration);
     setSeconds(0);
-    setIsDurationUpdated(false); // Reset the updated state
+    setIsDurationUpdated(false);
     setEndTime(null);
   };
 
   const handleWorkDurationChange = (e) => {
     setWorkDuration(Number(e.target.value));
-    setIsDurationUpdated(true); // Mark durations as updated
+    setIsDurationUpdated(true);
   };
 
   const handleBreakDurationChange = (e) => {
     setBreakDuration(Number(e.target.value));
-    setIsDurationUpdated(true); // Mark durations as updated
+    setIsDurationUpdated(true);
   };
 
   const toggleMaximize = () => {
-    setIsMaximized(!isMaximized); // Toggle between modal and minimized view
+    setIsMaximized(!isMaximized);
+  };
+
+  // Music volume slider handler
+  const handleMusicVolumeChange = (e) => {
+    setMusicVolume(Number(e.target.value));
   };
 
   return (
     <>
       {/* Bell sound */}
       <audio ref={audioRef} src={Bell} />
+
+      {/* Music audio element */}
+      <audio ref={musicRef} src={selectedTrack} loop />
 
       {isMaximized ? (
         // Modal View
@@ -347,7 +380,6 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
             >
               {title ? `"${title}"` : ""}
             </h3>
-            {/* Timer Display */}
             <h3
               className={`text-2xl font-semibold mb-6 text-center ${
                 theme === "dark" ? "text-teal-400" : "text-teal-600"
@@ -372,12 +404,12 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
               </div>
             </div>
 
-            {/* Adjust Work and Break Durations */}
-            <div className="flex justify-between items-center mb-4">
+            {/* Attractive Work and Break Duration Inputs */}
+            <div className="flex justify-center items-center gap-8 mb-6">
               <div className="flex flex-col items-center">
                 <label
-                  className={`text-sm ${
-                    theme === "dark" ? "text-gray-300" : "text-gray-600"
+                  className={`text-base font-semibold mb-2 ${
+                    theme === "dark" ? "text-teal-400" : "text-teal-600"
                   }`}
                 >
                   Work (min)
@@ -386,17 +418,19 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
                   type="number"
                   value={workDuration}
                   onChange={handleWorkDurationChange}
-                  className={`w-16 p-1 text-center border rounded ${
+                  min={1}
+                  max={120}
+                  className={`w-24 h-14 text-3xl font-bold text-center rounded-xl shadow border-2 focus:outline-none focus:ring-2 ${
                     theme === "dark"
-                      ? "bg-gray-700 text-gray-200"
-                      : "bg-white text-gray-800"
+                      ? "bg-gray-700 text-teal-300 border-teal-500 focus:ring-teal-400"
+                      : "bg-white text-teal-700 border-teal-300 focus:ring-teal-500"
                   }`}
                 />
               </div>
               <div className="flex flex-col items-center">
                 <label
-                  className={`text-sm ${
-                    theme === "dark" ? "text-gray-300" : "text-gray-600"
+                  className={`text-base font-semibold mb-2 ${
+                    theme === "dark" ? "text-teal-400" : "text-teal-600"
                   }`}
                 >
                   Break (min)
@@ -405,20 +439,61 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
                   type="number"
                   value={breakDuration}
                   onChange={handleBreakDurationChange}
-                  className={`w-16 p-1 text-center border rounded ${
+                  min={1}
+                  max={60}
+                  className={`w-24 h-14 text-3xl font-bold text-center rounded-xl shadow border-2 focus:outline-none focus:ring-2 ${
                     theme === "dark"
-                      ? "bg-gray-700 text-gray-200"
-                      : "bg-white text-gray-800"
+                      ? "bg-gray-700 text-teal-300 border-teal-500 focus:ring-teal-400"
+                      : "bg-white text-teal-700 border-teal-300 focus:ring-teal-500"
                   }`}
                 />
               </div>
+            </div>
+
+            {/* Music Controls */}
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <FaMusic className="text-teal-500 text-2xl" />
+              <select
+                value={selectedTrack}
+                onChange={e => setSelectedTrack(e.target.value)}
+                className={`p-3 rounded-xl border-2 text-lg font-semibold shadow focus:outline-none focus:ring-2 ${
+                  theme === "dark"
+                    ? "bg-gray-700 text-white border-teal-500 focus:ring-teal-400"
+                    : "bg-white text-gray-800 border-teal-300 focus:ring-teal-500"
+                }`}
+              >
+                {MUSIC_TRACKS.map(track => (
+                  <option key={track.src} value={track.src}>{track.name}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => setIsMuted(!isMuted)}
+                className={`p-3 rounded-full text-xl shadow ${
+                  theme === "dark"
+                    ? "bg-gray-700 text-teal-400 hover:bg-teal-500 hover:text-white"
+                    : "bg-gray-200 text-teal-600 hover:bg-teal-500 hover:text-white"
+                } transition`}
+                aria-label={isMuted ? "Unmute music" : "Mute music"}
+              >
+                {isMuted ? <FaVolumeMute /> : <FaVolumeUp />}
+              </button>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={musicVolume}
+                onChange={handleMusicVolumeChange}
+                className="w-32 accent-teal-500"
+                aria-label="Music volume"
+              />
             </div>
 
             {/* Start, Pause, and Reset/Set Buttons */}
             <div className="flex justify-center gap-4 mb-4">
               <button
                 onClick={startTimer}
-                className={`px-6 py-3 rounded-full w-full disabled:opacity-50 ${
+                className={`px-6 py-3 rounded-full w-full disabled:opacity-50 text-lg font-semibold shadow ${
                   theme === "dark"
                     ? "bg-teal-500 text-white hover:bg-teal-600"
                     : "bg-teal-500 text-white hover:bg-teal-400"
@@ -429,7 +504,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
               </button>
               <button
                 onClick={pauseTimer}
-                className={`px-6 py-3 rounded-full w-full disabled:opacity-50 ${
+                className={`px-6 py-3 rounded-full w-full disabled:opacity-50 text-lg font-semibold shadow ${
                   theme === "dark"
                     ? "bg-yellow-500 text-white hover:bg-yellow-600"
                     : "bg-yellow-500 text-white hover:bg-yellow-400"
@@ -442,7 +517,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
 
             <button
               onClick={isDurationUpdated ? setDurations : resetTimer}
-              className={`px-6 py-2 rounded-full w-full mt-4 ${
+              className={`px-6 py-2 rounded-full w-full mt-4 text-lg font-semibold shadow ${
                 theme === "dark"
                   ? "bg-red-500 text-white hover:bg-red-600"
                   : "bg-red-500 text-white hover:bg-red-400"
@@ -454,7 +529,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
             {/* View Log Button */}
             <button
               onClick={toggleLogModal}
-              className={`px-6 py-2 rounded-full w-full mt-4 ${
+              className={`px-6 py-2 rounded-full w-full mt-4 text-lg font-semibold shadow ${
                 theme === "dark"
                   ? "bg-blue-500 text-white hover:bg-blue-600"
                   : "bg-blue-500 text-white hover:bg-blue-400"
@@ -465,9 +540,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
             </button>
           </div>
         </div>
-      ) : // Minimized View
-
-      isVisible ? (
+      ) : isVisible ? (
         <Draggable nodeRef={nodeRef} handle=".drag-handle">
           <div
             ref={nodeRef}
@@ -514,7 +587,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
               {isWorkSession ? "Work Time" : "Break Time"}
             </h3>
 
-            <div className="flex justify-center items-center mb-4">
+            <div className="flex justify-center items-center mb-4 relative">
               <FaBell
                 className={`mr-2 ${
                   theme === "dark" ? "text-teal-400" : "text-teal-500"
@@ -528,13 +601,26 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
                 {String(minutes).padStart(2, "0")} :{" "}
                 {String(seconds).padStart(2, "0")}
               </div>
+              {/* Mute/Unmute button beside timer */}
+              <button
+                onClick={() => setIsMuted(!isMuted)}
+                className={`ml-3 p-2 rounded-full absolute right-0 top-1/2 transform -translate-y-1/2 ${
+                  theme === "dark"
+                    ? "bg-gray-700 text-teal-400"
+                    : "bg-gray-200 text-teal-600"
+                } hover:bg-teal-500 hover:text-white transition`}
+                aria-label={isMuted ? "Unmute music" : "Mute music"}
+              >
+                {isMuted ? <FaVolumeMute /> : <FaVolumeUp />}
+              </button>
             </div>
+            <audio ref={musicRef} src={selectedTrack} loop />
 
             {/* Start, Pause, and Reset/Set Buttons */}
             <div className="flex justify-center gap-4 mb-4">
               <button
                 onClick={startTimer}
-                className={`px-6 py-3 rounded-full w-full disabled:opacity-50 ${
+                className={`px-6 py-3 rounded-full w-full disabled:opacity-50 text-lg font-semibold shadow ${
                   theme === "dark"
                     ? "bg-teal-500 text-white hover:bg-teal-600"
                     : "bg-teal-500 text-white hover:bg-teal-400"
@@ -545,7 +631,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
               </button>
               <button
                 onClick={pauseTimer}
-                className={`px-6 py-3 rounded-full w-full disabled:opacity-50 ${
+                className={`px-6 py-3 rounded-full w-full disabled:opacity-50 text-lg font-semibold shadow ${
                   theme === "dark"
                     ? "bg-yellow-500 text-white hover:bg-yellow-600"
                     : "bg-yellow-500 text-white hover:bg-yellow-400"
@@ -558,7 +644,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
 
             <button
               onClick={isDurationUpdated ? setDurations : resetTimer}
-              className={`px-6 py-2 rounded-full w-full mt-4 ${
+              className={`px-6 py-2 rounded-full w-full mt-4 text-lg font-semibold shadow ${
                 theme === "dark"
                   ? "bg-red-500 text-white hover:bg-red-600"
                   : "bg-red-500 text-white hover:bg-red-400"
@@ -575,7 +661,6 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
           </div>
         </Draggable>
       ) : (
-        // Floating sticky button to bring back the Pomodoro widget
         <button
           onClick={toggleVisibility}
           className={`fixed bottom-20 right-4 px-4 py-2 rounded-full shadow-lg z-50 transition duration-300 ${
@@ -617,7 +702,6 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
             </button>
 
             <div className="flex sm:justify-around sm:items-center sm:flex-row flex-col mb-4">
-              {/* Modal Title */}
               <h3
                 className={`text-2xl font-semibold mb-4 ${
                   theme === "dark" ? "text-teal-400" : "text-teal-600"
@@ -626,7 +710,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
                 Pomodoro Session Log
               </h3>
               <button
-                onClick={toggleTimelineModal} // Open the timeline modal
+                onClick={toggleTimelineModal}
                 className={`sm:px-4 sm:py-2 px-3 py-1 rounded-lg font-bold ${
                   theme === "dark"
                     ? "bg-teal-500 text-white hover:bg-teal-600"
@@ -637,7 +721,6 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
               </button>
             </div>
 
-            {/* Scrollable Log Container */}
             <div className="max-h-96 overflow-y-auto space-y-4">
               <ul>
                 {sessionLog.map((session, index) => (
@@ -671,9 +754,9 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
       {/* Timeline Modal */}
       {isTimelineModalOpen && (
         <PomodoroTimeline
-          sessionLog={sessionLog} // Pass the session logs
-          theme={theme} // Pass the current theme
-          onClose={toggleTimelineModal} // Function to close the modal
+          sessionLog={sessionLog}
+          theme={theme}
+          onClose={toggleTimelineModal}
         />
       )}
     </>
