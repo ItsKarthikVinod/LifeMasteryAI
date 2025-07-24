@@ -28,6 +28,7 @@ import RecipeSharePage from './components/RecipeSharePage'; // Import your recip
 import DemoModeBanner from './components/demoModeBanner'; // Import your demo mode banner
 //import { useInactivityReminder } from './hooks/useInactivityReminder';
 import OneSignal from "react-onesignal";
+import { messaging, getToken } from "./firebase/firebase";
 
 
 const App = () => {
@@ -40,23 +41,39 @@ const App = () => {
   const { loading: authLoading } = useAuth(); // If your auth context provides loading
 
   useEffect(() => {
-    async function initOneSignal() {
-      await OneSignal.init({
-        appId: "47c26c0f-d61b-4716-9f62-f1f84ac305bc", // ✅ Your App ID
-        notifyButton: {
-          enable: true,
-        },
-        serviceWorkerPath: "service-worker.js", // ✅ Custom service worker
-        serviceWorkerUpdaterPath: "service-worker.js",
-        autoRegister: false, // ✅ Prevent auto-prompt
-      });
-
-      // Show slidedown prompt manually on page load
-      OneSignal.showSlidedownPrompt().catch(console.error);
+    async function requestFCMToken() {
+      try {
+        const token = await getToken(messaging, {
+          vapidKey:
+            "BOJBldxR1c4Lm6O3rsFYTFnRO1NMtyqPNdKC7isnBWxImFWu4d8b-4PDhKF5RS_81eGRGqXYcMNjT8_EdH8p2RU",
+        });
+        console.log("FCM Token:", token);
+        // Save token to your backend for later use
+      } catch (err) {
+        console.error("FCM token error:", err);
+      }
     }
-
-    initOneSignal();
+    requestFCMToken();
   }, []);
+
+  // useEffect(() => {
+  //   async function initOneSignal() {
+  //     await OneSignal.init({
+  //       appId: "47c26c0f-d61b-4716-9f62-f1f84ac305bc", // ✅ Your App ID
+  //       notifyButton: {
+  //         enable: true,
+  //       },
+  //       serviceWorkerPath: "service-worker.js", // ✅ Custom service worker
+  //       serviceWorkerUpdaterPath: "service-worker.js",
+  //       autoRegister: false, // ✅ Prevent auto-prompt
+  //     });
+
+  //     // Show slidedown prompt manually on page load
+  //     OneSignal.showSlidedownPrompt().catch(console.error);
+  //   }
+
+  //   initOneSignal();
+  // }, []);
 
   // useEffect(() => {
   //   // Dynamically load the OneSignal SDK script
