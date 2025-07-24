@@ -341,8 +341,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
     <>
       {/* Bell sound */}
       <audio ref={audioRef} src={Bell} />
-
-      {/* Music audio element */}
+      {/* Music audio element - only rendered once, always playing */}
       <audio ref={musicRef} src={selectedTrack} loop />
 
       {isMaximized ? (
@@ -420,7 +419,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
                   onChange={handleWorkDurationChange}
                   min={1}
                   max={120}
-                  className={`w-24 h-14 text-3xl font-bold text-center rounded-xl shadow border-2 focus:outline-none focus:ring-2 ${
+                  className={`w-28 h-16 text-4xl font-bold text-center rounded-2xl shadow border-2 focus:outline-none focus:ring-2 ${
                     theme === "dark"
                       ? "bg-gray-700 text-teal-300 border-teal-500 focus:ring-teal-400"
                       : "bg-white text-teal-700 border-teal-300 focus:ring-teal-500"
@@ -441,7 +440,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
                   onChange={handleBreakDurationChange}
                   min={1}
                   max={60}
-                  className={`w-24 h-14 text-3xl font-bold text-center rounded-xl shadow border-2 focus:outline-none focus:ring-2 ${
+                  className={`w-28 h-16 text-4xl font-bold text-center rounded-2xl shadow border-2 focus:outline-none focus:ring-2 ${
                     theme === "dark"
                       ? "bg-gray-700 text-teal-300 border-teal-500 focus:ring-teal-400"
                       : "bg-white text-teal-700 border-teal-300 focus:ring-teal-500"
@@ -614,7 +613,6 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
                 {isMuted ? <FaVolumeMute /> : <FaVolumeUp />}
               </button>
             </div>
-            <audio ref={musicRef} src={selectedTrack} loop />
 
             {/* Start, Pause, and Reset/Set Buttons */}
             <div className="flex justify-center gap-4 mb-4">
