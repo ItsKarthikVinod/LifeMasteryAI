@@ -40,20 +40,22 @@ const App = () => {
   const { loading: authLoading } = useAuth(); // If your auth context provides loading
 
   useEffect(() => {
-    // Ensure this code runs only on the client side
-    if (typeof window !== "undefined") {
-      OneSignal.init({
-        appId: "47c26c0f-d61b-4716-9f62-f1f84ac305bc",
-        // You can add other initialization options here
+    async function initOneSignal() {
+      await OneSignal.init({
+        appId: "47c26c0f-d61b-4716-9f62-f1f84ac305bc", // ✅ Your App ID
         notifyButton: {
           enable: true,
         },
-        serviceWorkerPath: "service-worker.js",
-        serviceWorkerUpdaterPath: "service-worker-updater.js",
-      }).then(() => {
-        OneSignal.Slidedown.promptPush();
+        serviceWorkerPath: "service-worker.js", // ✅ Custom service worker
+        serviceWorkerUpdaterPath: "service-worker.js",
+        autoRegister: false, // ✅ Prevent auto-prompt
       });
+
+      // Show slidedown prompt manually on page load
+      OneSignal.showSlidedownPrompt().catch(console.error);
     }
+
+    initOneSignal();
   }, []);
 
   // useEffect(() => {
