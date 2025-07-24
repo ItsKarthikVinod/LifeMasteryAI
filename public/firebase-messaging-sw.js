@@ -6,10 +6,10 @@ importScripts(
 );
 
 firebase.initializeApp({
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  apiKey: "AIzaSyAD2WMTMltBMpX_ljeSK7b1WgG_4ZfUH0Y",
   authDomain: "lifemaster-37373.firebaseapp.com",
   projectId: "lifemaster-37373",
-  storageBucket: "lifemaster-37373.firebaseapp.com",
+  storageBucket: "lifemaster-37373.appspot.com",
   messagingSenderId: "717688763336",
   appId: "1:717688763336:web:43e888fb6ee6eeec4e06fd",
   measurementId: "G-5P1D2VD8Z6",
