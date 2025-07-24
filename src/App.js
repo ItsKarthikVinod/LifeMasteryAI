@@ -27,7 +27,6 @@ import Planner from './components/Planner';
 import RecipeSharePage from './components/RecipeSharePage'; // Import your recipe share page
 import DemoModeBanner from './components/demoModeBanner'; // Import your demo mode banner
 //import { useInactivityReminder } from './hooks/useInactivityReminder';
-import OneSignal from "react-onesignal";
 import { messaging, getToken } from "./firebase/firebase";
 
 
