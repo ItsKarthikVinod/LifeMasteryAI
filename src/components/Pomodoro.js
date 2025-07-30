@@ -12,7 +12,8 @@ import {
   FaVolumeMute,
 } from "react-icons/fa";
 import { useAuth } from "../contexts/authContext";
-import Bell from "../assets/bell.mp3";
+import Bell from "../assets/belldigi.mp3";
+import Bell2 from "../assets/bell.mp3";
 import PomodoroTimeline from "./PomodoroTimeline";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -57,6 +58,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
 
   const nodeRef = useRef(null);
   const audioRef = useRef(null);
+  const audio2Ref = useRef(null);
   const musicRef = useRef(null);
 
   // Music player state
@@ -165,8 +167,19 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
           setMinutes(0);
           setSeconds(0);
 
-          audioRef.current.volume = 0.2;
-          audioRef.current.play();
+          // Play bell sound after work or break
+          if (isWorkSession) {
+            if (audioRef.current) {
+              audioRef.current.volume = 0.2;
+              audioRef.current.play();
+            }
+          } else {
+            if (audio2Ref.current) {
+              audio2Ref.current.volume = 0.2;
+              audio2Ref.current.play();
+            }
+          }
+
           localStorage.setItem("pomodoroStatus", "stopped");
 
           const session = {
@@ -267,7 +280,12 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
   // Music player logic
   useEffect(() => {
     if (musicRef.current) {
-      musicRef.current.muted = isMuted;
+      // Mute music during break unless user unmutes
+      if (isWorkSession) {
+        musicRef.current.muted = isMuted;
+      } else {
+        musicRef.current.muted = isMuted ? true : false;
+      }
       musicRef.current.volume = musicVolume;
       if (isRunning) {
         musicRef.current.play();
@@ -276,7 +294,14 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
         musicRef.current.currentTime = 0;
       }
     }
-  }, [isRunning, selectedTrack, isMuted, musicVolume]);
+  }, [isRunning, selectedTrack, isMuted, musicVolume, isWorkSession]);
+
+  // If break starts, auto-mute unless user unmutes
+  useEffect(() => {
+    if (!isWorkSession) {
+      setIsMuted(true);
+    }
+  }, [isWorkSession]);
 
   const startTimer = () => {
     setIsRunning(true);
@@ -337,10 +362,17 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
     setMusicVolume(Number(e.target.value));
   };
 
+  // UI: Show muted state during break
+  const showMuted =
+    !isWorkSession && isMuted
+      ? true
+      : isMuted;
+
   return (
     <>
       {/* Bell sound */}
       <audio ref={audioRef} src={Bell} />
+      <audio ref={audio2Ref} src={Bell2} />
       {/* Music audio element - only rendered once, always playing */}
       <audio ref={musicRef} src={selectedTrack} loop />
 
@@ -454,27 +486,31 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
               <FaMusic className="text-teal-500 text-2xl" />
               <select
                 value={selectedTrack}
-                onChange={e => setSelectedTrack(e.target.value)}
+                onChange={(e) => setSelectedTrack(e.target.value)}
                 className={`p-3 rounded-xl border-2 text-lg font-semibold shadow focus:outline-none focus:ring-2 ${
                   theme === "dark"
                     ? "bg-gray-700 text-white border-teal-500 focus:ring-teal-400"
                     : "bg-white text-gray-800 border-teal-300 focus:ring-teal-500"
                 }`}
               >
-                {MUSIC_TRACKS.map(track => (
-                  <option key={track.src} value={track.src}>{track.name}</option>
+                {MUSIC_TRACKS.map((track) => (
+                  <option key={track.src} value={track.src}>
+                    {track.name}
+                  </option>
                 ))}
               </select>
               <button
                 onClick={() => setIsMuted(!isMuted)}
                 className={`p-3 rounded-full text-xl shadow ${
-                  theme === "dark"
+                  showMuted
+                    ? "bg-gray-700 text-teal-400"
+                    : theme === "dark"
                     ? "bg-gray-700 text-teal-400 hover:bg-teal-500 hover:text-white"
                     : "bg-gray-200 text-teal-600 hover:bg-teal-500 hover:text-white"
                 } transition`}
-                aria-label={isMuted ? "Unmute music" : "Mute music"}
+                aria-label={showMuted ? "Unmute music" : "Mute music"}
               >
-                {isMuted ? <FaVolumeMute /> : <FaVolumeUp />}
+                {showMuted ? <FaVolumeMute /> : <FaVolumeUp />}
               </button>
               <input
                 type="range"
@@ -604,13 +640,15 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
               <button
                 onClick={() => setIsMuted(!isMuted)}
                 className={`ml-3 p-2 rounded-full absolute right-0 top-1/2 transform -translate-y-1/2 ${
-                  theme === "dark"
+                  showMuted
+                    ? "bg-gray-700 text-teal-400"
+                    : theme === "dark"
                     ? "bg-gray-700 text-teal-400"
                     : "bg-gray-200 text-teal-600"
                 } hover:bg-teal-500 hover:text-white transition`}
-                aria-label={isMuted ? "Unmute music" : "Mute music"}
+                aria-label={showMuted ? "Unmute music" : "Mute music"}
               >
-                {isMuted ? <FaVolumeMute /> : <FaVolumeUp />}
+                {showMuted ? <FaVolumeMute /> : <FaVolumeUp />}
               </button>
             </div>
 
@@ -754,7 +792,8 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
         <PomodoroTimeline
           sessionLog={sessionLog}
           theme={theme}
-          onClose={toggleTimelineModal}
+          toggleTimelineModal={toggleTimelineModal}
+          isTimelineModalOpen={isTimelineModalOpen}
         />
       )}
     </>

@@ -11,7 +11,7 @@ import {
   FaTrash,
   FaExpand,
   FaCompress,
-  FaQuestion
+  FaQuestion,
 } from "react-icons/fa";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../firebase/firebase";
@@ -345,7 +345,7 @@ const PlannerSidebar = ({
     return (
       <div className={sidebarClass}>
         <div className="flex items-center justify-center h-full">
-          <div className="text-xl text-gray-500">Loading...</div>
+          <div className={`text-xl ${isDark ? "text-gray-400" : "text-gray-500"}`}>Loading...</div>
         </div>
       </div>
     );
@@ -436,7 +436,7 @@ const PlannerSidebar = ({
             {isFullscreen ? <FaCompress /> : <FaExpand />}
           </button>
           <button
-            className="text-2xl text-gray-400 hover:text-red-500 transition"
+            className={`text-2xl transition ${isDark ? "text-gray-500 hover:text-red-400" : "text-gray-400 hover:text-red-500"}`}
             onClick={handleClose}
             aria-label="Close planner"
           >
@@ -458,7 +458,11 @@ const PlannerSidebar = ({
       {/* Add Task Button & Save */}
       <div className="flex items-center justify-between px-4 py-2">
         <button
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-500 text-white font-semibold shadow hover:bg-teal-600 transition"
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow transition ${
+            isDark
+              ? "bg-teal-600 text-white hover:bg-teal-700"
+              : "bg-teal-500 text-white hover:bg-teal-600"
+          }`}
           onClick={openAddModal}
         >
           <FaPlus /> Add Task to Plan
@@ -468,6 +472,8 @@ const PlannerSidebar = ({
             ${
               saving
                 ? "bg-gray-400 cursor-not-allowed"
+                : isDark
+                ? "bg-blue-700 hover:bg-blue-800 text-white"
                 : "bg-blue-500 hover:bg-blue-600 text-white"
             }
           `}
@@ -507,7 +513,7 @@ const PlannerSidebar = ({
             )}
           </button>
           {showMatrixInfo && (
-            <div className="mt-2 text-sm">
+            <div className={`mt-2 text-sm ${isDark ? "text-gray-200" : ""}`}>
               The Eisenhower Matrix is a powerful productivity tool that helps
               you prioritize tasks by urgency and importance.
               <br />
@@ -600,7 +606,7 @@ const PlannerSidebar = ({
                                 }
                               `}
                             >
-                              <span>
+                              <span className={isDark ? "text-gray-100" : ""}>
                                 <span className="font-bold text-teal-500 mr-2">
                                   {idx + 1}.
                                 </span>
@@ -611,14 +617,14 @@ const PlannerSidebar = ({
                               </span>
                               <div className="flex gap-2">
                                 <button
-                                  className="text-gray-400 hover:text-blue-500 transition"
+                                  className={`transition ${isDark ? "text-gray-400 hover:text-blue-400" : "text-gray-400 hover:text-blue-500"}`}
                                   onClick={() => editTaskLabel(id, bucket.id)}
                                   title="Edit"
                                 >
                                   <FaEdit />
                                 </button>
                                 <button
-                                  className="text-gray-400 hover:text-red-500 transition"
+                                  className={`transition ${isDark ? "text-gray-400 hover:text-red-400" : "text-gray-400 hover:text-red-500"}`}
                                   onClick={() => removeFromPlan(id)}
                                   title="Remove from plan"
                                 >
@@ -684,7 +690,7 @@ const PlannerSidebar = ({
                               }
                             `}
                           >
-                            <span>
+                            <span className={isDark ? "text-gray-100" : ""}>
                               <span className="font-bold text-teal-500 mr-2">
                                 {idx + 1}.
                               </span>
@@ -695,14 +701,14 @@ const PlannerSidebar = ({
                             </span>
                             <div className="flex gap-2">
                               <button
-                                className="text-gray-400 hover:text-blue-500 transition"
+                                className={`transition ${isDark ? "text-gray-400 hover:text-blue-400" : "text-gray-400 hover:text-blue-500"}`}
                                 onClick={() => editTaskLabel(id, "table")}
                                 title="Edit"
                               >
                                 <FaEdit />
                               </button>
                               <button
-                                className="text-gray-400 hover:text-red-500 transition"
+                                className={`transition ${isDark ? "text-gray-400 hover:text-red-400" : "text-gray-400 hover:text-red-500"}`}
                                 onClick={() => removeFromPlan(id)}
                                 title="Remove from plan"
                               >
@@ -754,7 +760,7 @@ const PlannerSidebar = ({
           >
             <div className="relative">
               <button
-                className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl z-10"
+                className={`absolute top-4 right-4 text-2xl z-10 transition ${isDark ? "text-gray-400 hover:text-red-400" : "text-gray-400 hover:text-red-500"}`}
                 onClick={() => setShowAddModal(false)}
                 aria-label="Close"
               >
@@ -768,7 +774,7 @@ const PlannerSidebar = ({
               >
                 ✨ Add Tasks to Your Plan
               </div>
-              <div className="px-8 pb-2 text-sm italic text-teal-400">
+              <div className={`px-8 pb-2 text-sm italic ${isDark ? "text-teal-400" : "text-teal-700"}`}>
                 Select from your available tasks below.
               </div>
               <div className="max-h-80 overflow-y-auto px-8 py-2 space-y-2">
@@ -810,21 +816,21 @@ const PlannerSidebar = ({
                           }}
                           className="accent-teal-500 scale-125"
                         />
-                        <span className="flex items-center gap-2 text-base font-semibold">
+                        <span className={`flex items-center gap-2 text-base font-semibold ${isDark ? "text-gray-100" : ""}`}>
                           <span className="text-xl">{getIcon(t.type)}</span>
                           <span>{t.name || t.title}</span>
                           {t.type === "habit" && (
-                            <span className="text-xs text-gray-500 italic">
+                            <span className={`text-xs italic ${isDark ? "text-gray-400" : "text-gray-500"}`}>
                               (Habit)
                             </span>
                           )}
                           {t.type === "subgoal" && (
-                            <span className="text-xs text-gray-500 italic">
+                            <span className={`text-xs italic ${isDark ? "text-gray-400" : "text-gray-500"}`}>
                               (Subgoal of {t.goalName})
                             </span>
                           )}
                           {t.type === "todo" && (
-                            <span className="text-xs text-gray-500 italic">
+                            <span className={`text-xs italic ${isDark ? "text-gray-400" : "text-gray-500"}`}>
                               (To-Do)
                             </span>
                           )}
@@ -836,11 +842,11 @@ const PlannerSidebar = ({
               </div>
               <div className="flex justify-end gap-2 px-8 py-6 bg-gradient-to-r from-teal-900/10 via-teal-400/10 to-blue-200/10">
                 <button
-                  className={`px-5 py-2 rounded-xl font-bold shadow ${
+                  className={`px-5 py-2 rounded-xl font-bold shadow transition ${
                     isDark
                       ? "bg-gray-700 text-gray-200 hover:bg-teal-800"
                       : "bg-gray-200 text-gray-700 hover:bg-teal-200"
-                  } transition`}
+                  }`}
                   onClick={() => setShowAddModal(false)}
                 >
                   Cancel
@@ -880,7 +886,7 @@ const PlannerSidebar = ({
           >
             <div className="relative px-8 pt-8 pb-6">
               <div
-                className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl z-10 cursor-pointer"
+                className={`absolute top-4 right-4 text-2xl z-10 cursor-pointer transition ${isDark ? "text-gray-400 hover:text-red-400" : "text-gray-400 hover:text-red-500"}`}
                 onClick={() => setShowUnsavedModal(false)}
               >
                 <FaTimes />
@@ -902,11 +908,11 @@ const PlannerSidebar = ({
               </div>
               <div className="flex justify-end gap-2">
                 <button
-                  className={`px-4 py-2 rounded-xl font-bold shadow ${
+                  className={`px-4 py-2 rounded-xl font-bold shadow transition ${
                     isDark
                       ? "bg-gray-700 text-gray-200 hover:bg-teal-800"
                       : "bg-gray-200 text-gray-700 hover:bg-teal-200"
-                  } transition`}
+                  }`}
                   onClick={() => setShowUnsavedModal(false)}
                 >
                   Cancel
