@@ -22,7 +22,7 @@ import Confetti from "react-confetti";
 import { Link } from "react-router-dom";
 import { getDocs, collection } from "firebase/firestore";
 import { db } from "../firebase/firebase";
-
+import PlannerSidebar from "./PlannerSidebar";
 
 const locales = {
   "en-US": require("date-fns/locale/en-US"),
@@ -134,6 +134,7 @@ const Dashboard = () => {
   const { goalss} = useGetGoals();
   const { todoss } = useGetTodos();
   const isGuest = currentUser && currentUser.isAnonymous;
+  const [plannerOpen, setPlannerOpen] = useState(false);
 
   const [adminEmails, setAdminEmails] = useState([]);
   useEffect(() => {
@@ -533,6 +534,42 @@ const Dashboard = () => {
           </button>
         </div>
 
+        {/* Sticky Rotated Button (Desktop) & Floating Button (Mobile) */}
+
+        {!plannerOpen && (
+          <>
+            <button
+              onClick={() => setPlannerOpen(true)}
+              className={`
+    fixed z-[10001] right-5 top-1/2 transform -translate-y-1/2
+    bg-teal-700 text-white font-bold shadow-lg
+    px-4 py-2 rounded-tr-2xl rounded-tl-2xl
+    transition hover:bg-teal-700
+    origin-right
+    -rotate-90
+    hidden sm:block
+    ring-2 ring-teal-300/50
+  `}
+            >
+              <span className="transition animate-bounce">🗓️</span> Plan My Day
+            </button>
+            <button
+              onClick={() => setPlannerOpen(true)}
+              className={`
+    fixed z-[10001] right-0 top-1/2 transform -translate-y-1/2
+    bg-teal-700 text-white font-bold shadow-lg
+    px-3 py-3 rounded-tl-2xl rounded-bl-2xl
+    transition hover:bg-teal-700
+    origin-right
+    ring-2 ring-teal-300/50
+    block sm:hidden
+  `}
+            >
+              🗓️
+            </button>
+          </>
+        )}
+
         <div className="mt-8 text-center">
           <button
             onClick={() => navigate("/community")}
@@ -654,6 +691,19 @@ const Dashboard = () => {
           </div>
         </>
       )}
+      <PlannerSidebar
+        isOpen={plannerOpen}
+        onClose={() => setPlannerOpen(false)}
+        todos={todoss || []}
+        habits={fetchedHabits || []}
+        subgoals={(goalss || []).flatMap((goal) =>
+          (goal.subGoals || []).map((sub) => ({
+            ...sub,
+            id: sub.id || `${goal.id}-${sub.name}`,
+            goalName: goal.name,
+          }))
+        )}
+      />
       {/* Roulette Modal */}
       {isRoulette && (
         <div className="fixed inset-0 flex items-center justify-center z-50">

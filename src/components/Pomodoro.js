@@ -226,7 +226,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
             setSeconds(0);
             setIsWorkSession(true);
             setEndTime(null);
-            document.title = "Life Mastery";
+            document.title = "Life Mastery | Unlock Your True Potential";
           }
 
           clearInterval(interval);
@@ -245,7 +245,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
       }, 1000);
     } else {
       setEndTime(null);
-      document.title = "Life Mastery";
+      document.title = "Life Mastery | Unlock Your True Potential";
     }
 
     return () => clearInterval(interval);
