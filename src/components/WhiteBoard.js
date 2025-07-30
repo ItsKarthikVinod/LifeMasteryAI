@@ -18,7 +18,6 @@ import "react-toastify/dist/ReactToastify.css";
 import { Link } from "react-router-dom";
 import { db } from "../firebase/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-  
 
 const WhiteBoard = () => {
   const stageRef = useRef(null);
@@ -41,12 +40,10 @@ const WhiteBoard = () => {
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    // Scroll to the top of the page when the component is mounted
     window.scrollTo(0, 0);
   }, []);
 
   useEffect(() => {
-    // Only run if the last added image is not already selected
     if (images.length > 0) {
       const lastImageId = images[images.length - 1].id;
       if (selectedId !== lastImageId) {
@@ -74,7 +71,6 @@ const WhiteBoard = () => {
                 draggable: true,
               };
               setImages((prev) => [...prev, image]);
-
               setHistory((prev) => [
                 ...prev,
                 {
@@ -95,17 +91,13 @@ const WhiteBoard = () => {
     return () => window.removeEventListener("paste", handlePaste);
   }, [lines, shapes, textItems, images, setImages, setHistory]);
 
-  // ...inside your WhiteBoard component
-  
-
-  const CLOUDINARY_UPLOAD_PRESET = "gallery"; // Replace with your preset
-  const CLOUDINARY_CLOUD_NAME = "dovnydco5"; // Replace with your cloud name
+  const CLOUDINARY_UPLOAD_PRESET = "gallery";
+  const CLOUDINARY_CLOUD_NAME = "dovnydco5";
 
   const handleSaveToGallery = async (dataUrl, bgColor) => {
     if (!currentUser) return;
     setSaving(true);
     try {
-      // Upload to Cloudinary
       const formData = new FormData();
       formData.append("file", dataUrl);
       formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
@@ -119,7 +111,6 @@ const WhiteBoard = () => {
       );
       const data = await res.json();
 
-      // Save metadata to Firestore
       await addDoc(collection(db, "whiteboard_galleries"), {
         userId: currentUser.uid,
         url: data.secure_url,
@@ -141,8 +132,72 @@ const WhiteBoard = () => {
     setSaving(false);
   };
 
+  // Erase logic for shapes and lines
+  const eraseAtPoint = (point) => {
+    const eraserRadius = eraserWidth / 2;
+
+    // Erase lines
+    let newLines = lines.filter((line) => {
+      for (let i = 0; i < line.points.length; i += 2) {
+        const x = line.points[i];
+        const y = line.points[i + 1];
+        const distance = Math.sqrt(
+          Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2)
+        );
+        if (distance <= eraserRadius) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    // Erase shapes
+    let newShapes = shapes.filter((shape) => {
+      if (shape.type === "rect") {
+        // Check if point is inside rectangle
+        if (
+          point.x >= shape.x &&
+          point.x <= shape.x + shape.width &&
+          point.y >= shape.y &&
+          point.y <= shape.y + shape.height
+        ) {
+          return false;
+        }
+      } else if (shape.type === "circle") {
+        const distance = Math.sqrt(
+          Math.pow(point.x - shape.x, 2) + Math.pow(point.y - shape.y, 2)
+        );
+        if (distance <= shape.radius) {
+          return false;
+        }
+      } else if (shape.type === "line") {
+        // Check if point is near the line segment
+        const [x1, y1, x2, y2] = shape.points;
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        if (length === 0) return true;
+        const t =
+          ((point.x - x1) * dx + (point.y - y1) * dy) / (length * length);
+        if (t < 0 || t > 1) return true;
+        const closestX = x1 + t * dx;
+        const closestY = y1 + t * dy;
+        const dist = Math.sqrt(
+          Math.pow(point.x - closestX, 2) + Math.pow(point.y - closestY, 2)
+        );
+        if (dist <= eraserRadius) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    setLines(newLines);
+    setShapes(newShapes);
+  };
+
   const handleMouseDown = (e) => {
-    e.evt.preventDefault(); // Prevent default browser behavior
+    e.evt.preventDefault();
     const stage = e.target.getStage();
     const clickedOnEmpty = e.target === stage;
     const pos = stage.getPointerPosition();
@@ -160,22 +215,23 @@ const WhiteBoard = () => {
         ...history,
         { lines, shapes, textItems: [...textItems, newText], images },
       ]);
-
-      // Set the selectedId to the new text item
     } else if (tool === "pen" || tool === "eraser") {
       setIsDrawing(true);
 
-      const newLine = {
-        tool,
-        points: [pos.x, pos.y],
-        stroke: color,
-        strokeWidth: strokeWidth,
-        id: `line_${Date.now()}`,
-      };
-      setLines([...lines, newLine]);
-      setHistory([...history, { lines, shapes, textItems, images }]);
+      if (tool === "eraser") {
+        eraseAtPoint(pos);
+      } else {
+        const newLine = {
+          tool,
+          points: [pos.x, pos.y],
+          stroke: color,
+          strokeWidth: strokeWidth,
+          id: `line_${Date.now()}`,
+        };
+        setLines([...lines, newLine]);
+        setHistory([...history, { lines, shapes, textItems, images }]);
+      }
     } else if (tool === "rect" || tool === "circle" || tool === "line") {
-      const pos = e.target.getStage().getPointerPosition();
       setStartPos(pos);
     }
   };
@@ -194,49 +250,28 @@ const WhiteBoard = () => {
     if (tool === "pen" && isDrawing) {
       const lastLine = lines[lines.length - 1];
       lastLine.points = lastLine.points.concat([point.x, point.y]);
-
       const newLines = lines.slice(0, -1).concat(lastLine);
       setLines(newLines);
     } else if (tool === "eraser" && isDrawing) {
-      // Eraser logic: Check for intersection with lines
-      const eraserRadius = eraserWidth / 2;
-
-      const newLines = lines.filter((line) => {
-        // Check if any point in the line is within the eraser radius
-        for (let i = 0; i < line.points.length; i += 2) {
-          const x = line.points[i];
-          const y = line.points[i + 1];
-          const distance = Math.sqrt(
-            Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2)
-          );
-          if (distance <= eraserRadius) {
-            return false; // Remove this line
-          }
-        }
-        return true; // Keep this line
-      });
-
-      setLines(newLines);
+      eraseAtPoint(point);
     } else if (
       startPos &&
       (tool === "rect" || tool === "circle" || tool === "line")
     ) {
-      const pos = e.target.getStage().getPointerPosition();
       let newShape;
-
       if (tool === "rect") {
         newShape = {
           type: "rect",
-          x: Math.min(startPos.x, pos.x),
-          y: Math.min(startPos.y, pos.y),
-          width: Math.abs(pos.x - startPos.x),
-          height: Math.abs(pos.y - startPos.y),
+          x: Math.min(startPos.x, point.x),
+          y: Math.min(startPos.y, point.y),
+          width: Math.abs(point.x - startPos.x),
+          height: Math.abs(point.y - startPos.y),
           stroke: color,
           strokeWidth: strokeWidth,
         };
       } else if (tool === "circle") {
         const radius = Math.sqrt(
-          Math.pow(pos.x - startPos.x, 2) + Math.pow(pos.y - startPos.y, 2)
+          Math.pow(point.x - startPos.x, 2) + Math.pow(point.y - startPos.y, 2)
         );
         newShape = {
           type: "circle",
@@ -249,13 +284,12 @@ const WhiteBoard = () => {
       } else if (tool === "line") {
         newShape = {
           type: "line",
-          points: [startPos.x, startPos.y, pos.x, pos.y],
+          points: [startPos.x, startPos.y, point.x, point.y],
           stroke: color,
           strokeWidth: strokeWidth,
         };
       }
-
-      setTempShape(newShape); // Update the temporary shape for visual feedback
+      setTempShape(newShape);
     }
   };
 
@@ -267,7 +301,93 @@ const WhiteBoard = () => {
       (tool === "rect" || tool === "circle" || tool === "line")
     ) {
       setShapes([...shapes, { ...tempShape, id: `shape_${Date.now()}` }]);
-      setTempShape(null); // Clear the temporary shape
+      setTempShape(null);
+      setStartPos(null);
+      setHistory([...history, { lines, shapes, textItems, images }]);
+    }
+  };
+
+  // Touch events for mobile resizing/moving
+  const handleTouchStart = (e) => {
+    const stage = e.target.getStage();
+    const pos = stage.getPointerPosition();
+    if (tool === "eraser") {
+      eraseAtPoint(pos);
+      setIsDrawing(true);
+    } else if (tool === "pen") {
+      setIsDrawing(true);
+      const newLine = {
+        tool,
+        points: [pos.x, pos.y],
+        stroke: color,
+        strokeWidth: strokeWidth,
+        id: `line_${Date.now()}`,
+      };
+      setLines([...lines, newLine]);
+      setHistory([...history, { lines, shapes, textItems, images }]);
+    } else if (tool === "rect" || tool === "circle" || tool === "line") {
+      setStartPos(pos);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    const stage = e.target.getStage();
+    const point = stage.getPointerPosition();
+    if (tool === "pen" && isDrawing) {
+      const lastLine = lines[lines.length - 1];
+      lastLine.points = lastLine.points.concat([point.x, point.y]);
+      const newLines = lines.slice(0, -1).concat(lastLine);
+      setLines(newLines);
+    } else if (tool === "eraser" && isDrawing) {
+      eraseAtPoint(point);
+    } else if (
+      startPos &&
+      (tool === "rect" || tool === "circle" || tool === "line")
+    ) {
+      let newShape;
+      if (tool === "rect") {
+        newShape = {
+          type: "rect",
+          x: Math.min(startPos.x, point.x),
+          y: Math.min(startPos.y, point.y),
+          width: Math.abs(point.x - startPos.x),
+          height: Math.abs(point.y - startPos.y),
+          stroke: color,
+          strokeWidth: strokeWidth,
+        };
+      } else if (tool === "circle") {
+        const radius = Math.sqrt(
+          Math.pow(point.x - startPos.x, 2) + Math.pow(point.y - startPos.y, 2)
+        );
+        newShape = {
+          type: "circle",
+          x: startPos.x,
+          y: startPos.y,
+          radius: radius,
+          stroke: color,
+          strokeWidth: strokeWidth,
+        };
+      } else if (tool === "line") {
+        newShape = {
+          type: "line",
+          points: [startPos.x, startPos.y, point.x, point.y],
+          stroke: color,
+          strokeWidth: strokeWidth,
+        };
+      }
+      setTempShape(newShape);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (tool === "pen" || tool === "eraser") {
+      setIsDrawing(false);
+    } else if (
+      startPos &&
+      (tool === "rect" || tool === "circle" || tool === "line")
+    ) {
+      setShapes([...shapes, { ...tempShape, id: `shape_${Date.now()}` }]);
+      setTempShape(null);
       setStartPos(null);
       setHistory([...history, { lines, shapes, textItems, images }]);
     }
@@ -285,25 +405,17 @@ const WhiteBoard = () => {
 
   const handleExport = () => {
     const stage = stageRef.current;
-
-    // Create a temporary canvas to include the background color
     const canvas = document.createElement("canvas");
     canvas.width = stage.width();
     canvas.height = stage.height();
     const context = canvas.getContext("2d");
-
-    // Fill the background color
     context.fillStyle = bgColor;
     context.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw the stage content onto the temporary canvas
     const stageDataURL = stage.toDataURL();
     const stageImage = new window.Image();
     stageImage.src = stageDataURL;
     stageImage.onload = () => {
       context.drawImage(stageImage, 0, 0);
-
-      // Export the combined canvas as an image
       const link = document.createElement("a");
       link.download = "whiteboard.png";
       link.href = canvas.toDataURL();
@@ -323,6 +435,8 @@ const WhiteBoard = () => {
         x: 150,
         y: 150,
         draggable: true,
+        scaleX: 1,
+        scaleY: 1,
       };
       setImages([...images, image]);
       setHistory([...history, { lines, shapes, textItems, images }]);
@@ -355,6 +469,7 @@ const WhiteBoard = () => {
     window.addEventListener("keydown", handleDelete);
     return () => window.removeEventListener("keydown", handleDelete);
   }, [selectedId, lines, shapes, textItems, images, handleDelete]);
+
   if (!currentUser) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
@@ -372,8 +487,9 @@ const WhiteBoard = () => {
       </div>
     );
   }
+
   return (
-    <div className={`p-7 bg-gray-100 mt-24 rounded-lg shadow-md ${ isGuest===true ? 'pt-[7rem] lg:pt-16':'pt-0'} `}>
+    <div className={`p-7 bg-gray-100 mt-24 rounded-lg shadow-md ${isGuest === true ? 'pt-[7rem] lg:pt-16' : 'pt-0'} `}>
       <ToastContainer />
       {saving && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
@@ -396,10 +512,11 @@ const WhiteBoard = () => {
       </h3>
       {/* Toolbar */}
       <div className="flex flex-wrap gap-3 mb-4 items-center justify-center">
+        {/* ...toolbar buttons unchanged... */}
         <button
           onClick={() => {
             setTool("cursor");
-            setSelectedId(null); // Clear the selectedId when switching tools
+            setSelectedId(null);
           }}
           className={`btn px-4 py-2 rounded-lg shadow-md transition-all ${
             tool === "cursor"
@@ -412,7 +529,7 @@ const WhiteBoard = () => {
         <button
           onClick={() => {
             setTool("pen");
-            setSelectedId(null); // Clear the selectedId when switching tools
+            setSelectedId(null);
           }}
           className={`btn px-4 py-2 rounded-lg shadow-md transition-all ${
             tool === "pen"
@@ -425,7 +542,7 @@ const WhiteBoard = () => {
         <button
           onClick={() => {
             setTool("eraser");
-            setSelectedId(null); // Clear the selectedId when switching tools
+            setSelectedId(null);
           }}
           className={`btn px-4 py-2 rounded-lg shadow-md transition-all ${
             tool === "eraser"
@@ -438,7 +555,7 @@ const WhiteBoard = () => {
         <button
           onClick={() => {
             setTool("rect");
-            setSelectedId(null); // Clear the selectedId when switching tools
+            setSelectedId(null);
           }}
           className={`btn px-4 py-2 rounded-lg shadow-md transition-all ${
             tool === "rect"
@@ -451,7 +568,7 @@ const WhiteBoard = () => {
         <button
           onClick={() => {
             setTool("circle");
-            setSelectedId(null); // Clear the selectedId when switching tools
+            setSelectedId(null);
           }}
           className={`btn px-4 py-2 rounded-lg shadow-md transition-all ${
             tool === "circle"
@@ -464,7 +581,7 @@ const WhiteBoard = () => {
         <button
           onClick={() => {
             setTool("line");
-            setSelectedId(null); // Clear the selectedId when switching tools
+            setSelectedId(null);
           }}
           className={`btn px-4 py-2 rounded-lg shadow-md transition-all ${
             tool === "line"
@@ -477,7 +594,7 @@ const WhiteBoard = () => {
         <button
           onClick={() => {
             setTool("text");
-            setSelectedId(null); // Clear the selectedId when switching tools
+            setSelectedId(null);
           }}
           className={`btn px-4 py-2 rounded-lg shadow-md transition-all ${
             tool === "text"
@@ -523,7 +640,6 @@ const WhiteBoard = () => {
         </button>
         <button
           onClick={() => {
-            // Export the whiteboard as an image and save to gallery
             const stage = stageRef.current;
             const dataUrl = stage.toDataURL({ pixelRatio: 2 });
             handleSaveToGallery(dataUrl, bgColor);
@@ -542,6 +658,7 @@ const WhiteBoard = () => {
       </div>
 
       <div className="flex flex-wrap gap-4 mb-4 justify-center">
+        {/* ...color pickers unchanged... */}
         <div>
           <label className="block mb-1"> Ink Color</label>
           <input
@@ -607,11 +724,13 @@ const WhiteBoard = () => {
         <Stage
           width={window.innerWidth - 60}
           height={window.innerHeight - 400}
+          ref={stageRef}
+          style={{ backgroundColor: bgColor }}
           onMouseDown={(e) => {
             if (window.innerWidth > 768) {
               const clickedOnEmpty = e.target === e.target.getStage();
               if (clickedOnEmpty && tool === "cursor") {
-                setSelectedId(null); // Clear the selectedId only if the tool is "cursor"
+                setSelectedId(null);
               } else {
                 handleMouseDown(e);
               }
@@ -631,24 +750,22 @@ const WhiteBoard = () => {
             if (window.innerWidth <= 768) {
               const clickedOnEmpty = e.target === e.target.getStage();
               if (clickedOnEmpty && tool === "cursor") {
-                setSelectedId(null); // Clear the selectedId only if the tool is "cursor"
+                setSelectedId(null);
               } else {
-                handleMouseDown(e);
+                handleTouchStart(e);
               }
             }
           }}
           onPointerMove={(e) => {
             if (window.innerWidth <= 768) {
-              handleMouseMove(e);
+              handleTouchMove(e);
             }
           }}
           onPointerUp={(e) => {
             if (window.innerWidth <= 768) {
-              handleMouseUp(e);
+              handleTouchEnd(e);
             }
           }}
-          ref={stageRef}
-          style={{ backgroundColor: bgColor }}
         >
           <Layer>
             {images.map((img) => (
@@ -658,7 +775,7 @@ const WhiteBoard = () => {
                 id={img.id}
                 onClick={() => tool === "cursor" && setSelectedId(img.id)}
                 isSelected={selectedId === img.id}
-                tool={tool} // Pass tool as a prop
+                tool={tool}
               />
             ))}
 
@@ -668,8 +785,8 @@ const WhiteBoard = () => {
                   key={shape.id}
                   {...shape}
                   id={shape.id}
-                  draggable={tool === "cursor"} // Enable dragging only when the cursor tool is selected
-                  onClick={() => tool === "cursor" && setSelectedId(shape.id)} // Select on single click
+                  draggable={tool === "cursor"}
+                  onClick={() => tool === "cursor" && setSelectedId(shape.id)}
                   onDragEnd={(e) => {
                     const updatedShapes = shapes.map((s) =>
                       s.id === shape.id
@@ -678,15 +795,35 @@ const WhiteBoard = () => {
                     );
                     setShapes(updatedShapes);
                   }}
+                  onTouchStart={(e) => {
+                    if (tool === "cursor") {
+                      setSelectedId(shape.id);
+                    }
+                  }}
+                  onTouchMove={(e) => {
+                    if (tool === "cursor") {
+                      const touch = e.evt.touches[0];
+                      if (touch) {
+                        const stage = e.target.getStage();
+                        const pointer = stage.getPointerPosition();
+                        const updatedShapes = shapes.map((s) =>
+                          s.id === shape.id
+                            ? { ...s, x: pointer.x, y: pointer.y }
+                            : s
+                        );
+                        setShapes(updatedShapes);
+                      }
+                    }
+                  }}
                   onMouseEnter={(e) => {
                     if (tool === "cursor") {
-                      e.target.getStage().container().style.cursor = "move"; // Change cursor to "move"
+                      e.target.getStage().container().style.cursor = "move";
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (tool === "cursor") {
                       e.target.getStage().container().style.cursor = "default";
-                    } // Reset cursor
+                    }
                   }}
                 />
               ) : shape.type === "circle" ? (
@@ -703,6 +840,26 @@ const WhiteBoard = () => {
                         : s
                     );
                     setShapes(updatedShapes);
+                  }}
+                  onTouchStart={(e) => {
+                    if (tool === "cursor") {
+                      setSelectedId(shape.id);
+                    }
+                  }}
+                  onTouchMove={(e) => {
+                    if (tool === "cursor") {
+                      const touch = e.evt.touches[0];
+                      if (touch) {
+                        const stage = e.target.getStage();
+                        const pointer = stage.getPointerPosition();
+                        const updatedShapes = shapes.map((s) =>
+                          s.id === shape.id
+                            ? { ...s, x: pointer.x, y: pointer.y }
+                            : s
+                        );
+                        setShapes(updatedShapes);
+                      }
+                    }
                   }}
                   onMouseEnter={(e) => {
                     if (tool === "cursor") {
@@ -737,6 +894,34 @@ const WhiteBoard = () => {
                     );
                     setShapes(updatedShapes);
                   }}
+                  onTouchStart={(e) => {
+                    if (tool === "cursor") {
+                      setSelectedId(shape.id);
+                    }
+                  }}
+                  onTouchMove={(e) => {
+                    if (tool === "cursor") {
+                      const touch = e.evt.touches[0];
+                      if (touch) {
+                        const stage = e.target.getStage();
+                        const pointer = stage.getPointerPosition();
+                        const updatedShapes = shapes.map((s) =>
+                          s.id === shape.id
+                            ? {
+                                ...s,
+                                points: [
+                                  pointer.x,
+                                  pointer.y,
+                                  pointer.x + 50,
+                                  pointer.y + 50,
+                                ],
+                              }
+                            : s
+                        );
+                        setShapes(updatedShapes);
+                      }
+                    }
+                  }}
                   onMouseEnter={(e) => {
                     if (tool === "cursor") {
                       e.target.getStage().container().style.cursor = "move";
@@ -750,7 +935,7 @@ const WhiteBoard = () => {
                 />
               )
             )}
-            {tempShape && // Render the temporary shape for visual feedback
+            {tempShape &&
               (tempShape.type === "rect" ? (
                 <Rect {...tempShape} dash={[10, 5]} />
               ) : tempShape.type === "circle" ? (
@@ -775,6 +960,26 @@ const WhiteBoard = () => {
                 onClick={() => {
                   if (tool === "cursor") {
                     setSelectedId(textItem.id);
+                  }
+                }}
+                onTouchStart={(e) => {
+                  if (tool === "cursor") {
+                    setSelectedId(textItem.id);
+                  }
+                }}
+                onTouchMove={(e) => {
+                  if (tool === "cursor") {
+                    const touch = e.evt.touches[0];
+                    if (touch) {
+                      const stage = e.target.getStage();
+                      const pointer = stage.getPointerPosition();
+                      const updatedTextItems = textItems.map((item) =>
+                        item.id === textItem.id
+                          ? { ...item, x: pointer.x, y: pointer.y }
+                          : item
+                      );
+                      setTextItems(updatedTextItems);
+                    }
                   }
                 }}
                 onDblClick={() => {
@@ -812,6 +1017,47 @@ const WhiteBoard = () => {
                 globalCompositeOperation={
                   line.tool === "eraser" ? "destination-out" : "source-over"
                 }
+                draggable={tool === "cursor"}
+                onClick={() => tool === "cursor" && setSelectedId(line.id)}
+                onDragEnd={(e) => {
+                  const updatedLines = lines.map((l) =>
+                    l.id === line.id
+                      ? {
+                          ...l,
+                          points: e.target.points(),
+                        }
+                      : l
+                  );
+                  setLines(updatedLines);
+                }}
+                onTouchStart={(e) => {
+                  if (tool === "cursor") {
+                    setSelectedId(line.id);
+                  }
+                }}
+                onTouchMove={(e) => {
+                  if (tool === "cursor") {
+                    const touch = e.evt.touches[0];
+                    if (touch) {
+                      const stage = e.target.getStage();
+                      const pointer = stage.getPointerPosition();
+                      const updatedLines = lines.map((l) =>
+                        l.id === line.id
+                          ? {
+                              ...l,
+                              points: [
+                                pointer.x,
+                                pointer.y,
+                                pointer.x + 50,
+                                pointer.y + 50,
+                              ],
+                            }
+                          : l
+                      );
+                      setLines(updatedLines);
+                    }
+                  }
+                }}
               />
             ))}
             <Transformer
@@ -822,23 +1068,35 @@ const WhiteBoard = () => {
                       `#${selectedId}`
                     );
                     if (selectedNode) {
-                      node.nodes([selectedNode]); // Attach the Transformer to the selected node
-                      node.getLayer().batchDraw(); // Redraw the layer
+                      node.nodes([selectedNode]);
+                      node.getLayer().batchDraw();
                     } else {
-                      node.nodes([]); // Clear the Transformer if no node is selected
+                      node.nodes([]);
                     }
                   } else {
-                    node.nodes([]); // Clear the Transformer if selectedId is null
+                    node.nodes([]);
                   }
                 }
               }}
               boundBoxFunc={(oldBox, newBox) => {
-                // Prevent resizing to negative dimensions
                 if (newBox.width < 5 || newBox.height < 5) {
                   return oldBox;
                 }
                 return newBox;
               }}
+              rotateEnabled={true}
+              resizeEnabled={true}
+              anchorSize={10}
+              enabledAnchors={[
+                "top-left",
+                "top-right",
+                "bottom-left",
+                "bottom-right",
+                "middle-left",
+                "middle-right",
+                "top-center",
+                "bottom-center",
+              ]}
             />
           </Layer>
         </Stage>
@@ -847,11 +1105,50 @@ const WhiteBoard = () => {
   );
 };
 
-// 🔽 Component to render uploaded image with resizing (Transformer)
-const URLImage = ({ src, x, y, id, isSelected, onClick, tool }) => {
+// Component to render uploaded image with resizing (Transformer) and pinch-to-zoom
+const URLImage = ({ src, x, y, id, isSelected, onClick, tool, scaleX = 1, scaleY = 1 }) => {
   const [image] = useImage(src);
   const shapeRef = useRef();
   const trRef = useRef();
+  const lastDistanceRef = useRef(null);
+
+  // Pinch-to-zoom for touch devices
+  useEffect(() => {
+    const node = shapeRef.current;
+    if (!node) return;
+
+    const handleTouchMove = (e) => {
+      if (tool !== "cursor") return;
+      if (e.evt.touches.length === 2) {
+        e.evt.preventDefault();
+        const touch1 = e.evt.touches[0];
+        const touch2 = e.evt.touches[1];
+        const dx = touch2.clientX - touch1.clientX;
+        const dy = touch2.clientY - touch1.clientY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (lastDistanceRef.current) {
+          const scaleChange = distance / lastDistanceRef.current;
+          node.scaleX(node.scaleX() * scaleChange);
+          node.scaleY(node.scaleY() * scaleChange);
+          node.getLayer().batchDraw();
+        }
+        lastDistanceRef.current = distance;
+      }
+    };
+
+    const handleTouchEnd = (e) => {
+      lastDistanceRef.current = null;
+    };
+
+    node.on("touchmove", handleTouchMove);
+    node.on("touchend", handleTouchEnd);
+
+    return () => {
+      node.off("touchmove", handleTouchMove);
+      node.off("touchend", handleTouchEnd);
+    };
+  }, [tool]);
 
   useEffect(() => {
     if (isSelected && trRef.current && shapeRef.current) {
@@ -866,13 +1163,32 @@ const URLImage = ({ src, x, y, id, isSelected, onClick, tool }) => {
         image={image}
         x={x}
         y={y}
-        draggable={tool === "cursor"} // Use the tool prop here
+        draggable={tool === "cursor"}
         onClick={onClick}
         id={id}
         ref={shapeRef}
+        scaleX={scaleX}
+        scaleY={scaleY}
+        onTouchStart={(e) => {
+          if (tool === "cursor") {
+            if (onClick) onClick();
+          }
+        }}
+        onTouchMove={(e) => {
+          if (tool === "cursor" && e.evt.touches.length === 1) {
+            const touch = e.evt.touches[0];
+            if (touch) {
+              const stage = e.target.getStage();
+              const pointer = stage.getPointerPosition();
+              shapeRef.current.x(pointer.x);
+              shapeRef.current.y(pointer.y);
+              shapeRef.current.getLayer().batchDraw();
+            }
+          }
+        }}
         onMouseEnter={(e) => {
           if (tool === "cursor") {
-            e.target.getStage().container().style.cursor = "move"; // Change cursor to "move"
+            e.target.getStage().container().style.cursor = "move";
           }
         }}
         onMouseLeave={(e) => {
@@ -887,10 +1203,22 @@ const URLImage = ({ src, x, y, id, isSelected, onClick, tool }) => {
           boundBoxFunc={(oldBox, newBox) => {
             return newBox.width < 5 || newBox.height < 5 ? oldBox : newBox;
           }}
+          rotateEnabled={true}
+          resizeEnabled={true}
+          anchorSize={10}
+          enabledAnchors={[
+            "top-left",
+            "top-right",
+            "bottom-left",
+            "bottom-right",
+            "middle-left",
+            "middle-right",
+            "top-center",
+            "bottom-center",
+          ]}
         />
       )}
     </>
   );
-};
-
+}
 export default WhiteBoard;
