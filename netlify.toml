@@ -1,2 +1,2 @@
-[functions."sendInactivityNotifications"]
-  schedule = "*/1 * * * *" # every 1 minute
+[build]
+  command = "npm install --legacy-peer-deps && npm run build"
