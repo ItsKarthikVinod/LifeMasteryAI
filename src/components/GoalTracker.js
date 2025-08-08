@@ -25,22 +25,62 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { sendNotification } from "../hooks/useSendNotification";
 import { isSameDay } from "date-fns";
-
 import useGetGoals from "../hooks/useGetGoals";
+import Datepicker from "tailwind-datepicker-react";
 
 const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
   const [goalName, setGoalName] = useState("");
   const [expandedGoals, setExpandedGoals] = useState({});
   const [subGoalInput, setSubGoalInput] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [showDatepicker, setShowDatepicker] = useState(false);
   const [currentGoalId, setCurrentGoalId] = useState(null);
   const [editingSubGoalIndex, setEditingSubGoalIndex] = useState(null);
   const [editingSubGoalName, setEditingSubGoalName] = useState("");
   const [editingDueDate, setEditingDueDate] = useState("");
+  const [showEditDatepicker, setShowEditDatepicker] = useState(false);
   const { currentUser, theme } = useAuth();
   const userId = currentUser.uid;
   const { goalss } = useGetGoals();
   const { awardXP } = useGetGame();
+
+  // Datepicker options for add subgoal
+  const datepickerOptions = {
+    title: "Pick a due date",
+    autoHide: false,
+    todayBtn: true,
+    clearBtn: false,
+    maxDate: new Date("2100-12-31"),
+    minDate: new Date("2000-01-01"),
+    theme: {
+      background: theme === "dark" ? "bg-gray-800" : "bg-white",
+      todayBtn: theme === "dark" ? "bg-teal-700" : "bg-teal-300",
+      clearBtn: theme === "dark" ? "bg-gray-700" : "bg-gray-200",
+      icons: theme === "dark" ? "text-teal-300" : "text-teal-700",
+      text: theme === "dark" ? "text-teal-300" : "text-teal-700",
+      disabledText: "text-gray-400",
+      input:
+        theme === "dark"
+          ? "bg-gray-800 border-teal-700 text-teal-300"
+          : "bg-white border-teal-300 text-teal-700",
+      inputIcon: "",
+      selected:
+        theme === "dark" ? "bg-teal-700 text-white" : "bg-teal-500 text-white",
+    },
+    icons: {
+      prev: () => <span>{"‹"}</span>,
+      next: () => <span>{"›"}</span>,
+    },
+    datepickerClassNames: "top-12",
+    defaultDate: dueDate ? new Date(dueDate) : undefined,
+    language: "en",
+  };
+
+  // Datepicker options for edit subgoal
+  const editDatepickerOptions = {
+    ...datepickerOptions,
+    defaultDate: editingDueDate ? new Date(editingDueDate) : undefined,
+  };
 
   // Only send reminder if not already sent for this subgoal today
   useEffect(() => {
@@ -141,7 +181,7 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
     const newSubGoal = {
       name: subGoalInput,
       completed: false,
-      dueDate: dueDate,
+      dueDate: formatDateForInput(dueDate),
     };
 
     try {
@@ -236,7 +276,7 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
     subGoals[editingSubGoalIndex] = {
       ...subGoals[editingSubGoalIndex],
       name: editingSubGoalName,
-      dueDate: editingDueDate,
+      dueDate: formatDateForInput(editingDueDate),
     };
 
     try {
@@ -257,6 +297,38 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
       ).length;
       return (completedSubGoals / subGoals.length) * 100;
     }
+  };
+
+  // Format date as YYYY-MM-DD for input value
+  function formatDateForInput(date) {
+    if (!date) return "";
+    if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date))
+      return date;
+    const d = typeof date === "string" ? new Date(date) : date;
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  // Datepicker change handler for add subgoal
+  const handleDatepickerChange = (date) => {
+    if (date instanceof Date && !isNaN(date.getTime())) {
+      setDueDate(formatDateForInput(date));
+    } else if (typeof date === "string" && !isNaN(new Date(date).getTime())) {
+      setDueDate(formatDateForInput(new Date(date)));
+    }
+    setShowDatepicker(false);
+  };
+
+  // Datepicker change handler for edit subgoal
+  const handleEditDatepickerChange = (date) => {
+    if (date instanceof Date && !isNaN(date.getTime())) {
+      setEditingDueDate(formatDateForInput(date));
+    } else if (typeof date === "string" && !isNaN(new Date(date).getTime())) {
+      setEditingDueDate(formatDateForInput(new Date(date)));
+    }
+    setShowEditDatepicker(false);
   };
 
   return (
@@ -395,17 +467,15 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
                         }`}
                         placeholder="Enter sub-goal"
                       />
-                      <input
-                        type="date"
-                        value={dueDate}
-                        onChange={(e) => setDueDate(e.target.value)}
-                        className={`border p-2 rounded flex-grow focus:outline-none focus:ring-2 ${
-                          theme === "dark"
-                            ? "bg-gray-800 border-gray-600 text-white focus:ring-teal-500"
-                            : "bg-white border-gray-300 text-gray-800 focus:ring-teal-400"
-                        }`}
-                        placeholder="Due date"
-                      />
+                      <div style={{ minWidth: 140 }}>
+                        <Datepicker
+                          options={datepickerOptions}
+                          show={showDatepicker}
+                          setShow={setShowDatepicker}
+                          value={dueDate ? new Date(dueDate) : null}
+                          onChange={handleDatepickerChange}
+                        />
+                      </div>
                       <button
                         onClick={addSubGoal}
                         className={`bg-teal-500 text-white px-4 py-2 rounded w-full sm:w-auto ${
@@ -453,16 +523,17 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
                             }`}
                             placeholder="Edit sub-goal"
                           />
-                          <input
-                            type="date"
-                            value={editingDueDate}
-                            onChange={(e) => setEditingDueDate(e.target.value)}
-                            className={`border p-2 rounded flex-grow focus:outline-none focus:ring-2 ${
-                              theme === "dark"
-                                ? "bg-gray-800 border-gray-600 text-gray-200 focus:ring-teal-500"
-                                : "bg-white border-gray-300 text-gray-800 focus:ring-teal-400"
-                            }`}
-                          />
+                          <div style={{ minWidth: 140 }}>
+                            <Datepicker
+                              options={editDatepickerOptions}
+                              show={showEditDatepicker}
+                              setShow={setShowEditDatepicker}
+                              value={
+                                editingDueDate ? new Date(editingDueDate) : null
+                              }
+                              onChange={handleEditDatepickerChange}
+                            />
+                          </div>
                           <button
                             onClick={saveSubGoalEdit}
                             className={`${

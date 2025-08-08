@@ -16,10 +16,19 @@ import {
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../firebase/firebase";
 import { useAuth } from "../contexts/authContext";
-import dayjs from "dayjs";
+import Datepicker from "tailwind-datepicker-react";
 
-// Helper to get today's date string
-const todayStr = (date) => dayjs(date).format("dddd, MMM D, YYYY");
+// Helper to get today's date string in readable format
+const todayStr = (date) => {
+  if (!date) return "";
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
 
 // Motivational quotes
 const QUOTES = [
@@ -110,6 +119,17 @@ const getIcon = (type) => {
 const DEFAULT_WIDTH = 480;
 const FULLSCREEN_WIDTH = "100vw";
 
+// Helper to format date as YYYY-MM-DD for Firestore doc id
+function formatDateId(date) {
+  if (!date) return "";
+  const d = typeof date === "string" ? new Date(date) : date;
+  // Pad month and day
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 const PlannerSidebar = ({
   isOpen,
   onClose,
@@ -117,7 +137,7 @@ const PlannerSidebar = ({
   habits = [],
   subgoals = [],
   refreshAllTasks,
-  onTriggerPomodoro
+  onTriggerPomodoro,
 }) => {
   const { currentUser, theme } = useAuth();
   const userId = currentUser?.uid;
@@ -140,11 +160,43 @@ const PlannerSidebar = ({
   const [quote, setQuote] = useState(getRandomQuote());
   const [saving, setSaving] = useState(false);
 
+  // Datepicker state
+  const [showDatepicker, setShowDatepicker] = useState(false);
+  // Date planning (use JS Date object)
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Datepicker options
+  const datepickerOptions = {
+    title: "Pick a date to plan",
+    autoHide: true,
+    todayBtn: true,
+    clearBtn: false,
+    maxDate: new Date("2100-12-31"),
+    minDate: new Date("2000-01-01"),
+    theme: {
+      background: isDark ? "bg-gray-800" : "bg-white",
+      todayBtn: isDark ? "bg-teal-700" : "bg-teal-300",
+      clearBtn: isDark ? "bg-gray-700" : "bg-gray-200",
+      icons: isDark ? "text-teal-300" : "text-teal-700",
+      text: isDark ? "text-teal-300" : "text-teal-700",
+      disabledText: "text-gray-400",
+      input: isDark
+        ? "bg-gray-800 border-teal-700 text-teal-300"
+        : "bg-white border-teal-300 text-teal-700",
+      inputIcon: "",
+      selected: isDark ? "bg-teal-700 text-white" : "bg-teal-500 text-white",
+    },
+    icons: {
+      prev: () => <span>{"‹"}</span>,
+      next: () => <span>{"›"}</span>,
+    },
+    datepickerClassNames: "top-12",
+    defaultDate: selectedDate,
+    language: "en",
+  };
+
   const [unsaved, setUnsaved] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
-
-  // Date planning
-  const [selectedDate, setSelectedDate] = useState(dayjs().format("YYYY-MM-DD"));
 
   // Compare plan with last saved plan
   const lastSavedPlanRef = React.useRef(null);
@@ -192,27 +244,38 @@ const PlannerSidebar = ({
       .forEach((s) => (map[s.id] = { ...s, type: "subgoal" }));
     return map;
   }, [todos, habits, subgoals]);
-  
+
   // Load plan from Firebase on open or date change
   useEffect(() => {
     if (!isOpen || !userId || !selectedDate) return;
     setLoading(true);
     (async () => {
-      const ref = doc(db, "planner", `${userId}_${selectedDate}`);
-      const snap = await getDoc(ref);
-      let loaded = {
-        urgent_important: [],
-        not_urgent_important: [],
-        urgent_not_important: [],
-        not_urgent_not_important: [],
-        table: [],
-      };
-      if (snap.exists()) loaded = { ...loaded, ...snap.data() };
-      // Remove completed tasks
-      const filtered = filterCompleted(loaded, allTasks);
-      setPlan(filtered);
-      setLoading(false);
-      setQuote(getRandomQuote());
+      try {
+        const ref = doc(db, "planner", `${userId}_${formatDateId(selectedDate)}`);
+        const snap = await getDoc(ref);
+        let loaded = {
+          urgent_important: [],
+          not_urgent_important: [],
+          urgent_not_important: [],
+          not_urgent_not_important: [],
+          table: [],
+        };
+        if (snap.exists()) loaded = { ...loaded, ...snap.data() };
+        // Remove completed tasks
+        const filtered = filterCompleted(loaded, allTasks);
+        setPlan(filtered);
+        setLoading(false);
+        setQuote(getRandomQuote());
+      } catch (err) {
+        setLoading(false);
+        setPlan({
+          urgent_important: [],
+          not_urgent_important: [],
+          urgent_not_important: [],
+          not_urgent_not_important: [],
+          table: [],
+        });
+      }
     })();
     if (refreshAllTasks) refreshAllTasks();
     // eslint-disable-next-line
@@ -295,7 +358,7 @@ const PlannerSidebar = ({
     if (!userId || !selectedDate) return;
     setSaving(true);
     const filtered = filterCompleted(plan, allTasks);
-    await setDoc(doc(db, "planner", `${userId}_${selectedDate}`), filtered);
+    await setDoc(doc(db, "planner", `${userId}_${formatDateId(selectedDate)}`), filtered);
     setPlan(filtered);
     setSaving(false);
   };
@@ -332,11 +395,26 @@ const PlannerSidebar = ({
   // Fullscreen toggle
   const handleFullscreenToggle = () => setIsFullscreen((prev) => !prev);
 
+  // Datepicker change handler (returns JS Date object)
+  const handleDatepickerChange = (date) => {
+    if (date instanceof Date && !isNaN(date.getTime())) {
+      setSelectedDate(date);
+    } else if (typeof date === "string" && !isNaN(new Date(date).getTime())) {
+      setSelectedDate(new Date(date));
+    } else {
+      setSelectedDate(new Date());
+    }
+  };
+
   if (loading || saving) {
     return (
       <div className={sidebarClass}>
         <div className="flex items-center justify-center h-full">
-          <div className={`text-xl ${isDark ? "text-gray-400" : "text-gray-500"}`}>Loading...</div>
+          <div
+            className={`text-xl ${isDark ? "text-gray-400" : "text-gray-500"}`}
+          >
+            Loading...
+          </div>
         </div>
       </div>
     );
@@ -381,18 +459,15 @@ const PlannerSidebar = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className={`px-2 py-1 rounded-lg border font-semibold text-xs transition ${
-              isDark
-                ? "bg-gray-800 border-teal-700 text-teal-300"
-                : "bg-white border-teal-300 text-teal-700"
-            }`}
-            title="Pick a date to plan"
-            style={{ minWidth: 120 }}
-          />
+          <div style={{minWidth:120}} >
+            <Datepicker
+              options={datepickerOptions}
+              show={showDatepicker}
+              setShow={setShowDatepicker}
+              value={selectedDate}
+              onChange={handleDatepickerChange}
+            />
+          </div>
           <button
             className={`p-2 rounded-lg transition ${
               view === "table"
@@ -636,13 +711,6 @@ const PlannerSidebar = ({
                                 >
                                   <FaClock />
                                 </button>
-                                {/* <button
-                                  className={`transition ${isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-700"}`}
-                                  onClick={() => onNavigateToTask && onNavigateToTask(allTasks[id])}
-                                  title="Go to Task"
-                                >
-                                  <FaLocationArrow />
-                                </button> */}
                                 <button
                                   className={`transition ${
                                     isDark
@@ -738,13 +806,6 @@ const PlannerSidebar = ({
                               >
                                 <FaClock />
                               </button>
-                              {/* <button
-                                className={`transition ${isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-700"}`}
-                                onClick={() => onNavigateToTask && onNavigateToTask(allTasks[id])}
-                                title="Go to Task"
-                              >
-                                <FaLocationArrow />
-                              </button> */}
                               <button
                                 className={`transition ${
                                   isDark
@@ -796,7 +857,7 @@ const PlannerSidebar = ({
               minWidth: 340,
               maxWidth: "98vw",
               backdropFilter: "blur(12px)",
-              boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
+              boxShadow: "0 8px 32px 0 rgba(0,0,0,0.37)",
               overflow: "hidden",
             }}
           >
@@ -1003,15 +1064,16 @@ const PlannerSidebar = ({
                     setShowUnsavedModal(false);
                     onClose();
                   }}
+                  
                 >
-                  Close Without Saving
+                  Discard & Close
                 </button>
               </div>
             </div>
           </div>
         </div>
-      )}
+      )}    
     </div>
-  );
-};
+  );  
+}
 export default PlannerSidebar;
