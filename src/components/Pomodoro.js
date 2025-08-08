@@ -120,6 +120,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
 
   const [blockedSites, setBlockedSites] = useState([]);
   const [isBlockingEnabled, setIsBlockingEnabled] = useState(false);
+  
 
   useEffect(() => {
     const storedSites = JSON.parse(localStorage.getItem("blockedSites")) || [];
@@ -148,134 +149,163 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
     fetchSessionLogsFromLocalStorage();
   }, [fetchSessionLogsFromLocalStorage]);
 
-  // Accurate timer logic
-  useEffect(() => {
-    let interval;
+  
+useEffect(() => {
+  let interval;
+  let wakeLock = null;
 
-    if (isRunning) {
-      if (!endTime) {
-        setEndTime(Date.now() + (minutes * 60 + seconds) * 1000);
-        return;
+  // Request Wake Lock to prevent screen from sleeping
+  const requestWakeLock = async () => {
+    try {
+      if ("wakeLock" in navigator && navigator.wakeLock.request) {
+        wakeLock = await navigator.wakeLock.request("screen");
+        // Re-acquire wake lock if released by system
+        wakeLock.addEventListener("release", () => {
+          if (isRunning) requestWakeLock();
+        });
       }
+    } catch (err) {
+      // Wake Lock not supported or denied
+    }
+  };
 
-      localStorage.setItem("pomodoroStatus", "running");
+  // Release Wake Lock
+  const releaseWakeLock = () => {
+    if (wakeLock) {
+      wakeLock.release();
+      wakeLock = null;
+    }
+  };
 
-      interval = setInterval(() => {
-        const now = Date.now();
-        const remainingMs = endTime - now;
-        if (remainingMs <= 0) {
-          setMinutes(0);
-          setSeconds(0);
-
-          // Play bell sound after work or break
-          if (isWorkSession) {
-            if (audioRef.current) {
-              audioRef.current.volume = 0.2;
-              audioRef.current.play();
-            }
-          } else {
-            if (audio2Ref.current) {
-              audio2Ref.current.volume = 0.2;
-              audio2Ref.current.play();
-            }
-          }
-
-          localStorage.setItem("pomodoroStatus", "stopped");
-
-          const session = {
-            title: title ? title : "Session",
-            type: isWorkSession ? "Work" : "Break",
-            duration: isWorkSession ? workDuration : breakDuration,
-            timestamp: new Date().toLocaleString(),
-          };
-
-          saveSessionToLocalStorage(session);
-
-          if (isWorkSession) {
-            const xpGained = workDuration;
-            awardXP(userId, xpGained);
-
-            toast.success(
-              `+${xpGained} XP gained for completing a work session.`,
-              {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-              }
-            );
-
-            if ("Notification" in window) {
-              if (Notification.permission === "granted") {
-                new Notification("Pomodoro Complete!", {
-                  body: `Great job! You finished your work session: "${
-                    title || "Session"
-                  }". Time for a break!`,
-                  icon: "/android-chrome-512x512.png",
-                });
-              } else if (Notification.permission !== "denied") {
-                Notification.requestPermission().then((permission) => {
-                  if (permission === "granted") {
-                    new Notification("Pomodoro Complete!", {
-                      body: `Great job! You finished your work session: "${
-                        title || "Session"
-                      }". Time for a break!`,
-                      icon: "/android-chrome-512x512.png",
-                    });
-                  }
-                });
-              }
-            }
-            setMinutes(breakDuration);
-            setSeconds(0);
-            setIsWorkSession(false);
-            setEndTime(Date.now() + breakDuration * 60 * 1000);
-          } else {
-            setIsRunning(false);
-            setMinutes(workDuration);
-            setSeconds(0);
-            setIsWorkSession(true);
-            setEndTime(null);
-            document.title = "Life Mastery | Unlock Your True Potential";
-          }
-
-          clearInterval(interval);
-        } else {
-          const remainingSeconds = Math.ceil(remainingMs / 1000);
-          const remainingMinutes = Math.floor(remainingSeconds / 60);
-          const secondsLeft = remainingSeconds % 60;
-          setMinutes(remainingMinutes);
-          setSeconds(secondsLeft);
-
-          document.title = `Life Mastery - ${String(remainingMinutes).padStart(
-            2,
-            "0"
-          )}:${String(secondsLeft).padStart(2, "0")}`;
-        }
-      }, 1000);
-    } else {
-      setEndTime(null);
-      document.title = "Life Mastery | Unlock Your True Potential";
+  if (isRunning) {
+    requestWakeLock();
+    if (!endTime) {
+      setEndTime(Date.now() + (minutes * 60 + seconds) * 1000);
+      return;
     }
 
-    return () => clearInterval(interval);
-  }, [
-    isRunning,
-    endTime,
-    isWorkSession,
-    breakDuration,
-    workDuration,
-    saveSessionToLocalStorage,
-    title,
-    setIsRunning,
-    awardXP,
-    userId,
-    minutes,
-    seconds,
-  ]);
+    localStorage.setItem("pomodoroStatus", "running");
+
+    interval = setInterval(() => {
+      const now = Date.now();
+      const remainingMs = endTime - now;
+      if (remainingMs <= 0) {
+        setMinutes(0);
+        setSeconds(0);
+
+        // Play bell sound after work or break
+        if (isWorkSession) {
+          if (audioRef.current) {
+            audioRef.current.volume = 0.2;
+            audioRef.current.play();
+          }
+        } else {
+          if (audio2Ref.current) {
+            audio2Ref.current.volume = 0.2;
+            audio2Ref.current.play();
+          }
+        }
+
+        localStorage.setItem("pomodoroStatus", "stopped");
+
+        const session = {
+          title: title ? title : "Session",
+          type: isWorkSession ? "Work" : "Break",
+          duration: isWorkSession ? workDuration : breakDuration,
+          timestamp: new Date().toLocaleString(),
+        };
+
+        saveSessionToLocalStorage(session);
+
+        if (isWorkSession) {
+          const xpGained = workDuration;
+          awardXP(userId, xpGained);
+
+          toast.success(
+            `+${xpGained} XP gained for completing a work session.`,
+            {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+            }
+          );
+
+          if ("Notification" in window) {
+            if (Notification.permission === "granted") {
+              new Notification("Pomodoro Complete!", {
+                body: `Great job! You finished your work session: "${
+                  title || "Session"
+                }". Time for a break!`,
+                icon: "/android-chrome-512x512.png",
+              });
+            } else if (Notification.permission !== "denied") {
+              Notification.requestPermission().then((permission) => {
+                if (permission === "granted") {
+                  new Notification("Pomodoro Complete!", {
+                    body: `Great job! You finished your work session: "${
+                      title || "Session"
+                    }". Time for a break!`,
+                    icon: "/android-chrome-512x512.png",
+                  });
+                }
+              });
+            }
+          }
+          setMinutes(breakDuration);
+          setSeconds(0);
+          setIsWorkSession(false);
+          setEndTime(Date.now() + breakDuration * 60 * 1000);
+        } else {
+          setIsRunning(false);
+          setMinutes(workDuration);
+          setSeconds(0);
+          setIsWorkSession(true);
+          setEndTime(null);
+          document.title = "Life Mastery | Unlock Your True Potential";
+        }
+
+        clearInterval(interval);
+      } else {
+        const remainingSeconds = Math.ceil(remainingMs / 1000);
+        const remainingMinutes = Math.floor(remainingSeconds / 60);
+        const secondsLeft = remainingSeconds % 60;
+        setMinutes(remainingMinutes);
+        setSeconds(secondsLeft);
+
+        document.title = `Life Mastery - ${String(remainingMinutes).padStart(
+          2,
+          "0"
+        )}:${String(secondsLeft).padStart(2, "0")}`;
+      }
+    }, 1000);
+  } else {
+    releaseWakeLock();
+    setEndTime(null);
+    document.title = "Life Mastery | Unlock Your True Potential";
+  }
+
+  return () => {
+    clearInterval(interval);
+    releaseWakeLock();
+  };
+}, [
+  isRunning,
+  endTime,
+  isWorkSession,
+  breakDuration,
+  workDuration,
+  saveSessionToLocalStorage,
+  title,
+  setIsRunning,
+  awardXP,
+  userId,
+  minutes,
+  seconds,
+]);
 
   // Music player logic
   useEffect(() => {
@@ -792,8 +822,7 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
         <PomodoroTimeline
           sessionLog={sessionLog}
           theme={theme}
-          toggleTimelineModal={toggleTimelineModal}
-          isTimelineModalOpen={isTimelineModalOpen}
+          onClose={toggleTimelineModal}
         />
       )}
     </>

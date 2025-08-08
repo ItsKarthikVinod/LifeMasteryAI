@@ -38,6 +38,7 @@ const WhiteBoard = () => {
   const [startPos, setStartPos] = useState(null);
   const [tempShape, setTempShape] = useState(null);
   const { currentUser } = useAuth();
+  const [exportTransparent, setExportTransparent] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -405,24 +406,20 @@ const WhiteBoard = () => {
 
   const handleExport = () => {
     const stage = stageRef.current;
-    const canvas = document.createElement("canvas");
-    canvas.width = stage.width();
-    canvas.height = stage.height();
-    const context = canvas.getContext("2d");
-    context.fillStyle = bgColor;
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    const stageDataURL = stage.toDataURL();
-    const stageImage = new window.Image();
-    stageImage.src = stageDataURL;
-    stageImage.onload = () => {
-      context.drawImage(stageImage, 0, 0);
-      const link = document.createElement("a");
-      link.download = "whiteboard.png";
-      link.href = canvas.toDataURL();
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    };
+    // Use Konva's built-in export with transparent or colored background
+    console.log(exportTransparent, bgColor);
+    const dataURL = stage.toDataURL({
+      pixelRatio: 2,
+      mimeType: "image/png",
+      quality: 1,
+      ...(exportTransparent ? {} : { backgroundColor: bgColor }),
+    });
+    const link = document.createElement("a");
+    link.download = "whiteboard.png";
+    link.href = dataURL;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleImageUpload = (e) => {
@@ -489,7 +486,11 @@ const WhiteBoard = () => {
   }
 
   return (
-    <div className={`p-7 bg-gray-100 mt-24 rounded-lg shadow-md ${isGuest === true ? 'pt-[7rem] lg:pt-16' : 'pt-0'} `}>
+    <div
+      className={`p-7 bg-gray-100 mt-24 rounded-lg shadow-md ${
+        isGuest === true ? "pt-[7rem] lg:pt-16" : "pt-0"
+      } `}
+    >
       <ToastContainer />
       {saving && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
@@ -693,7 +694,25 @@ const WhiteBoard = () => {
             type="color"
             value={bgColor}
             onChange={(e) => setBgColor(e.target.value)}
+            disabled={exportTransparent}
+            style={
+              exportTransparent ? { opacity: 0.5, cursor: "not-allowed" } : {}
+            }
           />
+        </div>
+        <div>
+          <label className="block mb-1">Export Transparent</label>
+          <input
+            type="checkbox"
+            checked={exportTransparent}
+            onChange={(e) => setExportTransparent(e.target.checked)}
+            className="ml-2"
+          />
+          <span className="ml-2 text-sm text-gray-600">
+            {exportTransparent
+              ? "PNG will be transparent"
+              : "PNG will use canvas color"}
+          </span>
         </div>
         <GoToGalleryButton />
       </div>
@@ -725,7 +744,6 @@ const WhiteBoard = () => {
           width={window.innerWidth - 60}
           height={window.innerHeight - 400}
           ref={stageRef}
-          style={{ backgroundColor: bgColor }}
           onMouseDown={(e) => {
             if (window.innerWidth > 768) {
               const clickedOnEmpty = e.target === e.target.getStage();
@@ -768,6 +786,16 @@ const WhiteBoard = () => {
           }}
         >
           <Layer>
+            {!exportTransparent && (
+              <Rect
+                x={0}
+                y={0}
+                width={window.innerWidth - 60}
+                height={window.innerHeight - 400}
+                fill={bgColor}
+                listening={false}
+              />
+            )}
             {images.map((img) => (
               <URLImage
                 key={img.id}

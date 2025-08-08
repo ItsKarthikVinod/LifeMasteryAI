@@ -432,8 +432,8 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
                       }  ${
                         isOverdue(subGoal.dueDate)
                           ? theme === "dark"
-                            ? "border-red-500 text-red-600"
-                            : "border-red-500 text-red-600"
+                            ? "border-2 border-red-500 text-white"
+                            : "border-2 border-red-500 text-red-600"
                           : ""
                       }`}
                     >

@@ -14,17 +14,35 @@ import {
 import { FaThumbsUp, FaComment, FaTrash, FaTimes } from "react-icons/fa";
 import Modal from "react-modal";
 import { useAuth } from "../contexts/authContext";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css"; // Import Quill's default theme
 import { Link } from "react-router-dom";
+import { EditorState, convertToRaw } from "draft-js";
+import { Editor } from "react-draft-wysiwyg";
+import draftToHtml from "draftjs-to-html";
+import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
 
 Modal.setAppElement("#root");
+
+const editorBoxStyle = (theme) => ({
+  borderRadius: "0.75rem",
+  border: theme === "dark" ? "2px solid #334155" : "2px solid #d1d5db",
+  background: theme === "dark" ? "#1e293b" : "#f9fafb",
+  color: theme === "dark" ? "#fff" : "#222",
+  padding: "1rem",
+  marginBottom: "1rem",
+  minHeight: "180px",
+  boxShadow: theme === "dark"
+    ? "0 2px 8px rgba(0,0,0,0.7)"
+    : "0 2px 8px rgba(0,0,0,0.08)",
+  position: "relative",
+});
+
+
 
 const CommunityPage = () => {
   const [posts, setPosts] = useState([]);
   const [newPostTitle, setNewPostTitle] = useState("");
-  const [newPostContent, setNewPostContent] = useState("");
-  const [newComment, setNewComment] = useState("");
+  const [newPostContent, setNewPostContent] = useState(EditorState.createEmpty());
+  const [newComment, setNewComment] = useState(EditorState.createEmpty());
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const { currentUser, theme } = useAuth();
@@ -55,7 +73,6 @@ const CommunityPage = () => {
   }, []);
 
   useEffect(() => {
-    // Scroll to the top of the page when the component is mounted
     window.scrollTo(0, 0);
   }, []);
 
@@ -74,12 +91,13 @@ const CommunityPage = () => {
   };
 
   const addPost = async () => {
-    if (!newPostTitle || !newPostContent) return;
+    const htmlContent = draftToHtml(convertToRaw(newPostContent.getCurrentContent()));
+    if (!newPostTitle || !htmlContent || newPostContent.getCurrentContent().getPlainText().trim() === "") return;
 
     try {
       await addDoc(collection(db, "posts"), {
         title: newPostTitle,
-        content: newPostContent,
+        content: htmlContent,
         timestamp: serverTimestamp(),
         likes: 0,
         comments: [],
@@ -89,7 +107,7 @@ const CommunityPage = () => {
         email: currentUser.email,
       });
       setNewPostTitle("");
-      setNewPostContent("");
+      setNewPostContent(EditorState.createEmpty());
       fetchPosts();
       setModalIsOpen(false);
     } catch (error) {
@@ -98,7 +116,8 @@ const CommunityPage = () => {
   };
 
   const addComment = async (postId) => {
-    if (!newComment) return;
+    const htmlComment = draftToHtml(convertToRaw(newComment.getCurrentContent()));
+    if (!htmlComment || newComment.getCurrentContent().getPlainText().trim() === "") return;
 
     const postRef = doc(db, "posts", postId);
     const post = posts.find((p) => p.id === postId);
@@ -106,7 +125,7 @@ const CommunityPage = () => {
       ...post.comments,
       {
         user: userName || "Anonymous User",
-        content: newComment,
+        content: htmlComment,
         timestamp: new Date(),
         email: currentUser.email,
       },
@@ -114,7 +133,7 @@ const CommunityPage = () => {
 
     try {
       await updateDoc(postRef, { comments: updatedComments });
-      setNewComment("");
+      setNewComment(EditorState.createEmpty());
       fetchPosts();
     } catch (error) {
       console.error("Error adding comment: ", error);
@@ -198,7 +217,6 @@ const CommunityPage = () => {
   };
 
   const isAdmin = (email) => adminEmails.includes(email);
-  
   const isGuest = currentUser && currentUser.isAnonymous;
 
   if (!currentUser) {
@@ -403,7 +421,9 @@ const CommunityPage = () => {
                           theme === "dark" ? "text-gray-400" : "text-gray-500"
                         }`}
                       >
-                        {comment.timestamp.toDate().toLocaleString()}
+                        {comment.timestamp?.toDate
+                          ? comment.timestamp.toDate().toLocaleString()
+                          : new Date(comment.timestamp).toLocaleString()}
                       </span>
                       <p
                         className="mt-2"
@@ -423,18 +443,50 @@ const CommunityPage = () => {
                     </div>
                   ))}
                 </div>
-                <div className="add-comment mt-6">
-                  <ReactQuill
-                    theme="snow"
-                    value={newComment}
-                    onChange={setNewComment}
-                    className={`mb-4 ${
-                      theme === "dark"
-                        ? "bg-gray-800 text-gray-200"
-                        : "bg-white text-gray-800"
-                    }`}
-                    placeholder="Write your comment here..."
-                  />
+                <div
+                  className="add-comment mt-6"
+                  style={{ position: "relative" }}
+                >
+                  <div style={editorBoxStyle(theme)}>
+                    {newComment.getCurrentContent().getPlainText().trim() ===
+                      "" && (
+                      <div className="absolute top-40 sm:top-[6.5rem] left-[1.2rem] text-[#888] pointer-events-none font-md z-1">
+                        Write your comment here...
+                      </div>
+                    )}
+                    <Editor
+                      editorState={newComment}
+                      onEditorStateChange={setNewComment}
+                      wrapperClassName="demo-wrapper"
+                      editorClassName={`demo-editor ${
+                        theme === "dark"
+                          ? "bg-gray-800 text-gray-200"
+                          : "bg-white text-gray-800"
+                      }`}
+                      toolbar={{
+                        options: [
+                          "inline",
+                          "fontSize",
+                          "list",
+                          "textAlign",
+                          "link",
+                          "emoji",
+                          "remove",
+                          "history",
+                        ],
+                        inline: {
+                          inDropdown: false,
+                          options: ["bold", "italic", "underline"],
+                        },
+                        fontSize: {
+                          options: [
+                            8, 9, 10, 11, 12, 14, 16, 18, 24, 30, 36, 48, 60,
+                            72, 96,
+                          ],
+                        },
+                      }}
+                    />
+                  </div>
                   <button
                     onClick={() => addComment(post.id)}
                     className={`px-6 py-3 rounded-full font-bold ${
@@ -480,17 +532,47 @@ const CommunityPage = () => {
           value={newPostTitle}
           onChange={(e) => setNewPostTitle(e.target.value)}
         />
-        <ReactQuill
-          theme="snow"
-          value={newPostContent}
-          onChange={setNewPostContent}
-          className={`mb-4 ${
-            theme === "dark"
-              ? "bg-gray-800 text-gray-200"
-              : "bg-white text-gray-800"
-          }`}
-          placeholder="Write your post here..."
-        />
+        <div style={{ position: "relative" }}>
+          <div style={editorBoxStyle(theme)}>
+            {newPostContent.getCurrentContent().getPlainText().trim() ===
+              "" && (
+              <div className="absolute top-40 sm:top-20 left-[1.2rem] text-[#888] pointer-events-none font-md z-1">
+                Write your post here...
+              </div>
+            )}
+            <Editor
+              editorState={newPostContent}
+              onEditorStateChange={setNewPostContent}
+              wrapperClassName="demo-wrapper"
+              editorClassName={`demo-editor ${
+                theme === "dark"
+                  ? "bg-gray-800 text-gray-200"
+                  : "bg-white text-gray-800"
+              }`}
+              toolbar={{
+                options: [
+                  "inline",
+                  "fontSize",
+                  "list",
+                  "textAlign",
+                  "link",
+                  "emoji",
+                  "remove",
+                  "history",
+                ],
+                inline: {
+                  inDropdown: false,
+                  options: ["bold", "italic", "underline"],
+                },
+                fontSize: {
+                  options: [
+                    8, 9, 10, 11, 12, 14, 16, 18, 24, 30, 36, 48, 60, 72, 96,
+                  ],
+                },
+              }}
+            />
+          </div>
+        </div>
         <div className="flex justify-between">
           <button
             onClick={addPost}

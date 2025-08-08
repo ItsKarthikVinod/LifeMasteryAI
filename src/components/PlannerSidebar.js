@@ -7,11 +7,11 @@ import {
   FaChevronRight,
   FaListUl,
   FaLayerGroup,
-  FaEdit,
   FaTrash,
   FaExpand,
   FaCompress,
   FaQuestion,
+  FaClock,
 } from "react-icons/fa";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../firebase/firebase";
@@ -19,7 +19,7 @@ import { useAuth } from "../contexts/authContext";
 import dayjs from "dayjs";
 
 // Helper to get today's date string
-const todayStr = () => dayjs().format("dddd, MMM D, YYYY");
+const todayStr = (date) => dayjs(date).format("dddd, MMM D, YYYY");
 
 // Motivational quotes
 const QUOTES = [
@@ -117,6 +117,7 @@ const PlannerSidebar = ({
   habits = [],
   subgoals = [],
   refreshAllTasks,
+  onTriggerPomodoro
 }) => {
   const { currentUser, theme } = useAuth();
   const userId = currentUser?.uid;
@@ -141,6 +142,9 @@ const PlannerSidebar = ({
 
   const [unsaved, setUnsaved] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+
+  // Date planning
+  const [selectedDate, setSelectedDate] = useState(dayjs().format("YYYY-MM-DD"));
 
   // Compare plan with last saved plan
   const lastSavedPlanRef = React.useRef(null);
@@ -188,13 +192,13 @@ const PlannerSidebar = ({
       .forEach((s) => (map[s.id] = { ...s, type: "subgoal" }));
     return map;
   }, [todos, habits, subgoals]);
-
-  // Load plan from Firebase on open
+  
+  // Load plan from Firebase on open or date change
   useEffect(() => {
-    if (!isOpen || !userId) return;
+    if (!isOpen || !userId || !selectedDate) return;
     setLoading(true);
     (async () => {
-      const ref = doc(db, "planner", userId);
+      const ref = doc(db, "planner", `${userId}_${selectedDate}`);
       const snap = await getDoc(ref);
       let loaded = {
         urgent_important: [],
@@ -212,7 +216,7 @@ const PlannerSidebar = ({
     })();
     if (refreshAllTasks) refreshAllTasks();
     // eslint-disable-next-line
-  }, [isOpen, userId]);
+  }, [isOpen, userId, selectedDate]);
 
   // Remove completed tasks on save/open/reload
   useEffect(() => {
@@ -286,25 +290,12 @@ const PlannerSidebar = ({
     });
   };
 
-  // Edit a task label in planner
-  const editTaskLabel = (id, bucket) => {
-    const t = allTasks[id];
-    if (!t) return;
-    const newLabel = prompt("Edit task name:", t.name || t.title);
-    if (!newLabel) return;
-    allTasks[id].name = newLabel;
-    setPlan((prev) => ({
-      ...prev,
-      [bucket]: prev[bucket].map((tid) => (tid === id ? id : tid)),
-    }));
-  };
-
-  // Save plan to Firebase
+  // Save plan to Firebase (for selected date)
   const savePlan = async () => {
-    if (!userId) return;
+    if (!userId || !selectedDate) return;
     setSaving(true);
     const filtered = filterCompleted(plan, allTasks);
-    await setDoc(doc(db, "planner", userId), filtered);
+    await setDoc(doc(db, "planner", `${userId}_${selectedDate}`), filtered);
     setPlan(filtered);
     setSaving(false);
   };
@@ -320,10 +311,10 @@ const PlannerSidebar = ({
   const summary =
     view === "table"
       ? plan.table.length === 0
-        ? "No tasks planned for today."
+        ? "No tasks planned for this day."
         : `You have ${plan.table.length} tasks in your planner.`
       : matrixBuckets.every((b) => plan[b.id].length === 0)
-      ? "No tasks planned for today."
+      ? "No tasks planned for this day."
       : matrixBuckets
           .map((b) => `${b.label}: ${plan[b.id].length}`)
           .join(" | ");
@@ -379,7 +370,7 @@ const PlannerSidebar = ({
               isDark ? "text-teal-300" : "text-teal-500"
             }`}
           >
-            {todayStr()}
+            {todayStr(selectedDate)}
           </div>
           <div
             className={`text-lg font-bold ${
@@ -390,6 +381,18 @@ const PlannerSidebar = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className={`px-2 py-1 rounded-lg border font-semibold text-xs transition ${
+              isDark
+                ? "bg-gray-800 border-teal-700 text-teal-300"
+                : "bg-white border-teal-300 text-teal-700"
+            }`}
+            title="Pick a date to plan"
+            style={{ minWidth: 120 }}
+          />
           <button
             className={`p-2 rounded-lg transition ${
               view === "table"
@@ -436,7 +439,11 @@ const PlannerSidebar = ({
             {isFullscreen ? <FaCompress /> : <FaExpand />}
           </button>
           <button
-            className={`text-2xl transition ${isDark ? "text-gray-500 hover:text-red-400" : "text-gray-400 hover:text-red-500"}`}
+            className={`text-2xl transition ${
+              isDark
+                ? "text-gray-500 hover:text-red-400"
+                : "text-gray-400 hover:text-red-500"
+            }`}
             onClick={handleClose}
             aria-label="Close planner"
           >
@@ -617,14 +624,31 @@ const PlannerSidebar = ({
                               </span>
                               <div className="flex gap-2">
                                 <button
-                                  className={`transition ${isDark ? "text-gray-400 hover:text-blue-400" : "text-gray-400 hover:text-blue-500"}`}
-                                  onClick={() => editTaskLabel(id, bucket.id)}
-                                  title="Edit"
+                                  className={`transition ${
+                                    isDark
+                                      ? "text-teal-400 hover:text-teal-300"
+                                      : "text-teal-600 hover:text-teal-700"
+                                  }`}
+                                  onClick={() =>
+                                    onTriggerPomodoro(allTasks[id]?.name)
+                                  }
+                                  title="Start Pomodoro"
                                 >
-                                  <FaEdit />
+                                  <FaClock />
                                 </button>
+                                {/* <button
+                                  className={`transition ${isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-700"}`}
+                                  onClick={() => onNavigateToTask && onNavigateToTask(allTasks[id])}
+                                  title="Go to Task"
+                                >
+                                  <FaLocationArrow />
+                                </button> */}
                                 <button
-                                  className={`transition ${isDark ? "text-gray-400 hover:text-red-400" : "text-gray-400 hover:text-red-500"}`}
+                                  className={`transition ${
+                                    isDark
+                                      ? "text-gray-400 hover:text-red-400"
+                                      : "text-gray-400 hover:text-red-500"
+                                  }`}
                                   onClick={() => removeFromPlan(id)}
                                   title="Remove from plan"
                                 >
@@ -701,14 +725,32 @@ const PlannerSidebar = ({
                             </span>
                             <div className="flex gap-2">
                               <button
-                                className={`transition ${isDark ? "text-gray-400 hover:text-blue-400" : "text-gray-400 hover:text-blue-500"}`}
-                                onClick={() => editTaskLabel(id, "table")}
-                                title="Edit"
+                                className={`transition ${
+                                  isDark
+                                    ? "text-teal-400 hover:text-teal-300"
+                                    : "text-teal-600 hover:text-teal-700"
+                                }`}
+                                onClick={() =>
+                                  onTriggerPomodoro &&
+                                  onTriggerPomodoro(allTasks[id]?.name)
+                                }
+                                title="Start Pomodoro"
                               >
-                                <FaEdit />
+                                <FaClock />
                               </button>
+                              {/* <button
+                                className={`transition ${isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-700"}`}
+                                onClick={() => onNavigateToTask && onNavigateToTask(allTasks[id])}
+                                title="Go to Task"
+                              >
+                                <FaLocationArrow />
+                              </button> */}
                               <button
-                                className={`transition ${isDark ? "text-gray-400 hover:text-red-400" : "text-gray-400 hover:text-red-500"}`}
+                                className={`transition ${
+                                  isDark
+                                    ? "text-gray-400 hover:text-red-400"
+                                    : "text-gray-400 hover:text-red-500"
+                                }`}
                                 onClick={() => removeFromPlan(id)}
                                 title="Remove from plan"
                               >
@@ -760,7 +802,11 @@ const PlannerSidebar = ({
           >
             <div className="relative">
               <button
-                className={`absolute top-4 right-4 text-2xl z-10 transition ${isDark ? "text-gray-400 hover:text-red-400" : "text-gray-400 hover:text-red-500"}`}
+                className={`absolute top-4 right-4 text-2xl z-10 transition ${
+                  isDark
+                    ? "text-gray-400 hover:text-red-400"
+                    : "text-gray-400 hover:text-red-500"
+                }`}
                 onClick={() => setShowAddModal(false)}
                 aria-label="Close"
               >
@@ -774,7 +820,11 @@ const PlannerSidebar = ({
               >
                 ✨ Add Tasks to Your Plan
               </div>
-              <div className={`px-8 pb-2 text-sm italic ${isDark ? "text-teal-400" : "text-teal-700"}`}>
+              <div
+                className={`px-8 pb-2 text-sm italic ${
+                  isDark ? "text-teal-400" : "text-teal-700"
+                }`}
+              >
                 Select from your available tasks below.
               </div>
               <div className="max-h-80 overflow-y-auto px-8 py-2 space-y-2">
@@ -816,21 +866,37 @@ const PlannerSidebar = ({
                           }}
                           className="accent-teal-500 scale-125"
                         />
-                        <span className={`flex items-center gap-2 text-base font-semibold ${isDark ? "text-gray-100" : ""}`}>
+                        <span
+                          className={`flex items-center gap-2 text-base font-semibold ${
+                            isDark ? "text-gray-100" : ""
+                          }`}
+                        >
                           <span className="text-xl">{getIcon(t.type)}</span>
                           <span>{t.name || t.title}</span>
                           {t.type === "habit" && (
-                            <span className={`text-xs italic ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                            <span
+                              className={`text-xs italic ${
+                                isDark ? "text-gray-400" : "text-gray-500"
+                              }`}
+                            >
                               (Habit)
                             </span>
                           )}
                           {t.type === "subgoal" && (
-                            <span className={`text-xs italic ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                            <span
+                              className={`text-xs italic ${
+                                isDark ? "text-gray-400" : "text-gray-500"
+                              }`}
+                            >
                               (Subgoal of {t.goalName})
                             </span>
                           )}
                           {t.type === "todo" && (
-                            <span className={`text-xs italic ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                            <span
+                              className={`text-xs italic ${
+                                isDark ? "text-gray-400" : "text-gray-500"
+                              }`}
+                            >
                               (To-Do)
                             </span>
                           )}
@@ -886,7 +952,11 @@ const PlannerSidebar = ({
           >
             <div className="relative px-8 pt-8 pb-6">
               <div
-                className={`absolute top-4 right-4 text-2xl z-10 cursor-pointer transition ${isDark ? "text-gray-400 hover:text-red-400" : "text-gray-400 hover:text-red-500"}`}
+                className={`absolute top-4 right-4 text-2xl z-10 cursor-pointer transition ${
+                  isDark
+                    ? "text-gray-400 hover:text-red-400"
+                    : "text-gray-400 hover:text-red-500"
+                }`}
                 onClick={() => setShowUnsavedModal(false)}
               >
                 <FaTimes />

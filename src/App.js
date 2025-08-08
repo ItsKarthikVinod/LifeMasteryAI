@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import HeroPage from './components/HeroPage';
@@ -11,7 +11,7 @@ import CommunityPage from './components/CommunityPage';
 import './App.css'; // Import your CSS file
 import Footer from './components/Footer'
 import {useAuth} from './contexts/authContext';
-
+import Pomodoro from './components/Pomodoro';
 import SettingsPage from './pages/SettingsPage';
 import WhiteBoard from './components/WhiteBoard';
 import WhiteboardGallery from './components/WhiteBoardGallery';
@@ -28,6 +28,28 @@ import RecipeSharePage from './components/RecipeSharePage'; // Import your recip
 import DemoModeBanner from './components/demoModeBanner'; // Import your demo mode banner
 //import { useInactivityReminder } from './hooks/useInactivityReminder';
 import { messaging, getToken } from "./firebase/firebase";
+import { useLocation } from 'react-router-dom';
+
+const PomodoroWrapper = ({
+  initialTitle,
+  isRunning,
+  setIsRunning,
+  initialMinutes,
+}) => {
+  const location = useLocation();
+  const showPomodoro =
+    location.pathname !== "/" &&
+    location.pathname !== "/login" &&
+    location.pathname !== "/register";
+  return showPomodoro ? (
+    <Pomodoro
+      initialTitle={initialTitle}
+      isRunning={isRunning}
+      setIsRunning={setIsRunning}
+      initialMinutes={initialMinutes}
+    />
+  ) : null;
+};
 
 
 const App = () => {
@@ -38,6 +60,8 @@ const App = () => {
   const { loading: goalsLoading } = useGetGoals();
   const { loading: todosLoading } = useGetTodos();
   const { loading: authLoading } = useAuth(); // If your auth context provides loading
+
+  
 
   useEffect(() => {
     async function requestFCMToken() {
@@ -127,9 +151,20 @@ const App = () => {
   // }, [currentUser]);
 
   // useInactivityReminder();
+  const [pomodoroTitle, setPomodoroTitle] = useState(""); // State to hold the Pomodoro session title
+  const [isPomodoroRunning, setIsPomodoroRunning] = useState(false); // State to track if Pomodoro is running
+  const [initialMinutes, setInitialMinutes] = useState(25); // Initial minutes for Pomodoro timer
 
-
-
+  useEffect(() => {
+      const storedMinutes = localStorage.getItem("pomodoroInitialMinutes");
+      if (storedMinutes) {
+        setInitialMinutes(parseInt(storedMinutes, 10));
+      }
+    }, []);
+    const triggerPomodoro = (title) => {
+      setPomodoroTitle(title);
+      setIsPomodoroRunning(true); // Start the Pomodoro session
+    };
 
   // Show loader if any global data is loading
   if (habitsLoading || goalsLoading || todosLoading || authLoading) {
@@ -139,15 +174,24 @@ const App = () => {
     <div className={theme === "dark" ? "dark" : ""}>
       <Router>
         <Navbar />
-        {isGuest && <Navbar  />}
+        {isGuest && <Navbar />}
         {isGuest && <DemoModeBanner />}
         <StatusBanner />
-
+        {/* Pomodoro Timer */}
+        <PomodoroWrapper
+          initialTitle={pomodoroTitle}
+          isRunning={isPomodoroRunning}
+          setIsRunning={setIsPomodoroRunning}
+          initialMinutes={initialMinutes}
+        />
         <Routes>
           <Route path="/" element={<HeroPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route
+            path="/dashboard"
+            element={<Dashboard triggerPomodoro={triggerPomodoro} />}
+          />
           <Route path="/journal-list" element={<JournalList />} />
           <Route path="/challenges" element={<Challenges />} />
           <Route path="/community" element={<CommunityPage />} />
