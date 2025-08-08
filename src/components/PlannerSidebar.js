@@ -142,6 +142,7 @@ const PlannerSidebar = ({
   const { currentUser, theme } = useAuth();
   const userId = currentUser?.uid;
   const isDark = theme === "dark";
+  console.log(isDark, theme)
 
   // Views: "table" (default) or "matrix"
   const [view, setView] = useState("table");
@@ -194,6 +195,8 @@ const PlannerSidebar = ({
     defaultDate: selectedDate,
     language: "en",
   };
+
+  console.log(datepickerOptions);
 
   const [unsaved, setUnsaved] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);

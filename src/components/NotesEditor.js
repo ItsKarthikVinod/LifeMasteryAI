@@ -11,7 +11,6 @@ import {
   FaFileAlt,
   FaMoon,
   FaSun,
-  FaCheck,
   FaTimes,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
@@ -127,11 +126,11 @@ const NotesEditor = ({
     return () => {
       isMounted = false;
     };
-  }, [editor, noteId, folderId, currentUser]);
+  }, [editor, noteId, folderId, currentUser, noteTitle]);
 
   // Save note to Firestore
   const handleSave = async (content) => {
-    if (!noteId || !folderId || !currentUser?.uid) return;
+    if (!noteId || !folderId || !currentUser?.uid) return; 
     if (JSON.stringify(content) === lastSavedContent) return;
     setSaving(true);
     try {
