@@ -13,6 +13,8 @@ import {
   FaQuestion,
   FaClock,
   FaSearch,
+  FaCheck,
+  FaExclamationCircle,
 } from "react-icons/fa";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../firebase/firebase";
@@ -191,13 +193,14 @@ const PlannerSidebar = ({
       prev: () => <span>{"‹"}</span>,
       next: () => <span>{"›"}</span>,
     },
-    datepickerClassNames: "top-12",
+    datepickerClassNames: "top-12 sm:top-16", // Fixes position for phones and desktop
     defaultDate: selectedDate,
     language: "en",
   };
 
   const [unsaved, setUnsaved] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [pendingPomodoro, setPendingPomodoro] = useState(null);
 
   // Search state for Add Task Modal
   const [searchTerm, setSearchTerm] = useState("");
@@ -358,6 +361,13 @@ const PlannerSidebar = ({
     });
   };
 
+  // Mark a task as completed (removes from plan and triggers refresh)
+  const completeTask = (id) => {
+    removeFromPlan(id);
+    // Optionally, you can update the completed status in your todos/subgoals/habits here
+    if (refreshAllTasks) refreshAllTasks();
+  };
+
   // Save plan to Firebase (for selected date)
   const savePlan = async () => {
     if (!userId || !selectedDate) return;
@@ -425,6 +435,56 @@ const PlannerSidebar = ({
     }
   };
 
+  // Pomodoro handler that also closes sidebar, but checks for unsaved changes
+  const handlePomodoro = (taskName) => {
+    if (unsaved) {
+      setPendingPomodoro(taskName);
+      setShowUnsavedModal(true);
+    } else {
+      if (onTriggerPomodoro) onTriggerPomodoro(taskName);
+      onClose();
+    }
+  };
+
+  // Handle Save & Close for Pomodoro
+  const handleSaveAndClose = async () => {
+    await savePlan();
+    setShowUnsavedModal(false);
+    if (pendingPomodoro) {
+      if (onTriggerPomodoro) onTriggerPomodoro(pendingPomodoro);
+      setPendingPomodoro(null);
+    }
+    onClose();
+  };
+
+  // Handle Discard & Close for Pomodoro
+  const handleDiscardAndClose = () => {
+    setShowUnsavedModal(false);
+    if (pendingPomodoro) {
+      if (onTriggerPomodoro) onTriggerPomodoro(pendingPomodoro);
+      setPendingPomodoro(null);
+    }
+    onClose();
+  };
+
+  // Handle Cancel for Unsaved Modal
+  const handleCancelUnsavedModal = () => {
+    setShowUnsavedModal(false);
+    setPendingPomodoro(null);
+  };
+
+  // Visual indicator for unsaved changes
+  const UnsavedIndicator = () => (
+    <span
+      className={`flex w-full items-center justify-center gap-1 mt-2 ml-2 text-xs font-bold ${isDark ? "text-yellow-300" : "text-yellow-700"
+        }`}
+      title="You have unsaved changes"
+    >
+      <FaExclamationCircle className="animate-pulse" />
+      Unsaved
+    </span>
+  );
+
   if (loading || saving) {
     return (
       <div className={sidebarClass}>
@@ -445,31 +505,34 @@ const PlannerSidebar = ({
       style={
         isFullscreen
           ? {
-            width: FULLSCREEN_WIDTH,
-            maxWidth: FULLSCREEN_WIDTH,
-            left: 0,
-            right: 0,
-          }
+              width: FULLSCREEN_WIDTH,
+              maxWidth: FULLSCREEN_WIDTH,
+              left: 0,
+              right: 0,
+            }
           : { maxWidth: DEFAULT_WIDTH }
       }
     >
       {/* Header */}
       <div
-        className={`flex items-center justify-between p-4 border-b ${isDark
+        className={`flex items-center justify-between p-4 border-b ${
+          isDark
             ? "border-gray-800 bg-gray-900/80"
             : "border-gray-200 bg-white/60"
-          } rounded-t-2xl`}
+        } rounded-t-2xl`}
       >
         <div>
           <div
-            className={`text-xs font-bold mb-1 ${isDark ? "text-teal-300" : "text-teal-500"
-              }`}
+            className={`text-xs font-bold mb-1 ${
+              isDark ? "text-teal-300" : "text-teal-500"
+            }`}
           >
             {todayStr(selectedDate)}
           </div>
           <div
-            className={`text-lg font-bold ${isDark ? "text-gray-100" : "text-gray-700"
-              }`}
+            className={`text-lg font-bold flex items-center ${
+              isDark ? "text-gray-100" : "text-gray-700"
+            }`}
           >
             🗓️ Plan My Day
           </div>
@@ -485,52 +548,56 @@ const PlannerSidebar = ({
             />
           </div>
           <button
-            className={`p-2 rounded-lg transition ${view === "table"
+            className={`p-2 rounded-lg transition ${
+              view === "table"
                 ? isDark
                   ? "bg-teal-800 text-teal-300"
                   : "bg-teal-100 text-teal-700"
                 : isDark
-                  ? "hover:bg-gray-800 text-gray-400"
-                  : "hover:bg-gray-200 text-gray-400"
-              }`}
+                ? "hover:bg-gray-800 text-gray-400"
+                : "hover:bg-gray-200 text-gray-400"
+            }`}
             title="Task Table View"
             onClick={() => setView("table")}
           >
             <FaListUl />
           </button>
           <button
-            className={`p-2 rounded-lg transition ${view === "matrix"
+            className={`p-2 rounded-lg transition ${
+              view === "matrix"
                 ? isDark
                   ? "bg-teal-800 text-teal-300"
                   : "bg-teal-100 text-teal-700"
                 : isDark
-                  ? "hover:bg-gray-800 text-gray-400"
-                  : "hover:bg-gray-200 text-gray-400"
-              }`}
+                ? "hover:bg-gray-800 text-gray-400"
+                : "hover:bg-gray-200 text-gray-400"
+            }`}
             title="Eisenhower Matrix View"
             onClick={() => setView("matrix")}
           >
             <FaLayerGroup />
           </button>
           <button
-            className={`p-2 rounded-lg transition hidden sm:block ${isFullscreen
+            className={`p-2 rounded-lg transition hidden sm:block ${
+              isFullscreen
                 ? isDark
                   ? "bg-blue-900 text-blue-300"
                   : "bg-blue-100 text-blue-700"
                 : isDark
-                  ? "hover:bg-gray-800 text-blue-400"
-                  : "hover:bg-gray-200 text-blue-400"
-              }`}
+                ? "hover:bg-gray-800 text-blue-400"
+                : "hover:bg-gray-200 text-blue-400"
+            }`}
             title={isFullscreen ? "Minimize" : "Maximize"}
             onClick={handleFullscreenToggle}
           >
             {isFullscreen ? <FaCompress /> : <FaExpand />}
           </button>
           <button
-            className={`text-2xl transition ${isDark
+            className={`text-2xl transition ${
+              isDark
                 ? "text-gray-500 hover:text-red-400"
                 : "text-gray-400 hover:text-red-500"
-              }`}
+            }`}
             onClick={handleClose}
             aria-label="Close planner"
           >
@@ -538,11 +605,12 @@ const PlannerSidebar = ({
           </button>
         </div>
       </div>
-
+      {unsaved && <UnsavedIndicator />}
       {/* Motivational quote */}
       <div
-        className={`px-4 py-2 text-sm italic ${isDark ? "text-teal-300" : "text-teal-700"
-          }`}
+        className={`px-4 py-2 text-sm italic ${
+          isDark ? "text-teal-300" : "text-teal-700"
+        }`}
       >
         <FaChevronRight className="inline mr-1" />
         {quote}
@@ -551,19 +619,21 @@ const PlannerSidebar = ({
       {/* Add Task Button & Save */}
       <div className="flex items-center justify-between px-4 py-2">
         <button
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow transition ${isDark
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow transition ${
+            isDark
               ? "bg-teal-600 text-white hover:bg-teal-700"
               : "bg-teal-500 text-white hover:bg-teal-600"
-            }`}
+          }`}
           onClick={openAddModal}
         >
           <FaPlus /> Add Task to Plan
         </button>
         <button
           className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow transition
-            ${saving
-              ? "bg-gray-400 cursor-not-allowed"
-              : isDark
+            ${
+              saving
+                ? "bg-gray-400 cursor-not-allowed"
+                : isDark
                 ? "bg-blue-700 hover:bg-blue-800 text-white"
                 : "bg-blue-500 hover:bg-blue-600 text-white"
             }
@@ -577,8 +647,9 @@ const PlannerSidebar = ({
 
       {/* Summary */}
       <div
-        className={`px-4 pb-2 text-xs ${isDark ? "text-gray-400" : "text-gray-500"
-          }`}
+        className={`px-4 pb-2 text-xs ${
+          isDark ? "text-gray-400" : "text-gray-500"
+        }`}
       >
         {summary}
       </div>
@@ -586,8 +657,9 @@ const PlannerSidebar = ({
       {/* Eisenhower Matrix Info Dropdown */}
       {view === "matrix" && (
         <div
-          className={`px-4 py-2 mb-2 rounded-xl ${isDark ? "bg-gray-800 text-teal-200" : "bg-teal-50 text-teal-700"
-            } shadow`}
+          className={`px-4 py-2 mb-2 rounded-xl ${
+            isDark ? "bg-gray-800 text-teal-200" : "bg-teal-50 text-teal-700"
+          } shadow`}
         >
           <button
             className="flex items-center gap-2 font-bold text-lg w-full justify-between focus:outline-none"
@@ -646,30 +718,34 @@ const PlannerSidebar = ({
                       {...provided.droppableProps}
                       className={`${glassCard(
                         isDark
-                      )} bg-gradient-to-br ${bucket.color(isDark)} ${snapshot.isDraggingOver ? "ring-2 ring-teal-400" : ""
-                        }`}
+                      )} bg-gradient-to-br ${bucket.color(isDark)} ${
+                        snapshot.isDraggingOver ? "ring-2 ring-teal-400" : ""
+                      }`}
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-xl">{bucket.icon}</span>
                         <span
-                          className={`font-bold text-base ${isDark ? "text-gray-100" : "text-gray-700"
-                            }`}
+                          className={`font-bold text-base ${
+                            isDark ? "text-gray-100" : "text-gray-700"
+                          }`}
                         >
                           {bucket.label}
                         </span>
                         <span
-                          className={`ml-2 text-xs px-2 py-1 rounded ${isDark
+                          className={`ml-2 text-xs px-2 py-1 rounded ${
+                            isDark
                               ? "bg-gray-900 text-teal-300"
                               : "bg-teal-100 text-teal-700"
-                            }`}
+                          }`}
                         >
                           {bucket.description}
                         </span>
                       </div>
                       {plan[bucket.id].length === 0 && (
                         <div
-                          className={`text-xs italic mb-2 ${isDark ? "text-gray-400" : "text-gray-400"
-                            }`}
+                          className={`text-xs italic mb-2 ${
+                            isDark ? "text-gray-400" : "text-gray-400"
+                          }`}
                         >
                           No tasks in this quadrant.
                         </div>
@@ -681,11 +757,13 @@ const PlannerSidebar = ({
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              className={`rounded-xl p-3 mb-2 ${isDark ? "bg-gray-800/80" : "bg-white/80"
-                                } shadow flex items-center justify-between transition
-                                ${snapshot.isDragging
-                                  ? "ring-2 ring-teal-400 scale-105"
-                                  : ""
+                              className={`rounded-xl p-3 mb-2 ${
+                                isDark ? "bg-gray-800/80" : "bg-white/80"
+                              } shadow flex items-center justify-between transition
+                                ${
+                                  snapshot.isDragging
+                                    ? "ring-2 ring-teal-400 scale-105"
+                                    : ""
                                 }
                               `}
                             >
@@ -700,22 +778,35 @@ const PlannerSidebar = ({
                               </span>
                               <div className="flex gap-2">
                                 <button
-                                  className={`transition ${isDark
+                                  className={`transition ${
+                                    isDark
                                       ? "text-teal-400 hover:text-teal-300"
                                       : "text-teal-600 hover:text-teal-700"
-                                    }`}
+                                  }`}
                                   onClick={() =>
-                                    onTriggerPomodoro(allTasks[id]?.name)
+                                    handlePomodoro(allTasks[id]?.name)
                                   }
                                   title="Start Pomodoro"
                                 >
                                   <FaClock />
                                 </button>
                                 <button
-                                  className={`transition ${isDark
+                                  className={`transition ${
+                                    isDark
+                                      ? "text-green-400 hover:text-green-300"
+                                      : "text-green-600 hover:text-green-700"
+                                  }`}
+                                  onClick={() => completeTask(id)}
+                                  title="Mark as Complete"
+                                >
+                                  <FaCheck />
+                                </button>
+                                <button
+                                  className={`transition ${
+                                    isDark
                                       ? "text-gray-400 hover:text-red-400"
                                       : "text-gray-400 hover:text-red-500"
-                                    }`}
+                                  }`}
                                   onClick={() => removeFromPlan(id)}
                                   title="Remove from plan"
                                 >
@@ -738,24 +829,27 @@ const PlannerSidebar = ({
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className={`${glassCard(isDark)} bg-gradient-to-br ${isDark
+                  className={`${glassCard(isDark)} bg-gradient-to-br ${
+                    isDark
                       ? "from-gray-800 via-gray-900 to-gray-700"
                       : "from-white via-blue-50 to-blue-100"
-                    } ${snapshot.isDraggingOver ? "ring-2 ring-teal-400" : ""}`}
+                  } ${snapshot.isDraggingOver ? "ring-2 ring-teal-400" : ""}`}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xl">📋</span>
                     <span
-                      className={`font-bold text-base ${isDark ? "text-gray-100" : "text-gray-700"
-                        }`}
+                      className={`font-bold text-base ${
+                        isDark ? "text-gray-100" : "text-gray-700"
+                      }`}
                     >
                       Task Table
                     </span>
                   </div>
                   {plan.table.length === 0 && (
                     <div
-                      className={`text-xs italic mb-2 ${isDark ? "text-gray-400" : "text-gray-400"
-                        }`}
+                      className={`text-xs italic mb-2 ${
+                        isDark ? "text-gray-400" : "text-gray-400"
+                      }`}
                     >
                       No tasks in your planner.
                     </div>
@@ -768,11 +862,13 @@ const PlannerSidebar = ({
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
-                            className={`rounded-xl p-3 mb-2 ${isDark ? "bg-gray-800/80" : "bg-white/80"
-                              } shadow flex items-center justify-between  transition
-                              ${snapshot.isDragging
-                                ? "ring-2 ring-teal-400 scale-105"
-                                : ""
+                            className={`rounded-xl p-3 mb-2 ${
+                              isDark ? "bg-gray-800/80" : "bg-white/80"
+                            } shadow flex items-center justify-between  transition
+                              ${
+                                snapshot.isDragging
+                                  ? "ring-2 ring-teal-400 scale-105"
+                                  : ""
                               }
                             `}
                           >
@@ -787,23 +883,35 @@ const PlannerSidebar = ({
                             </span>
                             <div className="flex gap-2">
                               <button
-                                className={`transition ${isDark
+                                className={`transition ${
+                                  isDark
                                     ? "text-teal-400 hover:text-teal-300"
                                     : "text-teal-600 hover:text-teal-700"
-                                  }`}
+                                }`}
                                 onClick={() =>
-                                  onTriggerPomodoro &&
-                                  onTriggerPomodoro(allTasks[id]?.name)
+                                  handlePomodoro(allTasks[id]?.name)
                                 }
                                 title="Start Pomodoro"
                               >
                                 <FaClock />
                               </button>
                               <button
-                                className={`transition ${isDark
+                                className={`transition ${
+                                  isDark
+                                    ? "text-green-400 hover:text-green-300"
+                                    : "text-green-600 hover:text-green-700"
+                                }`}
+                                onClick={() => completeTask(id)}
+                                title="Mark as Complete"
+                              >
+                                <FaCheck />
+                              </button>
+                              <button
+                                className={`transition ${
+                                  isDark
                                     ? "text-gray-400 hover:text-red-400"
                                     : "text-gray-400 hover:text-red-500"
-                                  }`}
+                                }`}
                                 onClick={() => removeFromPlan(id)}
                                 title="Remove from plan"
                               >
@@ -825,10 +933,11 @@ const PlannerSidebar = ({
 
       {/* One-liner summary at bottom */}
       <div
-        className={`px-4 py-2 text-center text-xs border-t rounded-b-2xl ${isDark
+        className={`px-4 py-2 text-center text-xs border-t rounded-b-2xl ${
+          isDark
             ? "text-gray-400 border-gray-800 bg-gray-900/80"
             : "text-gray-500 border-gray-200 bg-white/60"
-          }`}
+        }`}
       >
         {view === "table"
           ? "Tip: Drag and drop to reorder your tasks. Switch to Matrix view for prioritization."
@@ -839,10 +948,11 @@ const PlannerSidebar = ({
       {showAddModal && (
         <div className="fixed inset-0 z-[10000] bg-black/40 flex items-center justify-center">
           <div
-            className={`rounded-2xl shadow-2xl p-0 w-full max-w-lg relative ${isDark
+            className={`rounded-2xl shadow-2xl p-0 w-full max-w-lg relative ${
+              isDark
                 ? "bg-gradient-to-br from-gray-900 via-gray-800 to-teal-900 border border-teal-700"
                 : "bg-gradient-to-br from-white via-blue-50 to-teal-100 border border-teal-300"
-              }`}
+            }`}
             style={{
               minWidth: 340,
               maxWidth: "98vw",
@@ -853,38 +963,44 @@ const PlannerSidebar = ({
           >
             <div className="relative">
               <button
-                className={`absolute top-4 right-4 text-2xl z-10 transition ${isDark
+                className={`absolute top-4 right-4 text-2xl z-10 transition ${
+                  isDark
                     ? "text-gray-400 hover:text-red-400"
                     : "text-gray-400 hover:text-red-500"
-                  }`}
+                }`}
                 onClick={() => setShowAddModal(false)}
                 aria-label="Close"
               >
                 <FaTimes />
               </button>
               <div
-                className={`text-2xl font-extrabold px-8 pt-8 pb-2 ${isDark ? "text-teal-300 drop-shadow" : "text-teal-700"
-                  }`}
+                className={`text-2xl font-extrabold px-8 pt-8 pb-2 ${
+                  isDark ? "text-teal-300 drop-shadow" : "text-teal-700"
+                }`}
                 style={{ letterSpacing: "0.03em" }}
               >
                 ✨ Add Tasks to Your Plan
               </div>
               <div
-                className={`px-8 pb-2 text-sm italic ${isDark ? "text-teal-400" : "text-teal-700"
-                  }`}
+                className={`px-8 pb-2 text-sm italic ${
+                  isDark ? "text-teal-400" : "text-teal-700"
+                }`}
               >
                 Select from your available tasks below.
               </div>
               {/* Search bar */}
               <div className="px-8 pb-2">
                 <div className="flex items-center gap-2 bg-transparent rounded-lg border border-teal-300 p-2 mb-2">
-                  <FaSearch className={isDark ? "text-teal-300" : "text-teal-700"} />
+                  <FaSearch
+                    className={isDark ? "text-teal-300" : "text-teal-700"}
+                  />
                   <input
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className={`flex-1 bg-transparent outline-none border-none text-base ${isDark ? "text-teal-200" : "text-teal-700"
-                      }`}
+                    className={`flex-1 bg-transparent outline-none border-none text-base ${
+                      isDark ? "text-teal-200" : "text-teal-700"
+                    }`}
                     placeholder="Search tasks..."
                   />
                 </div>
@@ -892,8 +1008,9 @@ const PlannerSidebar = ({
               <div className="max-h-80 overflow-y-auto px-8 py-2 space-y-2">
                 {filteredAvailableToAdd.length === 0 ? (
                   <div
-                    className={`italic text-base text-center ${isDark ? "text-gray-400" : "text-gray-500"
-                      }`}
+                    className={`italic text-base text-center ${
+                      isDark ? "text-gray-400" : "text-gray-500"
+                    }`}
                   >
                     No tasks found!
                   </div>
@@ -903,10 +1020,11 @@ const PlannerSidebar = ({
                     return (
                       <label
                         key={id}
-                        className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition ${isDark
+                        className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition ${
+                          isDark
                             ? "bg-gray-800/60 hover:bg-teal-900/80"
                             : "bg-white/60 hover:bg-teal-100/80"
-                          } shadow-sm`}
+                        } shadow-sm`}
                         style={{
                           border: isDark
                             ? "1px solid #134e4a"
@@ -927,31 +1045,35 @@ const PlannerSidebar = ({
                           className="accent-teal-500 scale-125"
                         />
                         <span
-                          className={`flex items-center gap-2 text-base font-semibold ${isDark ? "text-gray-100" : ""
-                            }`}
+                          className={`flex items-center gap-2 text-base font-semibold ${
+                            isDark ? "text-gray-100" : ""
+                          }`}
                         >
                           <span className="text-xl">{getIcon(t.type)}</span>
                           <span>{t.name || t.title}</span>
                           {t.type === "habit" && (
                             <span
-                              className={`text-xs italic ${isDark ? "text-gray-400" : "text-gray-500"
-                                }`}
+                              className={`text-xs italic ${
+                                isDark ? "text-gray-400" : "text-gray-500"
+                              }`}
                             >
                               (Habit)
                             </span>
                           )}
                           {t.type === "subgoal" && (
                             <span
-                              className={`text-xs italic ${isDark ? "text-gray-400" : "text-gray-500"
-                                }`}
+                              className={`text-xs italic ${
+                                isDark ? "text-gray-400" : "text-gray-500"
+                              }`}
                             >
                               (Subgoal of {t.goalName})
                             </span>
                           )}
                           {t.type === "todo" && (
                             <span
-                              className={`text-xs italic ${isDark ? "text-gray-400" : "text-gray-500"
-                                }`}
+                              className={`text-xs italic ${
+                                isDark ? "text-gray-400" : "text-gray-500"
+                              }`}
                             >
                               (To-Do)
                             </span>
@@ -964,19 +1086,21 @@ const PlannerSidebar = ({
               </div>
               <div className="flex justify-end gap-2 px-8 py-6 bg-gradient-to-r from-teal-900/10 via-teal-400/10 to-blue-200/10">
                 <button
-                  className={`px-5 py-2 rounded-xl font-bold shadow transition ${isDark
+                  className={`px-5 py-2 rounded-xl font-bold shadow transition ${
+                    isDark
                       ? "bg-gray-700 text-gray-200 hover:bg-teal-800"
                       : "bg-gray-200 text-gray-700 hover:bg-teal-200"
-                    }`}
+                  }`}
                   onClick={() => setShowAddModal(false)}
                 >
                   Cancel
                 </button>
                 <button
-                  className={`px-5 py-2 rounded-xl font-bold shadow bg-gradient-to-r from-teal-500 via-blue-400 to-teal-600 text-white hover:from-teal-600 hover:to-blue-500 transition ${selectedToAdd.length === 0
+                  className={`px-5 py-2 rounded-xl font-bold shadow bg-gradient-to-r from-teal-500 via-blue-400 to-teal-600 text-white hover:from-teal-600 hover:to-blue-500 transition ${
+                    selectedToAdd.length === 0
                       ? "opacity-50 cursor-not-allowed"
                       : ""
-                    }`}
+                  }`}
                   onClick={addSelectedToPlan}
                   disabled={selectedToAdd.length === 0}
                 >
@@ -991,10 +1115,11 @@ const PlannerSidebar = ({
       {showUnsavedModal && (
         <div className="fixed inset-0 z-[10001] bg-black/40 flex items-center justify-center">
           <div
-            className={`rounded-2xl shadow-2xl p-0 w-full max-w-md relative ${isDark
+            className={`rounded-2xl shadow-2xl p-0 w-full max-w-md relative ${
+              isDark
                 ? "bg-gradient-to-br from-gray-900 via-gray-800 to-teal-900 border border-teal-700"
                 : "bg-gradient-to-br from-white via-blue-50 to-teal-100 border border-teal-300"
-              }`}
+            }`}
             style={{
               minWidth: 320,
               maxWidth: "96vw",
@@ -1005,53 +1130,50 @@ const PlannerSidebar = ({
           >
             <div className="relative px-8 pt-8 pb-6">
               <div
-                className={`absolute top-4 right-4 text-2xl z-10 cursor-pointer transition ${isDark
+                className={`absolute top-4 right-4 text-2xl z-10 cursor-pointer transition ${
+                  isDark
                     ? "text-gray-400 hover:text-red-400"
                     : "text-gray-400 hover:text-red-500"
-                  }`}
-                onClick={() => setShowUnsavedModal(false)}
+                }`}
+                onClick={handleCancelUnsavedModal}
               >
                 <FaTimes />
               </div>
               <div
-                className={`text-xl font-bold mb-2 ${isDark ? "text-teal-300" : "text-teal-700"
-                  }`}
+                className={`text-xl font-bold mb-2 ${
+                  isDark ? "text-teal-300" : "text-teal-700"
+                }`}
               >
                 Unsaved Changes
               </div>
               <div
-                className={`mb-4 text-base ${isDark ? "text-gray-200" : "text-gray-700"
-                  }`}
+                className={`mb-4 text-base ${
+                  isDark ? "text-gray-200" : "text-gray-700"
+                }`}
               >
                 You have unsaved changes in your planner. Would you like to save
                 before closing?
               </div>
               <div className="flex justify-end gap-2">
                 <button
-                  className={`px-4 py-2 rounded-xl font-bold shadow transition ${isDark
+                  className={`px-4 py-2 rounded-xl font-bold shadow transition ${
+                    isDark
                       ? "bg-gray-700 text-gray-200 hover:bg-teal-800"
                       : "bg-gray-200 text-gray-700 hover:bg-teal-200"
-                    }`}
-                  onClick={() => setShowUnsavedModal(false)}
+                  }`}
+                  onClick={handleCancelUnsavedModal}
                 >
                   Cancel
                 </button>
                 <button
                   className={`px-4 py-2 rounded-xl font-bold shadow bg-gradient-to-r from-teal-500 via-blue-400 to-teal-600 text-white hover:from-teal-600 hover:to-blue-500 transition`}
-                  onClick={() => {
-                    savePlan();
-                    setShowUnsavedModal(false);
-                    onClose();
-                  }}
+                  onClick={handleSaveAndClose}
                 >
                   Save & Close
                 </button>
                 <button
                   className={`px-4 py-2 rounded-xl font-bold shadow bg-gradient-to-r from-red-500 via-red-400 to-red-600 text-white hover:from-red-600 hover:to-red-500 transition`}
-                  onClick={() => {
-                    setShowUnsavedModal(false);
-                    onClose();
-                  }}
+                  onClick={handleDiscardAndClose}
                 >
                   Discard & Close
                 </button>
@@ -1063,4 +1185,4 @@ const PlannerSidebar = ({
     </div>
   );
 }
-  export default PlannerSidebar;
+export default PlannerSidebar;
