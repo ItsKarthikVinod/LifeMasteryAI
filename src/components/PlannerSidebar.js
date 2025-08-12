@@ -193,7 +193,7 @@ const PlannerSidebar = ({
       prev: () => <span>{"‹"}</span>,
       next: () => <span>{"›"}</span>,
     },
-    datepickerClassNames: "top-12 sm:top-16", // Fixes position for phones and desktop
+    datepickerClassNames: "top-12 right-10 sm:top-16", // Fixes position for phones and desktop
     defaultDate: selectedDate,
     language: "en",
   };
