@@ -14,6 +14,7 @@ import {
   FaCog,
   FaSignOutAlt,
   FaImages,
+  FaRegFile
 } from "react-icons/fa";
 import NotificationBell from "./NotificationBell";
 
@@ -120,6 +121,13 @@ const Navbar = () => {
             {toolsDropdownOpen && (
               <div className="absolute left-0 mt-2 w-52 bg-white text-gray-800 rounded-lg shadow-lg py-2 z-50">
                 <Link
+                  to="/notes"
+                  className="flex items-center px-4 py-2 hover:bg-teal-100 transition"
+                  onClick={closeAllMenus}
+                >
+                  <FaRegFile className="mr-2" /> Notes‼️💯🚩
+                </Link>
+                <Link
                   to="/whiteboard"
                   className="flex items-center px-4 py-2 hover:bg-teal-100 transition"
                   onClick={closeAllMenus}
@@ -210,9 +218,11 @@ const Navbar = () => {
               </Link>
             </>
           )}
-          {userLoggedIn && (<div className="text-gray-500">
-            <NotificationBell />
-          </div> )}
+          {userLoggedIn && (
+            <div className="text-gray-500">
+              <NotificationBell />
+            </div>
+          )}
         </div>
 
         {/* Mobile Hamburger Menu */}
@@ -238,10 +248,11 @@ const Navbar = () => {
               ></path>
             </svg>
           </button>
-          { userLoggedIn &&  <div className="text-gray-500 text-xs ">
-            <NotificationBell
-            />
-          </div>}
+          {userLoggedIn && (
+            <div className="text-gray-500 text-xs ">
+              <NotificationBell />
+            </div>
+          )}
         </div>
       </div>
 
@@ -279,6 +290,13 @@ const Navbar = () => {
           </button>
           {toolsDropdownOpen && (
             <div className="w-full bg-white text-gray-800 rounded-lg shadow-lg py-2 mt-1 z-50">
+              <Link
+                to="/notes"
+                className="flex items-center px-4 py-2 hover:bg-teal-100 transition"
+                onClick={closeAllMenus}
+              >
+                <FaRegFile className="mr-2" /> Notes
+              </Link>
               <Link
                 to="/whiteboard"
                 className="flex items-center px-4 py-2 hover:bg-teal-100 transition"

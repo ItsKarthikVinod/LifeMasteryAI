@@ -163,12 +163,14 @@ const NotesPage = () => {
 
   // Normal layout
   return (
+    
     <div
       className={`flex flex-col md:flex-row h-screen md:h-[calc(100vh-4rem)] pt-32 sm:pt-36 ${
         isDark ? "bg-gray-900" : "bg-white"
       }`}
       style={{ minHeight: "100vh" }}
     >
+      
       <div className="w-full md:w-auto">
         <NotesSidebar
           selectedFolder={selectedFolder}

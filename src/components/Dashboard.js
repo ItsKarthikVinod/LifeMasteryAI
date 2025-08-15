@@ -328,10 +328,11 @@ const Dashboard = ({triggerPomodoro}) => {
 
     return (
       <div
-        className={` min-h-screen pt-6 ${theme === "dark"
+        className={` min-h-screen pt-6 ${
+          theme === "dark"
             ? "bg-gradient-to-r from-gray-900 via-teal-800 to-blue-900"
             : "bg-gradient-to-r from-teal-400 to-blue-500"
-          } ${isGuest === true ? "pt-[7rem] lg:pt-16" : "pt-0"} `}
+        } ${isGuest === true ? "pt-[7rem] lg:pt-16" : "pt-0"} `}
         style={{ position: "relative", overflow: "hidden" }}
       >
         <ToastContainer />
@@ -344,10 +345,11 @@ const Dashboard = ({triggerPomodoro}) => {
             items-center
             justify-between
             mb-6 shadow-lg rounded-lg p-6 mt-2
-            ${theme === "dark"
+            ${
+              theme === "dark"
                 ? "bg-gray-800/50 backdrop-blur-lg"
                 : "bg-white/50 backdrop-blur-lg"
-              }
+            }
           `}
           >
             {/* Gamification Progress (Left) */}
@@ -358,14 +360,16 @@ const Dashboard = ({triggerPomodoro}) => {
             {/* Welcome Section (Center) */}
             <div className="w-full lg:w-1/3 flex flex-col items-center justify-center text-center px-2">
               <h1
-                className={`text-4xl font-bold ${theme === "dark" ? "text-gray-100" : "text-gray-800"
-                  }`}
+                className={`text-4xl font-bold ${
+                  theme === "dark" ? "text-gray-100" : "text-gray-800"
+                }`}
               >
                 Welcome to your Dashboard
               </h1>
               <p
-                className={`mt-4 text-lg flex items-center justify-center ${theme === "dark" ? "text-gray-100" : "text-gray-600"
-                  }`}
+                className={`mt-4 text-lg flex items-center justify-center ${
+                  theme === "dark" ? "text-gray-100" : "text-gray-600"
+                }`}
               >
                 <img
                   src={
@@ -380,16 +384,17 @@ const Dashboard = ({triggerPomodoro}) => {
                 {currentUser.isAnonymous
                   ? "Guest"
                   : currentUser.displayName
-                    ? currentUser.displayName
-                    : currentUser.email}
+                  ? currentUser.displayName
+                  : currentUser.email}
                 !
                 {isAdmin(currentUser.email) && (
                   <span
                     className={`px-2 py-1 ml-2 rounded-full font-bold shadow
-      ${theme === "dark"
-                        ? "bg-yellow-600 text-gray-900 border border-yellow-400"
-                        : "bg-yellow-300 text-gray-900 border border-yellow-400"
-                      }`}
+      ${
+        theme === "dark"
+          ? "bg-yellow-600 text-gray-900 border border-yellow-400"
+          : "bg-yellow-300 text-gray-900 border border-yellow-400"
+      }`}
                     style={{
                       letterSpacing: "0.5px",
                       fontSize: "0.85em",
@@ -465,8 +470,6 @@ const Dashboard = ({triggerPomodoro}) => {
             </div>
           </div>
 
-          
-
           {/* Voice Assistant */}
           <VoiceAssistant
             addTodo={addTodo}
@@ -478,31 +481,35 @@ const Dashboard = ({triggerPomodoro}) => {
           <div className="mt-8 text-center">
             <button
               onClick={() => navigate("/whiteboard")}
-              className={`relative group cursor-pointer inline-block px-8 py-6 rounded-lg shadow-lg font-bold transition-transform transform hover:scale-105 ${theme === "dark"
+              className={`relative group cursor-pointer inline-block px-8 py-6 rounded-lg shadow-lg font-bold transition-transform transform hover:scale-105 ${
+                theme === "dark"
                   ? "bg-gradient-to-r from-gray-800 via-gray-700 to-gray-600 text-white border border-gray-500"
                   : "bg-gradient-to-r from-white via-gray-100 to-gray-200 text-gray-800 border border-gray-300"
-                }`}
+              }`}
             >
               <div
                 onClick={() => navigate("/whiteboard")}
-                className={`absolute -top-4 -left-4 w-12 h-12 rounded-full flex items-center justify-center shadow-md ${theme === "dark"
+                className={`absolute -top-4 -left-4 w-12 h-12 rounded-full flex items-center justify-center shadow-md ${
+                  theme === "dark"
                     ? "bg-gray-700 text-white border border-gray-500"
                     : "bg-white text-gray-800 border border-gray-300"
-                  }`}
+                }`}
               >
                 🖍️
               </div>
 
               <span className="block text-lg">
                 <span
-                  className={`block text-2xl font-extrabold ${theme === "dark" ? "text-teal-400" : "text-teal-600"
-                    }`}
+                  className={`block text-2xl font-extrabold ${
+                    theme === "dark" ? "text-teal-400" : "text-teal-600"
+                  }`}
                 >
                   Open Whiteboard
                 </span>
                 <span
-                  className={`block text-sm ${theme === "dark" ? "text-gray-300" : "text-gray-600"
-                    }`}
+                  className={`block text-sm ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-600"
+                  }`}
                 >
                   Create, draw, and brainstorm!
                 </span>
@@ -527,7 +534,8 @@ const Dashboard = ({triggerPomodoro}) => {
     ring-2 ring-teal-300/50
   `}
               >
-                <span className="transition animate-bounce">🗓️</span> Plan My Day
+                <span className="transition animate-bounce">🗓️</span> Plan My
+                Day
               </button>
               <button
                 onClick={() => setPlannerOpen(true)}
@@ -546,13 +554,47 @@ const Dashboard = ({triggerPomodoro}) => {
             </>
           )}
 
+          <>
+            <button
+              onClick={() => navigate("/notes")}
+              className={`
+    fixed z-[10001] left-5 top-[35%] transform -translate-y-1/2
+    bg-teal-700 text-white font-bold shadow-lg
+    px-4 py-2 rounded-tr-2xl rounded-tl-2xl
+    transition hover:bg-teal-700
+    origin-left
+    rotate-90
+    hidden sm:block
+    ring-2 ring-teal-300/50
+  `}
+            >
+              <span className="transition animate-bounce">📝 </span> Notes
+            </button>
+            <button
+              onClick={() => setPlannerOpen(true)}
+              className={`
+    fixed z-[10001] left-0 top-1/2 transform -translate-y-1/2
+    bg-teal-700 text-white font-bold shadow-lg
+    px-3 py-3 rounded-tr-2xl rounded-br-2xl
+    transition hover:bg-teal-700
+    origin-left
+  
+    ring-2 ring-teal-300/50
+    block sm:hidden
+  `}
+            >
+              📝
+            </button>
+          </>
+
           <div className="mt-8 text-center">
             <button
               onClick={() => navigate("/community")}
-              className={`  text-white px-6 py-3 rounded-lg shadow-lg font-bold transition-transform transform hover:scale-105 ${theme === "dark"
+              className={`  text-white px-6 py-3 rounded-lg shadow-lg font-bold transition-transform transform hover:scale-105 ${
+                theme === "dark"
                   ? "bg-gradient-to-r from-purple-700 via-purple-600 to-purple-800 hover:from-purple-700 hover:via-purple-500 hover:to-purple-800"
                   : "bg-gradient-to-r from-purple-600 via-purple-300 to-purple-400 hover:from-purple-600 hover:via-purple-700 hover:to-purple-800"
-                }`}
+              }`}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -576,10 +618,11 @@ const Dashboard = ({triggerPomodoro}) => {
           <div className="mt-8 text-center">
             <button
               onClick={() => navigate("/login")}
-              className={` text-white px-6 py-3 rounded-lg shadow  transition  ${theme === "dark"
+              className={` text-white px-6 py-3 rounded-lg shadow  transition  ${
+                theme === "dark"
                   ? "bg-teal-600 hover:bg-teal-500"
                   : "bg-teal-500 hover:bg-teal-400"
-                }`}
+              }`}
             >
               Logout
             </button>
@@ -596,17 +639,20 @@ const Dashboard = ({triggerPomodoro}) => {
               className={`fixed inset-0 flex items-center justify-center z-50`}
             >
               <div
-                className={` ${theme === "dark" ? "bg-gray-800" : "bg-gray-300"
-                  } p-6 rounded-lg shadow-lg w-full max-w-4xl`}
+                className={` ${
+                  theme === "dark" ? "bg-gray-800" : "bg-gray-300"
+                } p-6 rounded-lg shadow-lg w-full max-w-4xl`}
               >
                 {/* Modal Header */}
                 <div
-                  className={`flex justify-between items-center mb-4 ${theme === "dark" ? "text-gray-200" : "text-gray-800"
-                    }`}
+                  className={`flex justify-between items-center mb-4 ${
+                    theme === "dark" ? "text-gray-200" : "text-gray-800"
+                  }`}
                 >
                   <h3
-                    className={`text-xl font-bold ${theme === "dark" ? "text-teal-400" : "text-teal-600"
-                      }`}
+                    className={`text-xl font-bold ${
+                      theme === "dark" ? "text-teal-400" : "text-teal-600"
+                    }`}
                   >
                     Calendar View
                   </h3>
@@ -631,10 +677,11 @@ const Dashboard = ({triggerPomodoro}) => {
                   }}
                   selectable
                   style={{ height: 500 }}
-                  className={`rounded-lg shadow-md ${theme === "dark"
+                  className={`rounded-lg shadow-md ${
+                    theme === "dark"
                       ? "bg-gray-800 text-gray-200"
                       : "bg-gray-200 text-gray-800"
-                    }`}
+                  }`}
                   eventPropGetter={(event) => ({
                     style: {
                       backgroundColor: event.completed ? "#1d9a8a" : "#3182ce",
@@ -650,8 +697,9 @@ const Dashboard = ({triggerPomodoro}) => {
                 <div className="mt-4 text-right">
                   <button
                     onClick={() => setShowCalendarModal(false)}
-                    className={`bg-red-500 text-white px-4 py-2 rounded-lg font-bold ${theme === "dark" ? "hover:bg-red-600" : "hover:bg-red-400"
-                      }`}
+                    className={`bg-red-500 text-white px-4 py-2 rounded-lg font-bold ${
+                      theme === "dark" ? "hover:bg-red-600" : "hover:bg-red-400"
+                    }`}
                   >
                     Close
                   </button>
@@ -680,10 +728,11 @@ const Dashboard = ({triggerPomodoro}) => {
           <div className="fixed inset-0 flex items-center justify-center z-50">
             <div className="fixed inset-0 bg-black bg-opacity-70 transition-opacity z-[-40]"></div>
             <div
-              className={`relative z-50 p-8 rounded-lg shadow-lg w-11/12 max-w-3xl ${theme === "dark"
+              className={`relative z-50 p-8 rounded-lg shadow-lg w-11/12 max-w-3xl ${
+                theme === "dark"
                   ? "bg-gradient-to-br from-[#0F4F51] via-[#1A9A9D] to-[#232b2b] text-gray-100"
                   : "bg-gradient-to-br from-[#E0F7FA] via-[#B2EBF2] to-[#F5F5DC] text-gray-900"
-                }`}
+              }`}
             >
               {/* Close Button */}
               <button
@@ -694,8 +743,9 @@ const Dashboard = ({triggerPomodoro}) => {
                 &times;
               </button>
               <h3
-                className={`text-2xl font-bold mb-6 text-center ${theme === "dark" ? "text-teal-300" : "text-teal-700"
-                  }`}
+                className={`text-2xl font-bold mb-6 text-center ${
+                  theme === "dark" ? "text-teal-300" : "text-teal-700"
+                }`}
               >
                 🎰 Spin the Wheel
               </h3>
@@ -712,11 +762,11 @@ const Dashboard = ({triggerPomodoro}) => {
                     theme === "dark"
                       ? ["#0F4F51", "#8B7349", "#4A4A3C"]
                       : [
-                        "#1A9A9D", // Teal
-                        "#E1C38F", // Gold
+                          "#1A9A9D", // Teal
+                          "#E1C38F", // Gold
 
-                        "#F5F5DC", // Beige
-                      ]
+                          "#F5F5DC", // Beige
+                        ]
                   }
                   textColors={theme === "dark" ? ["#ffffff"] : ["#333333"]}
                   radiusLineColor={["#333333"]}
@@ -749,19 +799,22 @@ const Dashboard = ({triggerPomodoro}) => {
                     recycle={false}
                   />
                   <div
-                    className={` ${theme === "dark" ? "bg-gray-900/90" : "bg-white/90"
-                      } rounded-2xl shadow-2xl px-10 py-8 border-4 border-teal-400 flex flex-col items-center pointer-events-auto`}
+                    className={` ${
+                      theme === "dark" ? "bg-gray-900/90" : "bg-white/90"
+                    } rounded-2xl shadow-2xl px-10 py-8 border-4 border-teal-400 flex flex-col items-center pointer-events-auto`}
                   >
                     <span className="text-5xl mb-4">🎉</span>
                     <div
-                      className={`text-2xl font-extrabold ${theme === "dark" ? "text-teal-300" : "text-teal-700"
-                        } text-center mb-2`}
+                      className={`text-2xl font-extrabold ${
+                        theme === "dark" ? "text-teal-300" : "text-teal-700"
+                      } text-center mb-2`}
                     >
                       Do this next:
                     </div>
                     <div
-                      className={` text-3xl font-bold ${theme === "dark" ? "text-gray-100" : "text-gray-800"
-                        } text-center mb-6`}
+                      className={` text-3xl font-bold ${
+                        theme === "dark" ? "text-gray-100" : "text-gray-800"
+                      } text-center mb-6`}
                     >
                       {selectedItem}
                     </div>
@@ -770,10 +823,11 @@ const Dashboard = ({triggerPomodoro}) => {
                       <button
                         onClick={closeRouletteModal}
                         className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold shadow transition
-            ${theme === "dark"
-                            ? "bg-teal-700 hover:bg-teal-600 text-white"
-                            : "bg-teal-500 hover:bg-teal-400 text-white"
-                          }`}
+            ${
+              theme === "dark"
+                ? "bg-teal-700 hover:bg-teal-600 text-white"
+                : "bg-teal-500 hover:bg-teal-400 text-white"
+            }`}
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -798,10 +852,11 @@ const Dashboard = ({triggerPomodoro}) => {
                           handleSpin();
                         }}
                         className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold shadow transition
-            ${theme === "dark"
-                            ? "bg-yellow-600 hover:bg-yellow-500 text-white"
-                            : "bg-yellow-400 hover:bg-yellow-300 text-gray-900"
-                          }`}
+            ${
+              theme === "dark"
+                ? "bg-yellow-600 hover:bg-yellow-500 text-white"
+                : "bg-yellow-400 hover:bg-yellow-300 text-gray-900"
+            }`}
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"

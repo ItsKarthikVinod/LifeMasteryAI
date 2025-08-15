@@ -159,7 +159,7 @@ const NotesSidebar = ({
                 isDark ? "text-teal-300" : "text-teal-700"
               }`}
             >
-              Pages
+              My Notes
             </span>
             <button
               className={`p-2 rounded transition ${
