@@ -115,6 +115,13 @@
       "last 1 safari version"
     ]
   },
+  
+  "overrides": {
+    "react-native": "0.72.0"
+  },
+
+
+
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@types/react-modal": "^3.16.3",
