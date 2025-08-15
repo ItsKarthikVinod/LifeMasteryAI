@@ -436,6 +436,7 @@ const Dashboard = ({triggerPomodoro}) => {
               <GoalTracker
                 toggleCalendarModal={toggleCalendarModal}
                 onTriggerPomodoro={triggerPomodoro}
+                className={`zindex-100`}
               />
             </div>
 

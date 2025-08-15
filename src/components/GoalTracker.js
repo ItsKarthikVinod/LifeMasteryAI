@@ -71,9 +71,9 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
       prev: () => <span>{"‹"}</span>,
       next: () => <span>{"›"}</span>,
     },
-    datepickerClassNames: "top-12",
     defaultDate: dueDate ? new Date(dueDate) : undefined,
     language: "en",
+    datepickerClassNames: "-top-24 -right-12"
   };
 
   // Datepicker options for edit subgoal
@@ -157,7 +157,10 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
 
   const addGoal = async (e) => {
     e.preventDefault();
-    if (!goalName) return;
+    if (!goalName) {
+      toast.error("Goal name cannot be empty!", { position: "top-right" });
+      return;
+    }
 
     try {
       const goalRef = collection(db, "goals");
@@ -170,12 +173,20 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
       });
       setGoalName("");
     } catch (error) {
+      toast.error("Error adding goal: " + error.message, {
+        position: "top-right",
+      });
       console.error("Error adding goal: ", error);
     }
   };
 
   const addSubGoal = async () => {
-    if (!subGoalInput || !currentGoalId || !dueDate) return;
+    if (!subGoalInput || !currentGoalId || !dueDate) {
+      toast.error("Sub-goal, goal, and due date are required!", {
+        position: "top-right",
+      });
+      return;
+    }
 
     const goalRef = doc(db, "goals", currentGoalId);
     const newSubGoal = {
@@ -194,6 +205,9 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
       setDueDate("");
       setCurrentGoalId(null);
     } catch (error) {
+      toast.error("Error adding sub-goal: " + error.message, {
+        position: "top-right",
+      });
       console.error("Error adding sub-goal: ", error);
     }
   };
@@ -234,6 +248,9 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
       );
       await updateDoc(goalRef, { completed: allSubGoalsCompleted });
     } catch (error) {
+      toast.error("Error toggling sub-goal: " + error.message, {
+        position: "top-right",
+      });
       console.error("Error toggling sub-goal completion: ", error);
     }
   };
@@ -247,6 +264,9 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
     try {
       await updateDoc(goalRef, { subGoals });
     } catch (error) {
+      toast.error("Error deleting sub-goal: " + error.message, {
+        position: "top-right",
+      });
       console.error("Error deleting sub-goal: ", error);
     }
   };
@@ -256,6 +276,9 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
     try {
       await deleteDoc(goalRef);
     } catch (error) {
+      toast.error("Error deleting goal: " + error.message, {
+        position: "top-right",
+      });
       console.error("Error deleting goal: ", error);
     }
   };
@@ -285,6 +308,9 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
       setEditingSubGoalName("");
       setEditingDueDate("");
     } catch (error) {
+      toast.error("Error saving sub-goal edit: " + error.message, {
+        position: "top-right",
+      });
       console.error("Error saving sub-goal edit: ", error);
     }
   };
@@ -332,7 +358,7 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
   };
 
   return (
-    <div className={`goal-tracker-container `}>
+    <div className={`goal-tracker-container zindex-100`}>
       <h2
         className={`text-2xl font-semibold mb-6 text-center ${
           theme === "dark" ? "text-teal-400" : ""
@@ -467,7 +493,7 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
                         }`}
                         placeholder="Enter sub-goal"
                       />
-                      <div style={{ minWidth: 140 }}>
+                      <div style={{ minWidth: 140, position: "relative" }}>
                         <Datepicker
                           options={datepickerOptions}
                           show={showDatepicker}
@@ -523,7 +549,7 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
                             }`}
                             placeholder="Edit sub-goal"
                           />
-                          <div style={{ minWidth: 140 }}>
+                          <div style={{ minWidth: 120, position: "relative" }}>
                             <Datepicker
                               options={editDatepickerOptions}
                               show={showEditDatepicker}

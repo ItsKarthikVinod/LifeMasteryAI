@@ -26,7 +26,8 @@ import Recipes from './components/Recipes';
 import Planner from './components/Planner';
 import RecipeSharePage from './components/RecipeSharePage'; // Import your recipe share page
 import DemoModeBanner from './components/demoModeBanner'; // Import your demo mode banner
-import NotesEditor from './components/NotesEditor';
+
+import NotesPage from './pages/NotesPage';
 //import { useInactivityReminder } from './hooks/useInactivityReminder';
 import { messaging, getToken } from "./firebase/firebase";
 import { useLocation } from 'react-router-dom';
@@ -203,7 +204,7 @@ const App = () => {
           <Route path="/recipes" element={<Recipes />} />
           <Route path="/planner" element={<Planner />} />
           <Route path="/recipes/share/:id" element={<RecipeSharePage />} />
-          <Route path="/notes" element={<NotesEditor />} />
+          <Route path="/notes" element={<NotesPage />} />
         </Routes>
         <Footer />
       </Router>

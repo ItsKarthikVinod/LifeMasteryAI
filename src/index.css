@@ -6,6 +6,7 @@
 
 
 
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -103,4 +104,10 @@ code {
 }
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+.datepicker-dropdown,
+.datepicker-popper,
+.datepicker-container {
+  z-index: 99999 !important;
 }
