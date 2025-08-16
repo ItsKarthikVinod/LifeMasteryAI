@@ -571,7 +571,7 @@ const Dashboard = ({triggerPomodoro}) => {
               <span className="transition animate-bounce">📝 </span> Notes
             </button>
             <button
-              onClick={() => setPlannerOpen(true)}
+              onClick={() => navigate("/notes")}
               className={`
     fixed z-[10001] left-0 top-1/2 transform -translate-y-1/2
     bg-teal-700 text-white font-bold shadow-lg

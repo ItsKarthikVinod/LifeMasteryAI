@@ -148,6 +148,7 @@ export default function NotesEditor({
     }
     setIsSaving(false);
     setIsDirty(false);
+    
     showToast("Note saved!", isDark);
   };
 
