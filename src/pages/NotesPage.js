@@ -63,6 +63,10 @@ const NotesPage = () => {
     setNotesLocal((prev) => prev.filter((n) => n.id !== note.id));
   };
 
+  useEffect(() => {
+      window.scrollTo(0, 0);
+    }, []);
+
   // Add first folder
   const handleCreateFirstFolder = async () => {
     const folderId = await addFolder("My First Folder", currentUser?.uid);
