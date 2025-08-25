@@ -3,6 +3,7 @@
   "version": "0.2.0",
   "private": true,
   "dependencies": {
+    "@blocknote/code-block": "^0.35.0",
     "@blocknote/core": "^0.35.0",
     "@blocknote/mantine": "^0.35.0",
     "@blocknote/react": "^0.35.0",
@@ -48,6 +49,7 @@
     "node-fetch": "^3.3.2",
     "openai": "^4.90.0",
     "postcss": "^8.4.49",
+    "prismjs": "^1.30.0",
     "react": "^18.3.1",
     "react-beautiful-dnd": "^13.1.1",
     "react-big-calendar": "^1.18.0",
@@ -72,6 +74,7 @@
     "react-toastify": "^11.0.5",
     "react-tsparticles": "^2.12.2",
     "react-type-animation": "^3.2.0",
+    "shiki": "^0.14.4",
     "slate": "^0.118.0",
     "slate-history": "^0.113.1",
     "slate-react": "^0.117.4",
@@ -115,13 +118,9 @@
       "last 1 safari version"
     ]
   },
-  
   "overrides": {
     "react-native": "npm:react-native-web@latest"
   },
-
-
-
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@types/react-modal": "^3.16.3",

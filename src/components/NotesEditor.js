@@ -21,6 +21,8 @@ import {
   FaTimes,
   FaSpinner,
 } from "react-icons/fa";
+import { codeBlock } from "@blocknote/code-block";
+
 
 const CLOUDINARY_UPLOAD_PRESET = "gallery";
 const CLOUDINARY_CLOUD_NAME = "dovnydco5";
@@ -57,6 +59,42 @@ async function uploadToCloudinary(file) {
   const data = await res.json();
   return data.secure_url;
 }
+
+function getYouTubeId(url) {
+  const match = url.match(
+    /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\\s]{11})/
+  );
+  return match ? match[1] : null;
+}
+
+function CustomVideoBlockContent({ url }) {
+  const videoId = getYouTubeId(url);
+  if (videoId) {
+    return (
+      <div style={{ margin: "1em 0", textAlign: "center" }}>
+        <iframe
+          width="560"
+          height="315"
+          src={`https://www.youtube.com/embed/${videoId}`}
+          title="YouTube video"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          style={{ borderRadius: 12, maxWidth: "100%" }}
+        />
+      </div>
+    );
+  }
+  // fallback: render as normal video
+  return (
+    <video
+      src={url}
+      controls
+      style={{ maxWidth: "100%", borderRadius: 12, margin: "1em 0" }}
+    />
+  );
+}
+
 
 export default function NotesEditor({
   folderId,
@@ -104,6 +142,18 @@ export default function NotesEditor({
   const editor = useMemo(() => {
     if (initialContent === "loading") return undefined;
     const ed = BlockNoteEditor.create({
+      blockComponents: {
+        video: {
+          render: ({ block }) => <CustomVideoBlockContent url={block.url} />,
+        },
+      },
+      codeBlock,
+      tables: {
+        splitCells: true,
+        cellBackgroundColor: true,
+        cellTextColor: true,
+        headers: true,
+      },
       initialContent,
       uploadFile: uploadToCloudinary,
     });
@@ -117,8 +167,8 @@ export default function NotesEditor({
   // Save note (create if no id, else update)
   const handleSave = async () => {
     if (!editor) return;
-    setIsSaving(true);
     const contentString = JSON.stringify(editor.document || EMPTY_DOC);
+    setIsSaving(true);
     const data = {
       title: title?.trim() || "Untitled",
       coverUrl: coverUrl || "",
@@ -148,7 +198,7 @@ export default function NotesEditor({
     }
     setIsSaving(false);
     setIsDirty(false);
-    
+
     showToast("Note saved!", isDark);
   };
 
@@ -431,7 +481,10 @@ export default function NotesEditor({
             padding: "16px",
           }}
         >
-          <BlockNoteView editor={editor} theme={isDark ? "dark" : "light"} />
+          <BlockNoteView
+            editor={editor}
+            theme={isDark ? "dark" : "light"}
+          />
         </div>
       </div>
     </MantineProvider>
