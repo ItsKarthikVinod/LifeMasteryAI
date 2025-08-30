@@ -15,6 +15,8 @@ import {
   FaSearch,
   FaCheck,
   FaExclamationCircle,
+  FaMagic,
+  FaRegCopy,
 } from "react-icons/fa";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../firebase/firebase";
@@ -133,6 +135,29 @@ function formatDateId(date) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+// --- Template helpers ---
+const TEMPLATES_COLLECTION = "plannerTemplates";
+
+async function saveTemplateToFirestore(
+  userId,
+  name,
+  plan,
+  completed,
+  allTasks
+) {
+  const ref = doc(db, TEMPLATES_COLLECTION, `${userId}_${name}`);
+  await setDoc(ref, {
+    name,
+    plan,
+    completed,
+    createdAt: new Date().toISOString(),
+    allTasksSnapshot: allTasks,
+  });
+}
+
+
+
+// --- Main Component ---
 const PlannerSidebar = ({
   isOpen,
   onClose,
@@ -157,11 +182,18 @@ const PlannerSidebar = ({
     not_urgent_not_important: [],
     table: [],
   });
+  const [completed, setCompleted] = useState([]); // array of completed task ids
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedToAdd, setSelectedToAdd] = useState([]);
   const [quote, setQuote] = useState(getRandomQuote());
   const [saving, setSaving] = useState(false);
+
+  // Templates
+  const [showTemplatesModal, setShowTemplatesModal] = useState(false);
+  const [templates, setTemplates] = useState([]);
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   // Datepicker state
   const [showDatepicker, setShowDatepicker] = useState(false);
@@ -193,7 +225,7 @@ const PlannerSidebar = ({
       prev: () => <span>{"‹"}</span>,
       next: () => <span>{"›"}</span>,
     },
-    datepickerClassNames: "top-12 right-10 sm:top-16", // Fixes position for phones and desktop
+    datepickerClassNames: "top-12 right-10 sm:top-16",
     defaultDate: selectedDate,
     language: "en",
   };
@@ -206,23 +238,31 @@ const PlannerSidebar = ({
   const [searchTerm, setSearchTerm] = useState("");
 
   // Compare plan with last saved plan
-  const lastSavedPlanRef = React.useRef(null);
+  // Compare plan and completed with last saved state
+  const lastSavedStateRef = React.useRef({ plan: null, completed: null });
 
   useEffect(() => {
     if (!loading && !saving) {
-      lastSavedPlanRef.current = JSON.stringify(plan);
+      lastSavedStateRef.current = {
+        plan: JSON.stringify(plan),
+        completed: JSON.stringify(completed),
+      };
       setUnsaved(false);
     }
     // eslint-disable-next-line
   }, [loading, saving]);
 
-  // Mark unsaved if plan changes
+  // Mark unsaved if plan or completed changes
   useEffect(() => {
-    if (!loading && lastSavedPlanRef.current) {
-      setUnsaved(JSON.stringify(plan) !== lastSavedPlanRef.current);
+    if (!loading && lastSavedStateRef.current) {
+      const planChanged =
+        JSON.stringify(plan) !== lastSavedStateRef.current.plan;
+      const completedChanged =
+        JSON.stringify(completed) !== lastSavedStateRef.current.completed;
+      setUnsaved(planChanged || completedChanged);
     }
     // eslint-disable-next-line
-  }, [plan]);
+  }, [plan, completed]);
 
   // Intercept close if unsaved
   const handleClose = () => {
@@ -258,7 +298,11 @@ const PlannerSidebar = ({
     setLoading(true);
     (async () => {
       try {
-        const ref = doc(db, "planner", `${userId}_${formatDateId(selectedDate)}`);
+        const ref = doc(
+          db,
+          "planner",
+          `${userId}_${formatDateId(selectedDate)}`
+        );
         const snap = await getDoc(ref);
         let loaded = {
           urgent_important: [],
@@ -267,10 +311,16 @@ const PlannerSidebar = ({
           not_urgent_not_important: [],
           table: [],
         };
-        if (snap.exists()) loaded = { ...loaded, ...snap.data() };
+        let loadedCompleted = [];
+        if (snap.exists()) {
+          const data = snap.data();
+          loaded = { ...loaded, ...data };
+          loadedCompleted = Array.isArray(data.completed) ? data.completed : [];
+        }
         // Remove completed tasks
         const filtered = filterCompleted(loaded, allTasks);
         setPlan(filtered);
+        setCompleted(loadedCompleted); // <-- Restore completed from DB
         setLoading(false);
         setQuote(getRandomQuote());
       } catch (err) {
@@ -282,12 +332,12 @@ const PlannerSidebar = ({
           not_urgent_not_important: [],
           table: [],
         });
+        setCompleted([]);
       }
     })();
     if (refreshAllTasks) refreshAllTasks();
     // eslint-disable-next-line
   }, [isOpen, userId, selectedDate]);
-
   // Remove completed tasks on save/open/reload
   useEffect(() => {
     setPlan((prev) => filterCompleted(prev, allTasks));
@@ -359,12 +409,12 @@ const PlannerSidebar = ({
       });
       return newPlan;
     });
+    setCompleted((prev) => prev.filter((tid) => tid !== id));
   };
 
   // Mark a task as completed (removes from plan and triggers refresh)
   const completeTask = (id) => {
-    removeFromPlan(id);
-    // Optionally, you can update the completed status in your todos/subgoals/habits here
+    setCompleted((prev) => [...prev, id]);
     if (refreshAllTasks) refreshAllTasks();
   };
 
@@ -373,16 +423,61 @@ const PlannerSidebar = ({
     if (!userId || !selectedDate) return;
     setSaving(true);
     const filtered = filterCompleted(plan, allTasks);
-    await setDoc(doc(db, "planner", `${userId}_${formatDateId(selectedDate)}`), filtered);
+    await setDoc(
+      doc(db, "planner", `${userId}_${formatDateId(selectedDate)}`),
+      {
+        ...filtered,
+        completed, // <-- Save completed array too!
+      }
+    );
     setPlan(filtered);
     setSaving(false);
+  };
+
+  // --- Templates logic ---
+  // Load templates for user
+  useEffect(() => {
+    if (!userId) return;
+    (async () => {
+      const { getDocs, collection } = await import("firebase/firestore");
+      const snap = await getDocs(collection(db, TEMPLATES_COLLECTION));
+      setTemplates(
+        snap.docs
+          .map((d) => ({ ...d.data(), id: d.id })) // include id here
+          .filter((tpl) => tpl && tpl.name && tpl.id.startsWith(userId + "_")) // use tpl.id
+      );
+    })();
+  }, [userId, showTemplatesModal, savingTemplate]);
+
+  // Save current plan as template
+  const handleSaveTemplate = async () => {
+    if (!userId || !newTemplateName.trim()) return;
+    setSavingTemplate(true);
+    await saveTemplateToFirestore(
+      userId,
+      newTemplateName.trim(),
+      plan,
+      completed,
+      allTasks
+    );
+    setNewTemplateName("");
+    setSavingTemplate(false);
+    setShowTemplatesModal(false);
+  };
+
+  // Apply a template to current plan
+  const handleApplyTemplate = (tpl) => {
+    setPlan(tpl.plan || {});
+    setCompleted(tpl.completed || []);
+    setShowTemplatesModal(false);
   };
 
   // All available tasks not already in plan
   const availableToAdd = Object.keys(allTasks).filter(
     (id) =>
       !plan.table.includes(id) &&
-      !matrixBuckets.some((b) => plan[b.id].includes(id))
+      !matrixBuckets.some((b) => plan[b.id].includes(id)) &&
+      !completed.includes(id)
   );
 
   // Filter available tasks by search term
@@ -399,17 +494,23 @@ const PlannerSidebar = ({
     });
   }, [searchTerm, availableToAdd, allTasks]);
 
-  // Summary one-liner
-  const summary =
-    view === "table"
-      ? plan.table.length === 0
-        ? "No tasks planned for this day."
-        : `You have ${plan.table.length} tasks in your planner.`
-      : matrixBuckets.every((b) => plan[b.id].length === 0)
-        ? "No tasks planned for this day."
-        : matrixBuckets
-          .map((b) => `${b.label}: ${plan[b.id].length}`)
-          .join(" | ");
+  const allPlannedIds = [
+    ...plan.table,
+    ...matrixBuckets.flatMap((b) => plan[b.id]),
+  ];
+  const uniquePlannedIds = Array.from(new Set(allPlannedIds));
+
+  // Only count as completed if the task is in the plan and marked as completed
+  const completedTasks = uniquePlannedIds.filter((id) =>
+    completed.includes(id)
+  ).length;
+  const totalTasks = uniquePlannedIds.length;
+
+  // For rendering: incomplete first, completed at bottom
+  const sortedTable = [
+    ...plan.table.filter((id) => !completed.includes(id)),
+    ...plan.table.filter((id) => completed.includes(id)),
+  ];
 
   // Sidebar classes
   const sidebarClass = `
@@ -476,8 +577,9 @@ const PlannerSidebar = ({
   // Visual indicator for unsaved changes
   const UnsavedIndicator = () => (
     <span
-      className={`flex w-full items-center justify-center gap-1 mt-2 ml-2 text-xs font-bold ${isDark ? "text-yellow-300" : "text-yellow-700"
-        }`}
+      className={`flex w-full items-center justify-center gap-1 mt-2 ml-2 text-xs font-bold ${
+        isDark ? "text-yellow-300" : "text-yellow-700"
+      }`}
       title="You have unsaved changes"
     >
       <FaExclamationCircle className="animate-pulse" />
@@ -616,7 +718,7 @@ const PlannerSidebar = ({
         {quote}
       </div>
 
-      {/* Add Task Button & Save */}
+      {/* Add Task Button & Save & Templates */}
       <div className="flex items-center justify-between px-4 py-2">
         <button
           className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow transition ${
@@ -643,15 +745,27 @@ const PlannerSidebar = ({
         >
           <FaSave /> {saving ? "Saving..." : "Save Plan"}
         </button>
+        <button
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow transition
+            ${
+              isDark
+                ? "bg-purple-700 text-white hover:bg-purple-800"
+                : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+            }
+          `}
+          onClick={() => setShowTemplatesModal(true)}
+        >
+          <FaMagic /> Templates
+        </button>
       </div>
 
-      {/* Summary */}
+      {/* Progress */}
       <div
         className={`px-4 pb-2 text-xs ${
           isDark ? "text-gray-400" : "text-gray-500"
         }`}
       >
-        {summary}
+        {`${completedTasks}/${totalTasks} tasks done`}
       </div>
 
       {/* Eisenhower Matrix Info Dropdown */}
@@ -750,73 +864,99 @@ const PlannerSidebar = ({
                           No tasks in this quadrant.
                         </div>
                       )}
-                      {plan[bucket.id].map((id, idx) => (
-                        <Draggable draggableId={id} index={idx} key={id}>
-                          {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              className={`rounded-xl p-3 mb-2 ${
-                                isDark ? "bg-gray-800/80" : "bg-white/80"
-                              } shadow flex items-center justify-between transition
-                                ${
-                                  snapshot.isDragging
-                                    ? "ring-2 ring-teal-400 scale-105"
-                                    : ""
-                                }
-                              `}
-                            >
-                              <span className={isDark ? "text-gray-100" : ""}>
-                                <span className="font-bold text-teal-500 mr-2">
-                                  {idx + 1}.
-                                </span>
-                                <span className="mr-1">
-                                  {getIcon(allTasks[id]?.type)}
-                                </span>
-                                {allTasks[id]?.name || allTasks[id]?.title}
-                              </span>
-                              <div className="flex gap-2">
-                                <button
-                                  className={`transition ${
-                                    isDark
-                                      ? "text-teal-400 hover:text-teal-300"
-                                      : "text-teal-600 hover:text-teal-700"
-                                  }`}
-                                  onClick={() =>
-                                    handlePomodoro(allTasks[id]?.name)
+                      {/* Incomplete first, completed at bottom */}
+                      {[
+                        ...plan[bucket.id].filter(
+                          (id) => !completed.includes(id)
+                        ),
+                        ...plan[bucket.id].filter((id) =>
+                          completed.includes(id)
+                        ),
+                      ].map((id, idx, arr) => {
+                        const isDone = completed.includes(id);
+                        return (
+                          <Draggable draggableId={id} index={idx} key={id}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className={`rounded-xl p-3 mb-2 ${
+                                  isDark ? "bg-gray-800/80" : "bg-white/80"
+                                } shadow flex items-center justify-between transition
+                                  ${
+                                    snapshot.isDragging
+                                      ? "ring-2 ring-teal-400 scale-105"
+                                      : ""
                                   }
-                                  title="Start Pomodoro"
-                                >
-                                  <FaClock />
-                                </button>
-                                <button
-                                  className={`transition ${
-                                    isDark
-                                      ? "text-green-400 hover:text-green-300"
-                                      : "text-green-600 hover:text-green-700"
-                                  }`}
-                                  onClick={() => completeTask(id)}
-                                  title="Mark as Complete"
-                                >
-                                  <FaCheck />
-                                </button>
-                                <button
-                                  className={`transition ${
-                                    isDark
-                                      ? "text-gray-400 hover:text-red-400"
-                                      : "text-gray-400 hover:text-red-500"
-                                  }`}
-                                  onClick={() => removeFromPlan(id)}
-                                  title="Remove from plan"
-                                >
-                                  <FaTrash />
-                                </button>
+                                  ${isDone ? "opacity-50 text-gray-400" : ""}
+                                `}
+                              >
+                                <span className={isDark ? "text-gray-100" : ""}>
+                                  {!isDone && (
+                                    <span className="font-bold text-teal-500 mr-2">
+                                      {idx + 1}.
+                                    </span>
+                                  )}
+                                  <span className="mr-1">
+                                    {getIcon(allTasks[id]?.type)}
+                                  </span>
+                                  {allTasks[id]?.name || allTasks[id]?.title}
+                                </span>
+                                <div className="flex gap-2">
+                                  <button
+                                    className={`transition ${
+                                      isDark
+                                        ? "text-teal-400 hover:text-teal-300"
+                                        : "text-teal-600 hover:text-teal-700"
+                                    }`}
+                                    onClick={() =>
+                                      handlePomodoro(allTasks[id]?.name)
+                                    }
+                                    title="Start Pomodoro"
+                                  >
+                                    <FaClock />
+                                  </button>
+                                  <button
+                                    className={`transition ${
+                                      isDone
+                                        ? "text-green-400"
+                                        : isDark
+                                        ? "text-gray-400 hover:text-green-500"
+                                        : "text-gray-400 hover:text-green-500"
+                                    }`}
+                                    onClick={() => {
+                                      isDone
+                                        ? setCompleted((prev) =>
+                                            prev.filter((tid) => tid !== id)
+                                          )
+                                        : completeTask(id);
+                                    }}
+                                    title={
+                                      isDone
+                                        ? "Mark as incomplete"
+                                        : "Mark as Complete"
+                                    }
+                                  >
+                                    <FaCheck />
+                                  </button>
+                                  <button
+                                    className={`transition ${
+                                      isDark
+                                        ? "text-gray-400 hover:text-red-400"
+                                        : "text-gray-400 hover:text-red-500"
+                                    }`}
+                                    onClick={() => removeFromPlan(id)}
+                                    title="Remove from plan"
+                                  >
+                                    <FaTrash />
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
+                            )}
+                          </Draggable>
+                        );
+                      })}
                       {provided.placeholder}
                     </div>
                   )}
@@ -855,73 +995,91 @@ const PlannerSidebar = ({
                     </div>
                   )}
                   <div>
-                    {plan.table.map((id, idx) => (
-                      <Draggable draggableId={id} index={idx} key={id}>
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            className={`rounded-xl p-3 mb-2 ${
-                              isDark ? "bg-gray-800/80" : "bg-white/80"
-                            } shadow flex items-center justify-between  transition
-                              ${
-                                snapshot.isDragging
-                                  ? "ring-2 ring-teal-400 scale-105"
-                                  : ""
-                              }
-                            `}
-                          >
-                            <span className={isDark ? "text-gray-100" : ""}>
-                              <span className="font-bold text-teal-500 mr-2">
-                                {idx + 1}.
-                              </span>
-                              <span className="mr-1">
-                                {getIcon(allTasks[id]?.type)}
-                              </span>
-                              {allTasks[id]?.name || allTasks[id]?.title}
-                            </span>
-                            <div className="flex gap-2">
-                              <button
-                                className={`transition ${
-                                  isDark
-                                    ? "text-teal-400 hover:text-teal-300"
-                                    : "text-teal-600 hover:text-teal-700"
-                                }`}
-                                onClick={() =>
-                                  handlePomodoro(allTasks[id]?.name)
+                    {sortedTable.map((id, idx) => {
+                      const isDone = completed.includes(id);
+                      return (
+                        <Draggable draggableId={id} index={idx} key={id}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={`rounded-xl p-3 mb-2 ${
+                                isDark ? "bg-gray-800/80" : "bg-white/80"
+                              } shadow flex items-center justify-between  transition
+                                ${
+                                  snapshot.isDragging
+                                    ? "ring-2 ring-teal-400 scale-105"
+                                    : ""
                                 }
-                                title="Start Pomodoro"
-                              >
-                                <FaClock />
-                              </button>
-                              <button
-                                className={`transition ${
-                                  isDark
-                                    ? "text-green-400 hover:text-green-300"
-                                    : "text-green-600 hover:text-green-700"
-                                }`}
-                                onClick={() => completeTask(id)}
-                                title="Mark as Complete"
-                              >
-                                <FaCheck />
-                              </button>
-                              <button
-                                className={`transition ${
-                                  isDark
-                                    ? "text-gray-400 hover:text-red-400"
-                                    : "text-gray-400 hover:text-red-500"
-                                }`}
-                                onClick={() => removeFromPlan(id)}
-                                title="Remove from plan"
-                              >
-                                <FaTrash />
-                              </button>
+                                ${isDone ? "opacity-50 text-gray-400" : ""}
+                              `}
+                            >
+                              <span className={isDark ? "text-gray-100" : ""}>
+                                {!isDone && (
+                                  <span className="font-bold text-teal-500 mr-2">
+                                    {idx + 1}.
+                                  </span>
+                                )}
+                                <span className="mr-1">
+                                  {getIcon(allTasks[id]?.type)}
+                                </span>
+                                {allTasks[id]?.name || allTasks[id]?.title}
+                              </span>
+                              <div className="flex gap-2">
+                                <button
+                                  className={`transition ${
+                                    isDark
+                                      ? "text-teal-400 hover:text-teal-300"
+                                      : "text-teal-600 hover:text-teal-700"
+                                  }`}
+                                  onClick={() =>
+                                    handlePomodoro(allTasks[id]?.name)
+                                  }
+                                  title="Start Pomodoro"
+                                >
+                                  <FaClock />
+                                </button>
+                                <button
+                                  className={`transition ${
+                                    isDone
+                                      ? "text-green-400"
+                                      : isDark
+                                      ? "text-gray-400 hover:text-green-500"
+                                      : "text-gray-400 hover:text-green-500"
+                                  }`}
+                                  onClick={() =>
+                                    isDone
+                                      ? setCompleted((prev) =>
+                                          prev.filter((tid) => tid !== id)
+                                        )
+                                      : completeTask(id)
+                                  }
+                                  title={
+                                    isDone
+                                      ? "Mark as incomplete"
+                                      : "Mark as Complete"
+                                  }
+                                >
+                                  <FaCheck />
+                                </button>
+                                <button
+                                  className={`transition ${
+                                    isDark
+                                      ? "text-gray-400 hover:text-red-400"
+                                      : "text-gray-400 hover:text-red-500"
+                                  }`}
+                                  onClick={() => removeFromPlan(id)}
+                                  title="Remove from plan"
+                                >
+                                  <FaTrash />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
+                          )}
+                        </Draggable>
+                      );
+                    })}
                   </div>
                   {provided.placeholder}
                 </div>
@@ -1112,6 +1270,111 @@ const PlannerSidebar = ({
           </div>
         </div>
       )}
+      {/* Templates Modal */}
+      {showTemplatesModal && (
+        <div className="fixed inset-0 z-[10001] bg-black/40 flex items-center justify-center">
+          <div
+            className={`rounded-2xl shadow-2xl p-0 w-full max-w-md relative ${
+              isDark
+                ? "bg-gradient-to-br from-gray-900 via-gray-800 to-teal-900 border border-teal-700"
+                : "bg-gradient-to-br from-white via-blue-50 to-teal-100 border border-teal-300"
+            }`}
+            style={{
+              minWidth: 320,
+              maxWidth: "96vw",
+              backdropFilter: "blur(12px)",
+              boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
+              overflow: "hidden",
+            }}
+          >
+            <div className="relative px-8 pt-8 pb-6">
+              <div
+                className={`absolute top-4 right-4 text-2xl z-10 cursor-pointer transition ${
+                  isDark
+                    ? "text-gray-400 hover:text-red-400"
+                    : "text-gray-400 hover:text-red-500"
+                }`}
+                onClick={() => setShowTemplatesModal(false)}
+              >
+                <FaTimes />
+              </div>
+              <div
+                className={`text-xl font-bold mb-2 ${
+                  isDark ? "text-purple-300" : "text-purple-700"
+                }`}
+              >
+                Templates
+              </div>
+              <div
+                className={`mb-4 text-base ${
+                  isDark ? "text-gray-200" : "text-gray-700"
+                }`}
+              >
+                Save your current plan as a template, or apply a saved template.
+              </div>
+              <div className="mb-4">
+                <input
+                  type="text"
+                  className={`w-full px-3 py-2 rounded border ${
+                    isDark
+                      ? "bg-gray-800 border-teal-700 text-teal-200"
+                      : "bg-white border-teal-300 text-teal-800"
+                  }`}
+                  placeholder="Template name"
+                  value={newTemplateName}
+                  onChange={(e) => setNewTemplateName(e.target.value)}
+                />
+                <button
+                  className={`mt-2 w-full px-4 py-2 rounded-xl font-bold shadow bg-gradient-to-r from-purple-500 via-blue-400 to-teal-600 text-white hover:from-purple-600 hover:to-blue-500 transition ${
+                    !newTemplateName.trim() || savingTemplate
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }`}
+                  onClick={handleSaveTemplate}
+                  disabled={!newTemplateName.trim() || savingTemplate}
+                >
+                  <FaSave className="inline mr-2" />
+                  {savingTemplate ? "Saving..." : "Save Current as Template"}
+                </button>
+              </div>
+              <div className="mb-2 font-bold text-sm text-purple-500">
+                Your Templates:
+              </div>
+              <div className="max-h-60 overflow-y-auto space-y-2">
+                {templates.length === 0 ? (
+                  <div
+                    className={`italic text-base text-center ${
+                      isDark ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
+                    No templates found!
+                  </div>
+                ) : (
+                  templates.map((tpl) => (
+                    <div
+                      key={tpl.id}
+                      className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition ${
+                        isDark
+                          ? "bg-gray-800/60 hover:bg-purple-900/80"
+                          : "bg-white/60 hover:bg-purple-100/80"
+                      } shadow-sm`}
+                      onClick={() => handleApplyTemplate(tpl)}
+                    >
+                      <span className="font-semibold">
+                        <FaRegCopy className="inline mr-2" />
+                        {tpl.name}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {tpl.plan?.table?.length || 0} tasks
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {showUnsavedModal && (
         <div className="fixed inset-0 z-[10001] bg-black/40 flex items-center justify-center">
           <div
@@ -1184,5 +1447,5 @@ const PlannerSidebar = ({
       )}
     </div>
   );
-}
+};
 export default PlannerSidebar;

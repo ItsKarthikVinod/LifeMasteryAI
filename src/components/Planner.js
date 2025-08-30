@@ -12,6 +12,8 @@ import {
   FaBullseye,
   FaLeaf,
   FaCalendarDay,
+  FaMagic,
+  FaTimes,
 } from "react-icons/fa";
 
 const getIcon = (type) => {
@@ -26,6 +28,56 @@ const getIcon = (type) => {
       return null;
   }
 };
+
+// Example templates
+const TEMPLATES = [
+  {
+    name: "Morning Routine",
+    items: [
+      {
+        id: "habit-wakeup",
+        text: "Wake up early",
+        type: "habit",
+        completed: false,
+      },
+      {
+        id: "habit-meditate",
+        text: "Meditate 10 min",
+        type: "habit",
+        completed: false,
+      },
+      {
+        id: "todo-breakfast",
+        text: "Healthy breakfast",
+        type: "todo",
+        completed: false,
+      },
+    ],
+  },
+  {
+    name: "Work Sprint",
+    items: [
+      {
+        id: "todo-email",
+        text: "Check emails",
+        type: "todo",
+        completed: false,
+      },
+      {
+        id: "todo-coding",
+        text: "Code 2 hours",
+        type: "todo",
+        completed: false,
+      },
+      {
+        id: "habit-standup",
+        text: "Team standup",
+        type: "habit",
+        completed: false,
+      },
+    ],
+  },
+];
 
 const Planner = () => {
   const { theme } = useAuth();
@@ -76,6 +128,7 @@ const Planner = () => {
   const [todoList, setTodoList] = useState(todos);
   const [habitList, setHabitList] = useState(habits);
   const [subgoalList, setSubgoalList] = useState(subgoals);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   // Sync lists when data changes
   React.useEffect(() => setTodoList(todos), [todos]);
@@ -136,6 +189,15 @@ const Planner = () => {
     }
   };
 
+  // Mark as completed
+  const handleToggleCompleted = (item) => {
+    setPlanner((prev) =>
+      prev.map((i) =>
+        i.id === item.id ? { ...i, completed: !i.completed } : i
+      )
+    );
+  };
+
   // Edit and delete handlers (demo only, you can connect to backend)
   const handleEdit = (item) => {
     const newText = prompt("Edit item:", item.text);
@@ -146,6 +208,15 @@ const Planner = () => {
   };
   const handleDelete = (item) => {
     setPlanner((prev) => prev.filter((i) => i.id !== item.id));
+  };
+
+  // Add template items to planner
+  const handleApplyTemplate = (template) => {
+    setPlanner((prev) => [
+      ...prev,
+      ...template.items.filter((t) => !prev.some((p) => p.id === t.id)),
+    ]);
+    setShowTemplates(false);
   };
 
   // Theme classes
@@ -160,12 +231,70 @@ const Planner = () => {
   // Responsive grid
   const gridCols = "grid-cols-1 md:grid-cols-2 lg:grid-cols-4";
 
+  // Progress
+  const totalTasks = planner.length;
+  const completedTasks = planner.filter((i) => i.completed).length;
+
+  // Sort planner: incomplete first, completed at bottom
+  const sortedPlanner = [
+    ...planner.filter((i) => !i.completed),
+    ...planner.filter((i) => i.completed),
+  ];
+
   return (
     <div className={`min-h-screen p-2 pt-28 sm:p-6 sm:pt-28 ${bg}`}>
       <h1 className="text-3xl font-extrabold mb-6 text-center text-teal-500 drop-shadow-lg tracking-tight">
         <FaCalendarDay className="inline-block mr-2 mb-1" />
         Plan Your Day
       </h1>
+      <div className="flex justify-center mb-4 gap-4">
+        <span className="text-lg font-bold text-gray-700 dark:text-gray-200 bg-white/70 dark:bg-gray-800/70 px-4 py-2 rounded-xl shadow">
+          {completedTasks}/{totalTasks} tasks done
+        </span>
+        <button
+          className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold shadow bg-purple-100 dark:bg-gray-700 text-purple-700 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-gray-600 transition"
+          onClick={() => setShowTemplates(true)}
+        >
+          <FaMagic />
+          Templates
+        </button>
+      </div>
+      {/* Templates Modal */}
+      {showTemplates && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-2xl min-w-[320px] max-w-[90vw]">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-purple-600 dark:text-purple-300">
+                Choose a Template
+              </h2>
+              <button
+                className="text-gray-400 hover:text-red-400 text-xl"
+                onClick={() => setShowTemplates(false)}
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <div className="space-y-4">
+              {TEMPLATES.map((tpl) => (
+                <div
+                  key={tpl.name}
+                  className="p-4 rounded-xl border border-purple-200 dark:border-purple-700 bg-purple-50 dark:bg-gray-800 cursor-pointer hover:bg-purple-100 dark:hover:bg-gray-700 transition"
+                  onClick={() => handleApplyTemplate(tpl)}
+                >
+                  <div className="font-bold text-purple-700 dark:text-purple-200 mb-2">
+                    {tpl.name}
+                  </div>
+                  <ul className="list-disc pl-5 text-gray-700 dark:text-gray-200">
+                    {tpl.items.map((item) => (
+                      <li key={item.id}>{item.text}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       <DragDropContext onDragEnd={onDragEnd}>
         <div className={`grid ${gridCols} gap-4`}>
           {/* Todos */}
@@ -302,22 +431,48 @@ const Planner = () => {
                 <h2 className="font-bold mb-3 text-lg flex items-center text-yellow-500">
                   <FaCalendarDay className="mr-2" /> Today's Plan
                 </h2>
-                {planner.length === 0 && (
+                {sortedPlanner.length === 0 && (
                   <div className="italic text-gray-400 text-sm mb-2">
                     Drag items here to plan your day!
                   </div>
                 )}
-                {planner.map((item, idx) => (
+                {sortedPlanner.map((item, idx) => (
                   <Draggable key={item.id} draggableId={item.id} index={idx}>
                     {(prov) => (
                       <div
                         ref={prov.innerRef}
                         {...prov.draggableProps}
                         {...prov.dragHandleProps}
-                        className="mb-2 p-3 rounded-xl bg-yellow-50 dark:bg-gray-700 text-gray-900 dark:text-yellow-200 shadow flex items-center group"
+                        className={`mb-2 p-3 rounded-xl shadow flex items-center group transition
+                          ${
+                            item.completed
+                              ? "opacity-50 bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-500"
+                              : "bg-yellow-50 dark:bg-gray-700 text-gray-900 dark:text-yellow-200"
+                          }`}
                       >
+                        {/* Serial number only for incomplete */}
+                        {!item.completed && (
+                          <span className="mr-2 font-bold text-gray-400">
+                            {idx + 1}
+                          </span>
+                        )}
                         {getIcon(item.type)}
                         <span className="flex-1">{item.text}</span>
+                        <button
+                          onClick={() => handleToggleCompleted(item)}
+                          className={`ml-2 text-xl ${
+                            item.completed
+                              ? "text-green-400"
+                              : "text-gray-400 hover:text-green-500"
+                          } transition`}
+                          title={
+                            item.completed
+                              ? "Mark as incomplete"
+                              : "Mark as completed"
+                          }
+                        >
+                          <FaCheckCircle />
+                        </button>
                         <button
                           onClick={() => handleEdit(item)}
                           className="ml-2 opacity-60 group-hover:opacity-100 transition"
@@ -332,12 +487,6 @@ const Planner = () => {
                         >
                           <FaTrash />
                         </button>
-                        {item.completed && (
-                          <FaCheckCircle
-                            className="ml-2 text-green-400"
-                            title="Completed"
-                          />
-                        )}
                       </div>
                     )}
                   </Draggable>
