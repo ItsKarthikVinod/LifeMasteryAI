@@ -155,8 +155,6 @@ async function saveTemplateToFirestore(
   });
 }
 
-
-
 // --- Main Component ---
 const PlannerSidebar = ({
   isOpen,
@@ -237,7 +235,6 @@ const PlannerSidebar = ({
   // Search state for Add Task Modal
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Compare plan with last saved plan
   // Compare plan and completed with last saved state
   const lastSavedStateRef = React.useRef({ plan: null, completed: null });
 
@@ -494,23 +491,16 @@ const PlannerSidebar = ({
     });
   }, [searchTerm, availableToAdd, allTasks]);
 
+  // Progress calculation
   const allPlannedIds = [
     ...plan.table,
     ...matrixBuckets.flatMap((b) => plan[b.id]),
   ];
   const uniquePlannedIds = Array.from(new Set(allPlannedIds));
-
-  // Only count as completed if the task is in the plan and marked as completed
   const completedTasks = uniquePlannedIds.filter((id) =>
     completed.includes(id)
   ).length;
   const totalTasks = uniquePlannedIds.length;
-
-  // For rendering: incomplete first, completed at bottom
-  const sortedTable = [
-    ...plan.table.filter((id) => !completed.includes(id)),
-    ...plan.table.filter((id) => completed.includes(id)),
-  ];
 
   // Sidebar classes
   const sidebarClass = `
@@ -864,16 +854,15 @@ const PlannerSidebar = ({
                           No tasks in this quadrant.
                         </div>
                       )}
-                      {/* Incomplete first, completed at bottom */}
-                      {[
-                        ...plan[bucket.id].filter(
-                          (id) => !completed.includes(id)
-                        ),
-                        ...plan[bucket.id].filter((id) =>
-                          completed.includes(id)
-                        ),
-                      ].map((id, idx, arr) => {
+                      {/* Always render in plan order for drag-and-drop */}
+                      {plan[bucket.id].map((id, idx) => {
                         const isDone = completed.includes(id);
+                        // Serial number: only for incomplete tasks, count their order
+                        const serial = !isDone
+                          ? plan[bucket.id].filter(
+                              (tid, i) => i <= idx && !completed.includes(tid)
+                            ).length
+                          : null;
                         return (
                           <Draggable draggableId={id} index={idx} key={id}>
                             {(provided, snapshot) => (
@@ -895,7 +884,7 @@ const PlannerSidebar = ({
                                 <span className={isDark ? "text-gray-100" : ""}>
                                   {!isDone && (
                                     <span className="font-bold text-teal-500 mr-2">
-                                      {idx + 1}.
+                                      {serial}.
                                     </span>
                                   )}
                                   <span className="mr-1">
@@ -995,8 +984,14 @@ const PlannerSidebar = ({
                     </div>
                   )}
                   <div>
-                    {sortedTable.map((id, idx) => {
+                    {plan.table.map((id, idx) => {
                       const isDone = completed.includes(id);
+                      // Serial number: only for incomplete tasks, count their order
+                      const serial = !isDone
+                        ? plan.table.filter(
+                            (tid, i) => i <= idx && !completed.includes(tid)
+                          ).length
+                        : null;
                       return (
                         <Draggable draggableId={id} index={idx} key={id}>
                           {(provided, snapshot) => (
@@ -1018,7 +1013,7 @@ const PlannerSidebar = ({
                               <span className={isDark ? "text-gray-100" : ""}>
                                 {!isDone && (
                                   <span className="font-bold text-teal-500 mr-2">
-                                    {idx + 1}.
+                                    {serial}.
                                   </span>
                                 )}
                                 <span className="mr-1">
