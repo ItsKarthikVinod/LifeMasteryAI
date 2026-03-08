@@ -130,7 +130,7 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
       await delay(3000);
 
       const response = await openai.chat.completions.create({
-        model: "google/gemma-3-12b-it:free",
+        model: "arcee-ai/trinity-large-preview:free",
         messages: [
           { role: "system", content: "You are a helpful assistant." },
           { role: "user", content: prompt },

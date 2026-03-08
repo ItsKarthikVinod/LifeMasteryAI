@@ -91,7 +91,7 @@ const JournalList = () => {
 
     try {
       const response = await openai.chat.completions.create({
-        model: "deepseek/deepseek-chat-v3-0324:free",
+        model: "arcee-ai/trinity-large-preview:free",
         messages: [
           { role: "system", content: "You are a helpful assistant." },
           { role: "user", content: prompt },
@@ -132,7 +132,7 @@ const JournalList = () => {
 
     try {
       const response = await openai.chat.completions.create({
-        model: "deepseek/deepseek-chat-v3-0324:free",
+        model: "arcee-ai/trinity-large-preview:free",
         messages: [
           { role: "system", content: "You are a helpful assistant." },
           { role: "user", content: prompt },

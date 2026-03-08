@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   collection,
   addDoc,
@@ -25,6 +25,7 @@ import {
 import { useAuth } from "../contexts/authContext";
 import { getAuth } from "firebase/auth";
 import stringSimilarity from "string-similarity";
+import OpenAI from "openai";
 import { Link } from "react-router-dom";
 
 // Utility: Normalize ingredient names for matching
@@ -111,6 +112,14 @@ export default function Recipes() {
   const [groceries, setGroceries] = useState([]);
   const user = getAuth().currentUser;
   const [addingIngredientsId, setAddingIngredientsId] = useState(null);
+
+  const openai = useMemo(() => {
+    return new OpenAI({
+      baseURL: "https://openrouter.ai/api/v1",
+      apiKey: process.env.REACT_APP_OPENAI_API_KEY,
+      dangerouslyAllowBrowser: true,
+    });
+  }, []);
 
   // Fetch recipes
   useEffect(() => {
@@ -440,25 +449,21 @@ export default function Recipes() {
                   onClick={async () => {
                     setLoading(true);
                     try {
-                      const cohereApiKey = process.env.REACT_APP_COHERE_API_KEY;
+                      
                       const prompt = `Extract a list of ingredients from this recipe text:\n${form.ingredients}\nOnly return a comma-separated list of ingredients. Remove all measurements and quantities. `;
-                      const res = await fetch(
-                        "https://api.cohere.ai/v1/generate",
-                        {
-                          method: "POST",
-                          headers: {
-                            Authorization: `Bearer ${cohereApiKey}`,
-                            "Content-Type": "application/json",
+                      
+                      
+                      const response = await openai.chat.completions.create({
+                        model: "arcee-ai/trinity-large-preview:free",
+                        messages: [
+                          {
+                            role: "system",
+                            content: "You are a helpful assistant.",
                           },
-                          body: JSON.stringify({
-                            model: "command",
-                            prompt,
-                            max_tokens: 100,
-                            temperature: 0.2,
-                          }),
-                        }
-                      );
-                      const data = await res.json();
+                          { role: "user", content: prompt },
+                        ],
+                      });
+                      const data = await response.json();
                       let aiIngredients = data.generations?.[0]?.text
                         ?.split(",")
                         .map((i) => i.trim())

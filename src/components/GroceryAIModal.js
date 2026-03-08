@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useAuth } from "../contexts/authContext";
+import OpenAI from "openai";
 
 // Accept theme as a prop for light/dark mode
 export default function GroceryAIModal({
@@ -14,7 +15,7 @@ export default function GroceryAIModal({
     const [error, setError] = useState("");
     const { theme } = useAuth();
 
-  const COHERE_API_KEY = process.env.REACT_APP_COHERE_API_KEY;
+  
 
   const isDark = theme === "dark";
   const modalBg = isDark ? "bg-gray-900" : "bg-white";
@@ -36,21 +37,30 @@ export default function GroceryAIModal({
   const scrollBar =
     "scrollbar-thin scrollbar-thumb-teal-400 scrollbar-track-teal-100 dark:scrollbar-thumb-teal-700 dark:scrollbar-track-gray-800";
 
+  const openai = useMemo(() => {
+      return new OpenAI({
+        baseURL: "https://openrouter.ai/api/v1",
+        apiKey: process.env.REACT_APP_OPENAI_API_KEY,
+        dangerouslyAllowBrowser: true,
+      });
+    }, []);
+  
   const handleAnalyze = async () => {
     setLoading(true);
     setError("");
     setSuggested([]);
     try {
-      const response = await fetch("https://api.cohere.ai/v1/chat", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${COHERE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "command-r-plus",
-          message: `Extract a simple list of grocery items from these recipe ingredients. Only return a JSON array of strings, no explanation:\n${input}`,
-        }),
+      
+
+      const response = await openai.chat.completions.create({
+        model: "arcee-ai/trinity-large-preview:free",
+        messages: [
+          { role: "system", content: "You are a helpful assistant." },
+          {
+            role: "user",
+            content: `Extract a simple list of grocery items from these recipe ingredients. Only return a JSON array of strings, no explanation:\n${input}`,
+          },
+        ],
       });
       const data = await response.json();
       // Try to extract JSON array from response
