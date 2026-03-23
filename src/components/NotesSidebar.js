@@ -15,6 +15,7 @@ import {
   renameFolder,
   deleteFolder,
 } from "../hooks/useNotesFolders";
+import Footer from "./Footer";
 
 const NotesSidebar = ({
   selectedFolder,
@@ -230,8 +231,8 @@ const NotesSidebar = ({
                           ? "bg-blue-900 text-white"
                           : "bg-blue-100 text-blue-700"
                         : isDark
-                        ? "hover:bg-gray-800 text-teal-200"
-                        : "hover:bg-blue-50 text-blue-700"
+                          ? "hover:bg-gray-800 text-teal-200"
+                          : "hover:bg-blue-50 text-blue-700"
                     }`}
                     onClick={() => {
                       setSelectedFolder(note.folderId);
@@ -293,8 +294,8 @@ const NotesSidebar = ({
                               ? "bg-teal-900 text-white"
                               : "bg-teal-100 text-teal-700"
                             : isDark
-                            ? "hover:bg-gray-800 text-teal-200"
-                            : "hover:bg-teal-50 text-teal-700"
+                              ? "hover:bg-gray-800 text-teal-200"
+                              : "hover:bg-teal-50 text-teal-700"
                         }`}
                         onClick={() => handleFolderClick(folder.id)}
                       >
@@ -328,14 +329,16 @@ const NotesSidebar = ({
                     </>
                   )}
                 </div>
-
                 {/* Notes list */}
                 {expandedFolders[folder.id] && notes && (
                   <ul className="ml-6 mt-1 space-y-1">
                     {notes
                       .filter((n) => n.folderId === folder.id)
                       .map((note) => (
-                        <li key={note.id + folder.id} className="flex items-center">
+                        <li
+                          key={note.id + folder.id}
+                          className="flex items-center"
+                        >
                           <button
                             className={`flex-1 w-full text-left px-2 py-1 rounded transition flex items-center gap-2 ${
                               selectedNote?.id === note.id
@@ -343,8 +346,8 @@ const NotesSidebar = ({
                                   ? "bg-blue-900 text-white"
                                   : "bg-blue-100 text-blue-700"
                                 : isDark
-                                ? "hover:bg-gray-800 text-teal-200"
-                                : "hover:bg-blue-50 text-blue-700"
+                                  ? "hover:bg-gray-800 text-teal-200"
+                                  : "hover:bg-blue-50 text-blue-700"
                             }`}
                             onClick={() => setSelectedNote(note)}
                           >
@@ -368,6 +371,7 @@ const NotesSidebar = ({
             ))}
           </ul>
         )}
+        <Footer />
 
         {/* New Folder Modal */}
         {showNewFolder && (

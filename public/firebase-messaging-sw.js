@@ -18,10 +18,7 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage(function (payload) {
-  console.log(
-    "[firebase-messaging-sw.js] Received background message ",
-    payload
-  );
+  
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
@@ -48,7 +45,7 @@ self.addEventListener("install", (event) => {
       return cache.addAll(urlsToCache);
     })
   );
-  console.log("✅ LifeMastery Service Worker Installed");
+  
 });
 
 self.addEventListener("activate", (event) => {
@@ -63,7 +60,7 @@ self.addEventListener("activate", (event) => {
         )
       )
   );
-  console.log("✅ LifeMastery Service Worker Activated");
+  
 });
 
 self.addEventListener("fetch", (event) => {

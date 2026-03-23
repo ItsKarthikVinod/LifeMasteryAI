@@ -407,7 +407,6 @@ const WhiteBoard = () => {
   const handleExport = () => {
     const stage = stageRef.current;
     // Use Konva's built-in export with transparent or colored background
-    console.log(exportTransparent, bgColor);
     const dataURL = stage.toDataURL({
       pixelRatio: 2,
       mimeType: "image/png",

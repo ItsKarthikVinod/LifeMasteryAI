@@ -656,7 +656,7 @@ const Hero = () => {
   const isInView = useInView(learnMoreRef, { once: true, amount: 0.05 });
   const controls = useAnimation();
   useEffect(() => {
-    console.log("isInView:", isInView);
+    
     if (isInView) {
       controls.start("visible");
     }

@@ -17,9 +17,19 @@ import {
   FaExclamationCircle,
   FaMagic,
   FaRegCopy,
+  FaTrashAlt, // For delete icon
 } from "react-icons/fa";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  getDoc,
+  deleteDoc,
+  getDocs,
+  collection,
+  where,
+} from "firebase/firestore";
 import { db } from "../firebase/firebase";
+import { query } from "firebase/firestore";
 import { useAuth } from "../contexts/authContext";
 import Datepicker from "tailwind-datepicker-react";
 
@@ -118,6 +128,7 @@ const getIcon = (type) => {
   if (type === "todo") return "📝";
   if (type === "habit") return "🔁";
   if (type === "subgoal") return "🎯";
+  if (type === "goal") return "🎯"; // For auto-added sub-goals
   return "";
 };
 
@@ -143,7 +154,7 @@ async function saveTemplateToFirestore(
   name,
   plan,
   completed,
-  allTasks
+  allTasks,
 ) {
   const ref = doc(db, TEMPLATES_COLLECTION, `${userId}_${name}`);
   await setDoc(ref, {
@@ -153,6 +164,11 @@ async function saveTemplateToFirestore(
     createdAt: new Date().toISOString(),
     allTasksSnapshot: allTasks,
   });
+}
+
+async function deleteTemplateFromFirestore(userId, name) {
+  const ref = doc(db, TEMPLATES_COLLECTION, `${userId}_${name}`);
+  await deleteDoc(ref);
 }
 
 // --- Main Component ---
@@ -192,6 +208,7 @@ const PlannerSidebar = ({
   const [templates, setTemplates] = useState([]);
   const [newTemplateName, setNewTemplateName] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null); // For delete confirmation
 
   // Datepicker state
   const [showDatepicker, setShowDatepicker] = useState(false);
@@ -298,7 +315,7 @@ const PlannerSidebar = ({
         const ref = doc(
           db,
           "planner",
-          `${userId}_${formatDateId(selectedDate)}`
+          `${userId}_${formatDateId(selectedDate)}`,
         );
         const snap = await getDoc(ref);
         let loaded = {
@@ -317,7 +334,41 @@ const PlannerSidebar = ({
         // Remove completed tasks
         const filtered = filterCompleted(loaded, allTasks);
         setPlan(filtered);
-        setCompleted(loadedCompleted); // <-- Restore completed from DB
+        setCompleted(loadedCompleted);
+
+        // Fetch goals and add sub-goals with matching due date
+        const goalsQuery = query(
+          collection(db, "goals"),
+          where("userId", "==", userId),
+        );
+        const goalsSnap = await getDocs(goalsQuery);
+        const dateStr = formatDateId(selectedDate);
+        const autoAdded = [];
+        goalsSnap.docs.forEach((goalDoc) => {
+          const goal = goalDoc.data();
+          goal.subGoals.forEach((subGoal, index) => {
+            if (subGoal.dueDate === dateStr && !subGoal.completed) {
+              const subGoalId = `${goalDoc.id}_${index}`;
+              if (!filtered.table.includes(subGoalId)) {
+                autoAdded.push(subGoalId);
+                allTasks[subGoalId] = {
+                  id: subGoalId,
+                  name: `${goal.name}: ${subGoal.name}`,
+                  title: `${goal.name}: ${subGoal.name}`,
+                  type: "goal",
+                  completed: false,
+                };
+              }
+            }
+          });
+        });
+        if (autoAdded.length > 0) {
+          setPlan((prev) => ({
+            ...prev,
+            table: [...prev.table, ...autoAdded],
+          }));
+        }
+
         setLoading(false);
         setQuote(getRandomQuote());
       } catch (err) {
@@ -381,7 +432,7 @@ const PlannerSidebar = ({
         ...selectedToAdd.filter(
           (id) =>
             !prev.table.includes(id) &&
-            !matrixBuckets.some((b) => prev[b.id].includes(id))
+            !matrixBuckets.some((b) => prev[b.id].includes(id)),
         ),
       ],
       urgent_important: [
@@ -390,7 +441,7 @@ const PlannerSidebar = ({
           (id) =>
             !prev.urgent_important.includes(id) &&
             !prev.table.includes(id) &&
-            !matrixBuckets.some((b) => prev[b.id].includes(id))
+            !matrixBuckets.some((b) => prev[b.id].includes(id)),
         ),
       ],
     }));
@@ -425,7 +476,7 @@ const PlannerSidebar = ({
       {
         ...filtered,
         completed, // <-- Save completed array too!
-      }
+      },
     );
     setPlan(filtered);
     setSaving(false);
@@ -436,12 +487,12 @@ const PlannerSidebar = ({
   useEffect(() => {
     if (!userId) return;
     (async () => {
-      const { getDocs, collection } = await import("firebase/firestore");
       const snap = await getDocs(collection(db, TEMPLATES_COLLECTION));
       setTemplates(
         snap.docs
-          .map((d) => ({ ...d.data(), id: d.id })) // include id here
-          .filter((tpl) => tpl && tpl.name && tpl.id.startsWith(userId + "_")) // use tpl.id
+          .map((d) => ({ ...d.data(), id: d.id }))
+          .filter((tpl) => tpl && tpl.name && tpl.id.startsWith(userId + "_"))
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), // Newest first
       );
     })();
   }, [userId, showTemplatesModal, savingTemplate]);
@@ -455,7 +506,7 @@ const PlannerSidebar = ({
       newTemplateName.trim(),
       plan,
       completed,
-      allTasks
+      allTasks,
     );
     setNewTemplateName("");
     setSavingTemplate(false);
@@ -469,12 +520,20 @@ const PlannerSidebar = ({
     setShowTemplatesModal(false);
   };
 
+  // Delete a template
+  const handleDeleteTemplate = async (tpl) => {
+    if (!userId) return;
+    await deleteTemplateFromFirestore(userId, tpl.name);
+    setTemplates((prev) => prev.filter((t) => t.id !== tpl.id));
+    setShowDeleteConfirm(null);
+  };
+
   // All available tasks not already in plan
   const availableToAdd = Object.keys(allTasks).filter(
     (id) =>
       !plan.table.includes(id) &&
       !matrixBuckets.some((b) => plan[b.id].includes(id)) &&
-      !completed.includes(id)
+      !completed.includes(id),
   );
 
   // Filter available tasks by search term
@@ -498,7 +557,7 @@ const PlannerSidebar = ({
   ];
   const uniquePlannedIds = Array.from(new Set(allPlannedIds));
   const completedTasks = uniquePlannedIds.filter((id) =>
-    completed.includes(id)
+    completed.includes(id),
   ).length;
   const totalTasks = uniquePlannedIds.length;
 
@@ -646,8 +705,8 @@ const PlannerSidebar = ({
                   ? "bg-teal-800 text-teal-300"
                   : "bg-teal-100 text-teal-700"
                 : isDark
-                ? "hover:bg-gray-800 text-gray-400"
-                : "hover:bg-gray-200 text-gray-400"
+                  ? "hover:bg-gray-800 text-gray-400"
+                  : "hover:bg-gray-200 text-gray-400"
             }`}
             title="Task Table View"
             onClick={() => setView("table")}
@@ -661,8 +720,8 @@ const PlannerSidebar = ({
                   ? "bg-teal-800 text-teal-300"
                   : "bg-teal-100 text-teal-700"
                 : isDark
-                ? "hover:bg-gray-800 text-gray-400"
-                : "hover:bg-gray-200 text-gray-400"
+                  ? "hover:bg-gray-800 text-gray-400"
+                  : "hover:bg-gray-200 text-gray-400"
             }`}
             title="Eisenhower Matrix View"
             onClick={() => setView("matrix")}
@@ -676,8 +735,8 @@ const PlannerSidebar = ({
                   ? "bg-blue-900 text-blue-300"
                   : "bg-blue-100 text-blue-700"
                 : isDark
-                ? "hover:bg-gray-800 text-blue-400"
-                : "hover:bg-gray-200 text-blue-400"
+                  ? "hover:bg-gray-800 text-blue-400"
+                  : "hover:bg-gray-200 text-blue-400"
             }`}
             title={isFullscreen ? "Minimize" : "Maximize"}
             onClick={handleFullscreenToggle}
@@ -726,8 +785,8 @@ const PlannerSidebar = ({
               saving
                 ? "bg-gray-400 cursor-not-allowed"
                 : isDark
-                ? "bg-blue-700 hover:bg-blue-800 text-white"
-                : "bg-blue-500 hover:bg-blue-600 text-white"
+                  ? "bg-blue-700 hover:bg-blue-800 text-white"
+                  : "bg-blue-500 hover:bg-blue-600 text-white"
             }
           `}
           onClick={savePlan}
@@ -821,7 +880,7 @@ const PlannerSidebar = ({
                       ref={provided.innerRef}
                       {...provided.droppableProps}
                       className={`${glassCard(
-                        isDark
+                        isDark,
                       )} bg-gradient-to-br ${bucket.color(isDark)} ${
                         snapshot.isDraggingOver ? "ring-2 ring-teal-400" : ""
                       }`}
@@ -860,7 +919,7 @@ const PlannerSidebar = ({
                         // Serial number: only for incomplete tasks, count their order
                         const serial = !isDone
                           ? plan[bucket.id].filter(
-                              (tid, i) => i <= idx && !completed.includes(tid)
+                              (tid, i) => i <= idx && !completed.includes(tid),
                             ).length
                           : null;
                         return (
@@ -911,13 +970,13 @@ const PlannerSidebar = ({
                                       isDone
                                         ? "text-green-400"
                                         : isDark
-                                        ? "text-gray-400 hover:text-green-500"
-                                        : "text-gray-400 hover:text-green-500"
+                                          ? "text-gray-400 hover:text-green-500"
+                                          : "text-gray-400 hover:text-green-500"
                                     }`}
                                     onClick={() => {
                                       isDone
                                         ? setCompleted((prev) =>
-                                            prev.filter((tid) => tid !== id)
+                                            prev.filter((tid) => tid !== id),
                                           )
                                         : completeTask(id);
                                     }}
@@ -989,7 +1048,7 @@ const PlannerSidebar = ({
                       // Serial number: only for incomplete tasks, count their order
                       const serial = !isDone
                         ? plan.table.filter(
-                            (tid, i) => i <= idx && !completed.includes(tid)
+                            (tid, i) => i <= idx && !completed.includes(tid),
                           ).length
                         : null;
                       return (
@@ -1040,13 +1099,13 @@ const PlannerSidebar = ({
                                     isDone
                                       ? "text-green-400"
                                       : isDark
-                                      ? "text-gray-400 hover:text-green-500"
-                                      : "text-gray-400 hover:text-green-500"
+                                        ? "text-gray-400 hover:text-green-500"
+                                        : "text-gray-400 hover:text-green-500"
                                   }`}
                                   onClick={() =>
                                     isDone
                                       ? setCompleted((prev) =>
-                                          prev.filter((tid) => tid !== id)
+                                          prev.filter((tid) => tid !== id),
                                         )
                                       : completeTask(id)
                                   }
@@ -1192,7 +1251,7 @@ const PlannerSidebar = ({
                             setSelectedToAdd((prev) =>
                               e.target.checked
                                 ? [...prev, id]
-                                : prev.filter((x) => x !== id)
+                                : prev.filter((x) => x !== id),
                             );
                           }}
                           className="accent-teal-500 scale-125"
@@ -1222,13 +1281,13 @@ const PlannerSidebar = ({
                               (Subgoal of {t.goalName})
                             </span>
                           )}
-                          {t.type === "todo" && (
+                          {t.type === "goal" && (
                             <span
                               className={`text-xs italic ${
                                 isDark ? "text-gray-400" : "text-gray-500"
                               }`}
                             >
-                              (To-Do)
+                              (Goal Sub-task)
                             </span>
                           )}
                         </span>
@@ -1348,23 +1407,95 @@ const PlannerSidebar = ({
                   templates.map((tpl) => (
                     <div
                       key={tpl.id}
-                      className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition ${
+                      className={`flex items-center justify-between p-3 rounded-xl transition ${
                         isDark
                           ? "bg-gray-800/60 hover:bg-purple-900/80"
                           : "bg-white/60 hover:bg-purple-100/80"
                       } shadow-sm`}
-                      onClick={() => handleApplyTemplate(tpl)}
                     >
-                      <span className="font-semibold">
-                        <FaRegCopy className="inline mr-2" />
-                        {tpl.name}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        {tpl.plan?.table?.length || 0} tasks
-                      </span>
+                      <div className="flex-1">
+                        <div className="font-semibold flex items-center gap-2">
+                          <FaRegCopy />
+                          {tpl.name}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {tpl.plan?.table?.length || 0} tasks • Created{" "}
+                          {new Date(tpl.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          className={`px-3 py-1 rounded text-sm font-medium transition ${
+                            isDark
+                              ? "bg-purple-700 text-white hover:bg-purple-800"
+                              : "bg-purple-500 text-white hover:bg-purple-600"
+                          }`}
+                          onClick={() => handleApplyTemplate(tpl)}
+                          title="Apply this template"
+                        >
+                          Apply
+                        </button>
+                        <button
+                          className={`p-2 rounded transition ${
+                            isDark
+                              ? "text-gray-400 hover:text-red-400"
+                              : "text-gray-400 hover:text-red-500"
+                          }`}
+                          onClick={() => setShowDeleteConfirm(tpl)}
+                          title="Delete template"
+                        >
+                          <FaTrashAlt />
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[10002] bg-black/40 flex items-center justify-center">
+          <div
+            className={`rounded-2xl shadow-2xl p-6 w-full max-w-sm ${
+              isDark
+                ? "bg-gray-900 border border-teal-700"
+                : "bg-white border border-teal-300"
+            }`}
+          >
+            <div className="text-center">
+              <div
+                className={`text-lg font-bold mb-2 ${
+                  isDark ? "text-teal-300" : "text-teal-700"
+                }`}
+              >
+                Delete Template
+              </div>
+              <div
+                className={`mb-4 ${isDark ? "text-gray-200" : "text-gray-700"}`}
+              >
+                Are you sure you want to delete "{showDeleteConfirm.name}"? This
+                action cannot be undone.
+              </div>
+              <div className="flex justify-center gap-2">
+                <button
+                  className={`px-4 py-2 rounded font-bold transition ${
+                    isDark
+                      ? "bg-gray-700 text-gray-200 hover:bg-teal-800"
+                      : "bg-gray-200 text-gray-700 hover:bg-teal-200"
+                  }`}
+                  onClick={() => setShowDeleteConfirm(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className={`px-4 py-2 rounded font-bold bg-red-500 text-white hover:bg-red-600 transition`}
+                  onClick={() => handleDeleteTemplate(showDeleteConfirm)}
+                >
+                  Delete
+                </button>
               </div>
             </div>
           </div>

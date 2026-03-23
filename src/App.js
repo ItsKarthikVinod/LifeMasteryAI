@@ -1,36 +1,39 @@
-import React, {useEffect, useState} from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import HeroPage from './components/HeroPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import Dashboard from './components/Dashboard';
-import JournalList from './components/JournalList';
-import Challenges from './components/Challenges/Challenges';
-import CommunityPage from './components/CommunityPage';
-import './App.css'; // Import your CSS file
-import Footer from './components/Footer'
-import {useAuth} from './contexts/authContext';
-import Pomodoro from './components/Pomodoro';
-import SettingsPage from './pages/SettingsPage';
-import WhiteBoard from './components/WhiteBoard';
-import WhiteboardGallery from './components/WhiteBoardGallery';
-import StatusBanner from './components/StatusBanner';
+import React, { useEffect, useState } from "react";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
+import Navbar from "./components/Navbar";
+import HeroPage from "./components/HeroPage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import Dashboard from "./components/Dashboard";
+import JournalList from "./components/JournalList";
+import Challenges from "./components/Challenges/Challenges";
+import CommunityPage from "./components/CommunityPage";
+import "./App.css"; // Import your CSS file
+import Footer from "./components/Footer";
+import { useAuth } from "./contexts/authContext";
+import Pomodoro from "./components/Pomodoro";
+import SettingsPage from "./pages/SettingsPage";
+import WhiteBoard from "./components/WhiteBoard";
+import WhiteboardGallery from "./components/WhiteBoardGallery";
+import StatusBanner from "./components/StatusBanner";
 import useGetHabits from "./hooks/useGetHabits";
 import useGetGoals from "./hooks/useGetGoals";
 import useGetTodos from "./hooks/useGetTodos";
-import Loader from './components/Loader'; // Assuming you have a Loader component
+import Loader from "./components/Loader"; // Assuming you have a Loader component
 import Grocery from "./components/Grocery";
-import InstallPrompt from './components/InstallPrompt'; 
-import Recipes from './components/Recipes';
-import Planner from './components/Planner';
-import RecipeSharePage from './components/RecipeSharePage'; // Import your recipe share page
-import DemoModeBanner from './components/demoModeBanner'; // Import your demo mode banner
+import InstallPrompt from "./components/InstallPrompt";
+import Recipes from "./components/Recipes";
+import RecipeSharePage from "./components/RecipeSharePage"; // Import your recipe share page
+import DemoModeBanner from "./components/demoModeBanner"; // Import your demo mode banner
 
-import NotesPage from './pages/NotesPage';
+import NotesPage from "./pages/NotesPage";
 //import { useInactivityReminder } from './hooks/useInactivityReminder';
 import { messaging, getToken } from "./firebase/firebase";
-import { useLocation } from 'react-router-dom';
 
 const PomodoroWrapper = ({
   initialTitle,
@@ -53,6 +56,54 @@ const PomodoroWrapper = ({
   ) : null;
 };
 
+// Create a new component for content inside Router
+const AppContent = ({
+  theme,
+  isGuest,
+  pomodoroTitle,
+  isPomodoroRunning,
+  setIsPomodoroRunning,
+  initialMinutes,
+  triggerPomodoro,
+}) => {
+  const location = useLocation(); // Now safe to use here
+
+  return (
+    <>
+      <Navbar />
+      {isGuest && <Navbar />}
+      {isGuest && <DemoModeBanner />}
+      <StatusBanner />
+      {/* Pomodoro Timer */}
+      <PomodoroWrapper
+        initialTitle={pomodoroTitle}
+        isRunning={isPomodoroRunning}
+        setIsRunning={setIsPomodoroRunning}
+        initialMinutes={initialMinutes}
+      />
+      <Routes>
+        <Route path="/" element={<HeroPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route
+          path="/dashboard"
+          element={<Dashboard triggerPomodoro={triggerPomodoro} />}
+        />
+        <Route path="/journal-list" element={<JournalList />} />
+        <Route path="/challenges" element={<Challenges />} />
+        <Route path="/community" element={<CommunityPage />} />
+        <Route path="/whiteboard" element={<WhiteBoard />} />
+        <Route path="/whiteboard-gallery" element={<WhiteboardGallery />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/grocery" element={<Grocery />} />
+        <Route path="/recipes" element={<Recipes />} />
+        <Route path="/recipes/share/:id" element={<RecipeSharePage />} />
+        <Route path="/notes" element={<NotesPage />} />
+      </Routes>
+      {location.pathname !== "/notes" && <Footer />}
+    </>
+  );
+};
 
 const App = () => {
   const { theme, currentUser } = useAuth();
@@ -63,8 +114,6 @@ const App = () => {
   const { loading: todosLoading } = useGetTodos();
   const { loading: authLoading } = useAuth(); // If your auth context provides loading
 
-  
-
   useEffect(() => {
     async function requestFCMToken() {
       try {
@@ -72,7 +121,8 @@ const App = () => {
           vapidKey:
             "BOJBldxR1c4Lm6O3rsFYTFnRO1NMtyqPNdKC7isnBWxImFWu4d8b-4PDhKF5RS_81eGRGqXYcMNjT8_EdH8p2RU",
         });
-        console.log("FCM Token:", token);
+        return token;
+
         // Save token to your backend for later use
       } catch (err) {
         console.error("FCM token error:", err);
@@ -158,15 +208,15 @@ const App = () => {
   const [initialMinutes, setInitialMinutes] = useState(25); // Initial minutes for Pomodoro timer
 
   useEffect(() => {
-      const storedMinutes = localStorage.getItem("pomodoroInitialMinutes");
-      if (storedMinutes) {
-        setInitialMinutes(parseInt(storedMinutes, 10));
-      }
-    }, []);
-    const triggerPomodoro = (title) => {
-      setPomodoroTitle(title);
-      setIsPomodoroRunning(true); // Start the Pomodoro session
-    };
+    const storedMinutes = localStorage.getItem("pomodoroInitialMinutes");
+    if (storedMinutes) {
+      setInitialMinutes(parseInt(storedMinutes, 10));
+    }
+  }, []);
+  const triggerPomodoro = (title) => {
+    setPomodoroTitle(title);
+    setIsPomodoroRunning(true); // Start the Pomodoro session
+  };
 
   // Show loader if any global data is loading
   if (habitsLoading || goalsLoading || todosLoading || authLoading) {
@@ -175,38 +225,15 @@ const App = () => {
   return (
     <div className={theme === "dark" ? "dark" : ""}>
       <Router>
-        <Navbar />
-        {isGuest && <Navbar />}
-        {isGuest && <DemoModeBanner />}
-        <StatusBanner />
-        {/* Pomodoro Timer */}
-        <PomodoroWrapper
-          initialTitle={pomodoroTitle}
-          isRunning={isPomodoroRunning}
-          setIsRunning={setIsPomodoroRunning}
+        <AppContent
+          theme={theme}
+          isGuest={isGuest}
+          pomodoroTitle={pomodoroTitle}
+          isPomodoroRunning={isPomodoroRunning}
+          setIsPomodoroRunning={setIsPomodoroRunning}
           initialMinutes={initialMinutes}
+          triggerPomodoro={triggerPomodoro}
         />
-        <Routes>
-          <Route path="/" element={<HeroPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route
-            path="/dashboard"
-            element={<Dashboard triggerPomodoro={triggerPomodoro} />}
-          />
-          <Route path="/journal-list" element={<JournalList />} />
-          <Route path="/challenges" element={<Challenges />} />
-          <Route path="/community" element={<CommunityPage />} />
-          <Route path="/whiteboard" element={<WhiteBoard />} />
-          <Route path="/whiteboard-gallery" element={<WhiteboardGallery />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/grocery" element={<Grocery />} />
-          <Route path="/recipes" element={<Recipes />} />
-          <Route path="/planner" element={<Planner />} />
-          <Route path="/recipes/share/:id" element={<RecipeSharePage />} />
-          <Route path="/notes" element={<NotesPage />} />
-        </Routes>
-        <Footer />
       </Router>
       <InstallPrompt />
     </div>
