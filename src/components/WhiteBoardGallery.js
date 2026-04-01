@@ -432,7 +432,7 @@ const WhiteboardGallery = () => {
 
   return (
     <div
-      className={`min-h-screen py-8 mt-24 transition-colors duration-300 ${bgMain} ${
+      className={`min-h-screen py-8 pt-24 transition-colors duration-300 ${bgMain} ${
         isGuest === true ? "pt-[7rem] lg:pt-16" : "pt-0"
       }`}
     >

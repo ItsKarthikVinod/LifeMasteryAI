@@ -9,6 +9,7 @@ import {
   addEmptyNote,
   deleteNote,
 } from "../hooks/useNotesFolders";
+import { useIsTouchDevice } from "../hooks/useIsTouchDevice";
 
 const NotesPage = () => {
   const { theme, currentUser } = useAuth();
@@ -21,8 +22,7 @@ const NotesPage = () => {
   const [notesLocal, setNotesLocal] = useState([]);
 
   const isDark = theme === "dark";
-
-  
+  const isMobile = useIsTouchDevice();
 
   // Sync local notes with Firestore notes
   useEffect(() => {
@@ -33,17 +33,20 @@ const NotesPage = () => {
   useEffect(() => {
     if (selectedFolder) {
       const folderNotes = notesLocal.filter(
-        (n) => n.folderId === selectedFolder
+        (n) => n.folderId === selectedFolder,
       );
       if (folderNotes.length > 0) {
         setSelectedNote(folderNotes[0]);
+        if (isMobile) {
+          setSidebarCollapsed(true); // Auto-collapse sidebar on mobile when note is selected
+        }
       } else {
         setSelectedNote(null);
       }
     } else {
       setSelectedNote(null);
     }
-  }, [selectedFolder, notesLocal]);
+  }, [selectedFolder, notesLocal, isMobile]);
 
   // Add a new note and select it immediately (only if folder exists)
   const handleAddNoteToFolder = async (folderId) => {
@@ -52,8 +55,11 @@ const NotesPage = () => {
     setSelectedFolder(folderId);
     setSelectedNote(note);
     setNotesLocal((prev) =>
-      prev.some((n) => n.id === note.id) ? prev : [...prev, note]
+      prev.some((n) => n.id === note.id) ? prev : [...prev, note],
     ); // Optimistically add note, avoid duplicates
+    if (isMobile) {
+      setSidebarCollapsed(true); // Auto-collapse sidebar on mobile when note is added
+    }
   };
 
   const handleDeleteNote = async (note) => {
@@ -64,8 +70,8 @@ const NotesPage = () => {
   };
 
   useEffect(() => {
-      window.scrollTo(0, 0);
-    }, []);
+    window.scrollTo(0, 0);
+  }, []);
 
   // Add first folder
   const handleCreateFirstFolder = async () => {
@@ -80,14 +86,17 @@ const NotesPage = () => {
     const note = await addEmptyNote(selectedFolder);
     setSelectedNote(note);
     setNotesLocal((prev) =>
-      prev.some((n) => n.id === note.id) ? prev : [...prev, note]
+      prev.some((n) => n.id === note.id) ? prev : [...prev, note],
     );
+    if (isMobile) {
+      setSidebarCollapsed(true); // Auto-collapse sidebar on mobile when first note is created
+    }
   };
 
   // Handle note rename (called from NotesEditor)
   const handleNoteRename = (noteId, newTitle) => {
     setNotesLocal((prev) =>
-      prev.map((n) => (n.id === noteId ? { ...n, title: newTitle } : n))
+      prev.map((n) => (n.id === noteId ? { ...n, title: newTitle } : n)),
     );
     if (selectedNote?.id === noteId) {
       setSelectedNote({ ...selectedNote, title: newTitle });
@@ -167,15 +176,15 @@ const NotesPage = () => {
 
   // Normal layout
   return (
-    
     <div
-      className={`flex flex-col md:flex-row h-screen md:h-[calc(100vh-4rem)] pt-32 sm:pt-36 ${
+      className={`flex flex-col md:flex-row h-screen md:h-[calc(100vh-4rem)] pt-32  ${
         isDark ? "bg-gray-900" : "bg-white"
       }`}
       style={{ minHeight: "100vh" }}
     >
-      
-      <div className="w-full md:w-auto">
+      <div
+        className={`w-full md:w-auto ${isMobile ? (sidebarCollapsed ? "hidden" : "fixed inset-0 z-50 top-28") : ""}`}
+      >
         <NotesSidebar
           selectedFolder={selectedFolder}
           setSelectedFolder={setSelectedFolder}
@@ -189,7 +198,13 @@ const NotesPage = () => {
           setSidebarCollapsed={setSidebarCollapsed}
         />
       </div>
-      <div className="flex-1 h-full w-full overflow-auto">
+      <div
+        className={`flex-1 h-full w-full overflow-auto ${isMobile && !sidebarCollapsed ? "hidden" : ""}`}
+        style={{
+          scrollbarWidth: "thin",
+          scrollbarColor: isDark ? "#14b8a6 #18181b" : "#14b8a6 #f9fafb",
+        }}
+      >
         {selectedFolder && selectedNote ? (
           <NotesEditor
             folderId={selectedFolder}

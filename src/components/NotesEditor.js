@@ -8,6 +8,7 @@ import { db } from "../firebase/firebase";
 import {
   doc,
   updateDoc,
+  setDoc,
   addDoc,
   collection,
   serverTimestamp,
@@ -20,9 +21,11 @@ import {
   FaFileAlt,
   FaTimes,
   FaSpinner,
+  FaFilePdf,
+
 } from "react-icons/fa";
 import { codeBlock } from "@blocknote/code-block";
-
+import { jsPDF } from "jspdf";
 
 const CLOUDINARY_UPLOAD_PRESET = "gallery";
 const CLOUDINARY_CLOUD_NAME = "dovnydco5";
@@ -40,7 +43,7 @@ function showToast(msg, isDark) {
   toast.style.fontWeight = "bold";
   toast.style.zIndex = 9999;
   toast.style.background = isDark ? "#222" : "#14b8a6";
-  toast.style.color = isDark ? "#fff" : "#fff";
+  toast.style.color = "#fff";
   toast.style.boxShadow = "0 2px 12px rgba(0,0,0,0.15)";
   document.body.appendChild(toast);
   setTimeout(() => {
@@ -54,7 +57,7 @@ async function uploadToCloudinary(file) {
   formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
   const res = await fetch(
     `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`,
-    { method: "POST", body: formData }
+    { method: "POST", body: formData },
   );
   const data = await res.json();
   return data.secure_url;
@@ -62,7 +65,7 @@ async function uploadToCloudinary(file) {
 
 function getYouTubeId(url) {
   const match = url.match(
-    /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\\s]{11})/
+    /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/,
   );
   return match ? match[1] : null;
 }
@@ -85,7 +88,6 @@ function CustomVideoBlockContent({ url }) {
       </div>
     );
   }
-  // fallback: render as normal video
   return (
     <video
       src={url}
@@ -95,6 +97,65 @@ function CustomVideoBlockContent({ url }) {
   );
 }
 
+function flattenBlocknoteToText(blockContent) {
+  if (!blockContent) return "";
+
+  if (blockContent.content && Array.isArray(blockContent.content)) {
+    blockContent = blockContent.content;
+  }
+
+  if (!Array.isArray(blockContent)) return "";
+
+  const nodeToText = (node) => {
+    if (!node) return "";
+    if (typeof node === "string") return node;
+    if (node.type === "text") return node.text || "";
+    if (Array.isArray(node.content)) {
+      return node.content.map(nodeToText).join("");
+    }
+    if (Array.isArray(node.children)) {
+      return node.children.map(nodeToText).join("");
+    }
+    return node.text || "";
+  };
+
+  let output = "";
+  blockContent.forEach((block) => {
+    if (!block || typeof block !== "object") return;
+
+    let blockText = "";
+    if (Array.isArray(block.content)) {
+      blockText = block.content.map(nodeToText).join("");
+    } else if (block.text) {
+      blockText = block.text;
+    }
+
+    const prefix =
+      block.type === "heading"
+        ? "# "
+        : block.type === "blockquote"
+          ? "> "
+          : block.type === "ordered_list_item" ||
+              block.type === "bullet_list_item"
+            ? "• "
+            : "";
+
+    output += prefix + blockText + "\n";
+    if (
+      [
+        "paragraph",
+        "heading",
+        "blockquote",
+        "ordered_list_item",
+        "bullet_list_item",
+      ].includes(block.type)
+    ) {
+      output += "\n";
+    }
+  });
+
+  return output.trim();
+}
 
 export default function NotesEditor({
   folderId,
@@ -113,9 +174,11 @@ export default function NotesEditor({
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [showUnsavedPrompt, setShowUnsavedPrompt] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const editorRef = useRef(null);
+  const exportTargetRef = useRef(null);
+  const unsubscribeRef = useRef(null);
 
-  // Load note content when selectedNote changes
   useEffect(() => {
     if (selectedNote) {
       setTitle(selectedNote.title || "");
@@ -138,9 +201,15 @@ export default function NotesEditor({
     }
   }, [selectedNote]);
 
-  // Create editor only when initialContent is loaded
   const editor = useMemo(() => {
     if (initialContent === "loading") return undefined;
+
+    // Clean up previous listener
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+      unsubscribeRef.current = null;
+    }
+
     const ed = BlockNoteEditor.create({
       blockComponents: {
         video: {
@@ -158,15 +227,32 @@ export default function NotesEditor({
       uploadFile: uploadToCloudinary,
     });
     editorRef.current = ed;
-    ed.on("change", () => {
-      setIsDirty(true);
-    });
+
     return ed;
   }, [initialContent]);
 
-  // Save note (create if no id, else update)
+  // Add change listener after editor is created
+  useEffect(() => {
+    if (editor) {
+      const unsubscribe = editor.on("change", () => {
+        setIsDirty(true);
+      });
+      unsubscribeRef.current = unsubscribe;
+    }
+  }, [editor]);
+
+  // Cleanup editor change listener when component unmounts
+  useEffect(() => {
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
+    };
+  }, []);
+
   const handleSave = async () => {
-    if (!editor) return;
+    if (!editor || !folderId) return;
     const contentString = JSON.stringify(editor.document || EMPTY_DOC);
     setIsSaving(true);
     const data = {
@@ -177,32 +263,122 @@ export default function NotesEditor({
       updatedAt: serverTimestamp(),
     };
 
-    if (selectedNote?.id) {
-      await updateDoc(
-        doc(db, "notesFolders", folderId, "notes", selectedNote.id),
-        data
-      );
-      setSelectedNote({ ...selectedNote, ...data, content: editor.document });
-    } else {
-      const ref = await addDoc(
-        collection(db, "notesFolders", folderId, "notes"),
-        {
-          ...data,
-          createdAt: serverTimestamp(),
+    try {
+      if (selectedNote?.id) {
+        const noteRef = doc(
+          db,
+          "notesFolders",
+          folderId,
+          "notes",
+          selectedNote.id,
+        );
+        try {
+          await updateDoc(noteRef, data);
+        } catch (err) {
+          // If no document, do an upsert using setDoc + merge
+          if (
+            err.code === "not-found" ||
+            err.message?.includes("No document to update")
+          ) {
+            await setDoc(
+              noteRef,
+              {
+                ...data,
+                createdAt: selectedNote.createdAt || serverTimestamp(),
+              },
+              { merge: true },
+            );
+          } else {
+            console.error("Failed to update note:", err);
+            showToast("Save failed. Please try again.", isDark);
+            setIsSaving(false);
+            return;
+          }
         }
-      );
-      setSelectedNote({ id: ref.id, ...data, content: editor.document });
-    }
-    if (onNoteRename && typeof onNoteRename === "function") {
-      onNoteRename(selectedNote.id, data.title);
-    }
-    setIsSaving(false);
-    setIsDirty(false);
+        setSelectedNote({ ...selectedNote, ...data, content: editor.document });
+        if (onNoteRename && typeof onNoteRename === "function") {
+          onNoteRename(selectedNote.id, data.title);
+        }
+      } else {
+        const ref = await addDoc(
+          collection(db, "notesFolders", folderId, "notes"),
+          {
+            ...data,
+            createdAt: serverTimestamp(),
+          },
+        );
+        setSelectedNote({ id: ref.id, ...data, content: editor.document });
+        if (onNoteRename && typeof onNoteRename === "function") {
+          onNoteRename(ref.id, data.title);
+        }
+      }
 
-    showToast("Note saved!", isDark);
+      setIsSaving(false);
+      setIsDirty(false);
+      showToast("Note saved!", isDark);
+    } catch (err) {
+      console.error("Save error:", err);
+      showToast("Save failed. Please try again.", isDark);
+      setIsSaving(false);
+    }
   };
 
-  // Prompt on close/refresh if unsaved
+  const exportNoteToPdf = async () => {
+    if (!editor) return;
+    setIsExporting(true);
+
+    const rawDoc = editor.document || initialContent;
+    const plainText = flattenBlocknoteToText(rawDoc);
+
+    if (!plainText.trim()) {
+      showToast("No content to export.", isDark);
+      setIsExporting(false);
+      return;
+    }
+
+    const safeTitle = (title?.trim() || "Untitled Note").replace(
+      /[<>:"\\/|?*]/g,
+      "",
+    );
+
+    try {
+      const pdf = new jsPDF("p", "mm", "a4");
+      const margin = 15;
+      const maxWidth = 180;
+      const lineHeight = 7;
+      let cursorY = 20;
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(14);
+      pdf.text(safeTitle, margin, cursorY);
+      cursorY += lineHeight + 6;
+      pdf.setFontSize(11);
+
+      const paragraphs = plainText.split(/\n+/);
+      for (const p of paragraphs) {
+        const lines = pdf.splitTextToSize(p, maxWidth);
+        for (const line of lines) {
+          if (cursorY > 285) {
+            pdf.addPage();
+            cursorY = 20;
+          }
+          pdf.text(line, margin, cursorY);
+          cursorY += lineHeight;
+        }
+        cursorY += 3;
+      }
+
+      pdf.save(`${safeTitle}.pdf`);
+      showToast("PDF export complete!", isDark);
+    } catch (err) {
+      console.error("PDF export failed", err);
+      showToast("PDF export failed. Please try again.", isDark);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Monitor unsaved changes when leaving page/browser
   useEffect(() => {
     const handler = (e) => {
       if (isDirty) {
@@ -216,7 +392,6 @@ export default function NotesEditor({
     return () => window.removeEventListener("beforeunload", handler);
   }, [isDirty]);
 
-  // Unsaved prompt modal
   const UnsavedPrompt = () =>
     showUnsavedPrompt ? (
       <div
@@ -326,13 +501,12 @@ export default function NotesEditor({
     <MantineProvider theme={{ colorScheme: isDark ? "dark" : "light" }}>
       <UnsavedPrompt />
       <div
-        className="flex flex-col h-full w-full"
+        className="flex flex-col w-full "
         style={{
           minHeight: "100vh",
           background: isDark ? "#18181b" : "#f9fafb",
         }}
       >
-        {/* Breadcrumbs */}
         <nav
           className={`sticky top-0 z-10 flex flex-wrap items-center gap-2 px-4 py-3 mb-2 border-b ${
             isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"
@@ -359,16 +533,15 @@ export default function NotesEditor({
           ))}
         </nav>
 
-        {/* Cover */}
-        <div className="w-full flex justify-center relative mb-2">
+        <div className="w-full flex justify-center relative mb-2 ">
           <div
-            className="w-full max-w-4xl h-48 sm:h-56 md:h-64 rounded-2xl overflow-hidden shadow-lg relative"
+            className="w-full max-w-4xl h-48 sm:h-56 md:h-64 rounded-2xl overflow shadow-lg relative"
             style={{
               background: coverUrl
                 ? `url(${coverUrl}) center/cover no-repeat`
                 : isDark
-                ? "linear-gradient(135deg,#222,#333)"
-                : "linear-gradient(135deg,#e0f7fa,#f9fafb)",
+                  ? "linear-gradient(135deg,#222,#333)"
+                  : "linear-gradient(135deg,#e0f7fa,#f9fafb)",
               display: coverUrl ? "flex" : "none",
               alignItems: "center",
               justifyContent: "center",
@@ -389,8 +562,7 @@ export default function NotesEditor({
           </div>
         </div>
 
-        {/* Title + Cover picker + Save + Unsaved Banner */}
-        <div className="flex flex-col md:flex-row items-center gap-4 mt-2 mb-6 w-full max-w-4xl px-2 sm:px-4 md:px-6 mx-auto">
+        <div className="flex flex-col md:flex-row items-center gap-4 mb-6 w-full h-full max-w-6xl px-2 sm:px-6 md:px-6 mx-auto sticky top-[0rem] z-10 bg-inherit p-3 rounded-xl shadow backdrop-blur-sm">
           <div className="flex-1 flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <input
@@ -408,28 +580,32 @@ export default function NotesEditor({
                 maxLength={120}
                 style={{ minWidth: 0 }}
               />
-              {isDirty && (
-                <span
-                  className={`ml-2 px-2 py-1 rounded text-xs font-bold ${
-                    isDark
-                      ? "bg-yellow-900 text-yellow-300"
-                      : "bg-yellow-100 text-yellow-700"
-                  }`}
-                >
-                  Unsaved
-                </span>
-              )}
             </div>
-            {isSaving && (
+            {(isSaving || isExporting) && (
               <div className="flex items-center gap-2 text-xs font-semibold mt-1">
                 <FaSpinner className="animate-spin" />
                 <span className={isDark ? "text-teal-300" : "text-teal-700"}>
-                  Saving...
+                  {isSaving
+                    ? "Saving..."
+                    : isExporting
+                      ? "Preparing PDF..."
+                      : ""}
                 </span>
               </div>
             )}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            {isDirty && (
+              <span
+                className={`ml-2 px-2 py-1 rounded text-xs font-bold ${
+                  isDark
+                    ? "bg-yellow-900 text-yellow-300"
+                    : "bg-yellow-100 text-yellow-700"
+                }`}
+              >
+                Unsaved
+              </span>
+            )}
             <label
               className={`flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 rounded-xl font-bold shadow transition cursor-pointer ${
                 isDark
@@ -447,6 +623,21 @@ export default function NotesEditor({
               />
               <span className="text-xs font-semibold">Cover</span>
             </label>
+
+            <button
+              onClick={exportNoteToPdf}
+              className={`flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 rounded-xl font-bold shadow transition ${
+                isDark
+                  ? "bg-indigo-700 text-white hover:bg-indigo-800"
+                  : "bg-blue-500 text-white hover:bg-blue-600"
+              }`}
+              disabled={isExporting || isSaving}
+              title="Export current note to PDF"
+            >
+              <FaFilePdf />
+              <span className="text-xs font-semibold">Export as PDF</span>
+            </button>
+
             <button
               className={`flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 rounded-xl font-bold shadow transition ${
                 isDark
@@ -455,7 +646,7 @@ export default function NotesEditor({
               }`}
               onClick={handleSave}
               title="Save"
-              disabled={isSaving}
+              disabled={isSaving || isExporting}
             >
               <FaSave />
               <span className="text-xs font-semibold">Save</span>
@@ -463,29 +654,42 @@ export default function NotesEditor({
           </div>
         </div>
 
-        {/* BlockNote Editor */}
         <div
           className="flex-1 w-full max-w-full sm:max-w-4xl md:max-w-5xl px-2 sm:px-4 md:px-8 pb-8 mx-auto"
           style={{
             minHeight: 300,
-            maxHeight: "calc(100vh - 320px)",
-            overflow: "auto",
+
             borderRadius: 18,
             background: isDark ? "#18181b" : "#fff",
             boxShadow: isDark
               ? "0 4px 24px 0 rgba(0,0,0,0.25)"
               : "0 4px 24px 0 rgba(0,0,0,0.07)",
-            scrollbarWidth: "thin",
-            scrollbarColor: isDark ? "#14b8a6 #18181b" : "#14b8a6 #f9fafb",
+
             width: "100%",
             padding: "16px",
           }}
         >
           <BlockNoteView
+            onChange={() => setIsDirty(true)}
             editor={editor}
             theme={isDark ? "dark" : "light"}
           />
         </div>
+
+        <div
+          ref={exportTargetRef}
+          style={{
+            position: "fixed",
+            width: 800,
+            left: -9999,
+            top: -9999,
+            padding: 20,
+            zIndex: -1,
+            opacity: 0,
+            pointerEvents: "none",
+          }}
+          aria-hidden="true"
+        />
       </div>
     </MantineProvider>
   );

@@ -463,11 +463,30 @@ export default function Recipes() {
                           { role: "user", content: prompt },
                         ],
                       });
-                      const data = await response.json();
-                      let aiIngredients = data.generations?.[0]?.text
-                        ?.split(",")
-                        .map((i) => i.trim())
-                        .filter(Boolean);
+                     
+                      const rawText =
+                        response?.choices?.[0]?.message?.content || "";
+                      let aiIngredients = [];
+
+                      // Try JSON parse if the model returned JSON text
+                      try {
+                        const parsed = JSON.parse(rawText);
+                        const textFromParsed =
+                          parsed?.generations?.[0]?.text ||
+                          parsed?.output_text ||
+                          parsed?.choices?.[0]?.text ||
+                          rawText;
+                        aiIngredients = textFromParsed
+                          .split(",")
+                          .map((i) => i.trim())
+                          .filter(Boolean);
+                      } catch (err) {
+                        // fallback: treat whatever came as comma-separated text
+                        aiIngredients = rawText
+                          .split(",")
+                          .map((i) => i.trim())
+                          .filter(Boolean);
+                      }
                       // Deduplicate and group synonyms
                       aiIngredients = deduplicateIngredients(aiIngredients);
                       if (aiIngredients && aiIngredients.length > 0) {
@@ -476,7 +495,10 @@ export default function Recipes() {
                           ingredients: aiIngredients.join(", "),
                         }));
                       }
-                    } catch (err) {}
+                    } catch (err) {
+                        console.error(err)
+                     
+                    }
                     setLoading(false);
                   }}
                 >
@@ -488,7 +510,7 @@ export default function Recipes() {
                     className={`px-4 py-2 rounded-lg font-bold ${btnPrimary}`}
                     disabled={loading}
                   >
-                    {loading ? "Saving..." : editId ? "Update" : "Add"}
+                    {loading ? "Generating..." : editId ? "Update" : "Add"}
                   </button>
                   <button
                     type="button"

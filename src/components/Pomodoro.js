@@ -20,6 +20,10 @@ import "react-toastify/dist/ReactToastify.css";
 import useGetGame from "../hooks/useGetGame";
 
 const MUSIC_TRACKS = [
+  {
+    name: "Focus Binaural Beats",
+    src: "/focus-beats.mp3",
+  },
   { name: "Lo-fi Chillhop", src: "/jazzy-focus-1-lofi-jazz-371178.mp3" },
   {
     name: "Focus Ambient",
@@ -31,7 +35,12 @@ const MUSIC_TRACKS = [
   },
 ];
 
-const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => {
+const Pomodoro = ({
+  initialTitle,
+  isRunning,
+  setIsRunning,
+  initialMinutes,
+}) => {
   const [minutes, setMinutes] = useState(initialMinutes);
   const [seconds, setSeconds] = useState(0);
   const [title, setTitle] = useState(initialTitle || "");
@@ -44,6 +53,9 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
   const [sessionLog, setSessionLog] = useState([]);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
+  const [isAlarmRinging, setIsAlarmRinging] = useState(false);
+  const [pendingSessionType, setPendingSessionType] = useState(null); // "break" or null
+  const [isSoundTooltipOpen, setIsSoundTooltipOpen] = useState(false);
   const { awardXP } = useGetGame();
   const { currentUser } = useAuth();
   const userId = currentUser?.uid;
@@ -115,12 +127,11 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
       setSessionLog(updatedLogs);
       localStorage.setItem("pomodoroSessionLogs", JSON.stringify(updatedLogs));
     },
-    [sessionLog]
+    [sessionLog],
   );
 
   const [blockedSites, setBlockedSites] = useState([]);
   const [isBlockingEnabled, setIsBlockingEnabled] = useState(false);
-  
 
   useEffect(() => {
     const storedSites = JSON.parse(localStorage.getItem("blockedSites")) || [];
@@ -149,165 +160,236 @@ const Pomodoro = ({ initialTitle, isRunning, setIsRunning, initialMinutes }) => 
     fetchSessionLogsFromLocalStorage();
   }, [fetchSessionLogsFromLocalStorage]);
 
-  
-useEffect(() => {
-  let interval;
-  let wakeLock = null;
+  const totalDurationSec = isWorkSession
+    ? workDuration * 60
+    : breakDuration * 60;
+  const remainingSeconds = minutes * 60 + seconds;
+  const progressPercent =
+    totalDurationSec > 0
+      ? Math.min(100, Math.max(0, (remainingSeconds / totalDurationSec) * 100))
+      : 0;
+  const baseColor = isWorkSession ? "#22c55e" : "#38bdf8";
 
-  // Request Wake Lock to prevent screen from sleeping
-  const requestWakeLock = async () => {
-    try {
-      if ("wakeLock" in navigator && navigator.wakeLock.request) {
-        wakeLock = await navigator.wakeLock.request("screen");
-        // Re-acquire wake lock if released by system
-        wakeLock.addEventListener("release", () => {
-          if (isRunning) requestWakeLock();
-        });
-      }
-    } catch (err) {
-      // Wake Lock not supported or denied
-    }
+  const animatedBorderStyle = {
+    border: "4px solid transparent",
+    borderRadius: "16px",
+    borderImageRepeat: "round",
+    borderImageSlice: 1,
+    borderImageSource: `conic-gradient(from -90deg, ${baseColor} ${progressPercent}%, rgba(255,255,255,0.3) ${progressPercent}% 100%)`,
+    boxShadow: `0 0 12px ${baseColor}`,
+    animation: "1.8s ease-in-out infinite",
   };
 
-  // Release Wake Lock
-  const releaseWakeLock = () => {
-    if (wakeLock) {
-      wakeLock.release();
-      wakeLock = null;
-    }
+  const animatedBorderStyleMaximized = {
+    border: "6px solid transparent",
+    borderRadius: "20px",
+    borderImageSlice: 1,
+    borderImageSource: `conic-gradient(from -90deg, ${baseColor} ${progressPercent}%, rgba(255,255,255,0.25) ${progressPercent}% 100%)`,
+    boxShadow: `0 0 16px ${baseColor}`,
+    animation: "1.8s ease-in-out infinite",
   };
 
-  if (isRunning) {
-    requestWakeLock();
-    if (!endTime) {
-      setEndTime(Date.now() + (minutes * 60 + seconds) * 1000);
-      return;
+  const stopAlarm = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current.loop = false;
     }
-
-    localStorage.setItem("pomodoroStatus", "running");
-
-    interval = setInterval(() => {
-      const now = Date.now();
-      const remainingMs = endTime - now;
-      if (remainingMs <= 0) {
-        setMinutes(0);
-        setSeconds(0);
-
-        // Play bell sound after work or break
-        if (isWorkSession) {
-          if (audioRef.current) {
-            audioRef.current.volume = 0.2;
-            audioRef.current.play();
-          }
-        } else {
-          if (audio2Ref.current) {
-            audio2Ref.current.volume = 0.2;
-            audio2Ref.current.play();
-          }
-        }
-
-        localStorage.setItem("pomodoroStatus", "stopped");
-
-        const session = {
-          title: title ? title : "Session",
-          type: isWorkSession ? "Work" : "Break",
-          duration: isWorkSession ? workDuration : breakDuration,
-          timestamp: new Date().toLocaleString(),
-        };
-
-        saveSessionToLocalStorage(session);
-
-        if (isWorkSession) {
-          const xpGained = workDuration;
-          awardXP(userId, xpGained);
-
-          toast.success(
-            `+${xpGained} XP gained for completing a work session.`,
-            {
-              position: "top-right",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-            }
-          );
-
-          if ("Notification" in window) {
-            if (Notification.permission === "granted") {
-              new Notification("Pomodoro Complete!", {
-                body: `Great job! You finished your work session: "${
-                  title || "Session"
-                }". Time for a break!`,
-                icon: "/android-chrome-512x512.png",
-              });
-            } else if (Notification.permission !== "denied") {
-              Notification.requestPermission().then((permission) => {
-                if (permission === "granted") {
-                  new Notification("Pomodoro Complete!", {
-                    body: `Great job! You finished your work session: "${
-                      title || "Session"
-                    }". Time for a break!`,
-                    icon: "/android-chrome-512x512.png",
-                  });
-                }
-              });
-            }
-          }
-          setMinutes(breakDuration);
-          setSeconds(0);
-          setIsWorkSession(false);
-          setEndTime(Date.now() + breakDuration * 60 * 1000);
-        } else {
-          setIsRunning(false);
-          setMinutes(workDuration);
-          setSeconds(0);
-          setIsWorkSession(true);
-          setEndTime(null);
-          document.title = "Life Mastery | Unlock Your True Potential";
-        }
-
-        clearInterval(interval);
-      } else {
-        const remainingSeconds = Math.ceil(remainingMs / 1000);
-        const remainingMinutes = Math.floor(remainingSeconds / 60);
-        const secondsLeft = remainingSeconds % 60;
-        setMinutes(remainingMinutes);
-        setSeconds(secondsLeft);
-
-        document.title = `Life Mastery - ${String(remainingMinutes).padStart(
-          2,
-          "0"
-        )}:${String(secondsLeft).padStart(2, "0")}`;
-      }
-    }, 1000);
-  } else {
-    releaseWakeLock();
-    setEndTime(null);
+    if (audio2Ref.current) {
+      audio2Ref.current.pause();
+      audio2Ref.current.currentTime = 0;
+      audio2Ref.current.loop = false;
+    }
+    setIsAlarmRinging(false);
     document.title = "Life Mastery | Unlock Your True Potential";
-  }
-
-  return () => {
-    clearInterval(interval);
-    releaseWakeLock();
   };
-}, [
-  isRunning,
-  endTime,
-  isWorkSession,
-  breakDuration,
-  workDuration,
-  saveSessionToLocalStorage,
-  title,
-  setIsRunning,
-  awardXP,
-  userId,
-  minutes,
-  seconds,
-]);
 
-  // Music player logic
+  const proceedToNextSession = () => {
+    if (pendingSessionType === "break") {
+      stopAlarm();
+      setIsWorkSession(false);
+      setMinutes(breakDuration);
+      setSeconds(0);
+      setIsRunning(true);
+      setEndTime(Date.now() + breakDuration * 60 * 1000);
+    }
+    setPendingSessionType(null);
+  };
+
+  useEffect(() => {
+    let interval;
+    let wakeLock = null;
+
+    // Request Wake Lock to prevent screen from sleeping
+    const requestWakeLock = async () => {
+      try {
+        if ("wakeLock" in navigator && navigator.wakeLock.request) {
+          wakeLock = await navigator.wakeLock.request("screen");
+          // Re-acquire wake lock if released by system
+          wakeLock.addEventListener("release", () => {
+            if (isRunning) requestWakeLock();
+          });
+        }
+      } catch (err) {
+        // Wake Lock not supported or denied
+      }
+    };
+
+    // Release Wake Lock
+    const releaseWakeLock = () => {
+      if (wakeLock) {
+        wakeLock.release();
+        wakeLock = null;
+      }
+    };
+
+    if (isRunning) {
+      requestWakeLock();
+      if (!endTime) {
+        setEndTime(Date.now() + (minutes * 60 + seconds) * 1000);
+        return;
+      }
+
+      localStorage.setItem("pomodoroStatus", "running");
+
+      interval = setInterval(() => {
+        const now = Date.now();
+        const remainingMs = endTime - now;
+        if (remainingMs <= 0) {
+          setMinutes(0);
+          setSeconds(0);
+          setIsRunning(false);
+          setEndTime(null);
+
+          if (isWorkSession) {
+            const alarmAudio = audioRef.current;
+            if (alarmAudio) {
+              alarmAudio.volume = 0.2;
+              alarmAudio.loop = true;
+              alarmAudio.play();
+            }
+
+            setIsAlarmRinging(true);
+            setPendingSessionType("break");
+          } else {
+            // Break ends silently
+            setIsWorkSession(true);
+            setMinutes(workDuration);
+            setSeconds(0);
+            setEndTime(null);
+          }
+
+          localStorage.setItem("pomodoroStatus", "stopped");
+
+          const session = {
+            title: title ? title : "Session",
+            type: isWorkSession ? "Work" : "Break",
+            duration: isWorkSession ? workDuration : breakDuration,
+            timestamp: new Date().toLocaleString(),
+          };
+
+          saveSessionToLocalStorage(session);
+
+          if (isWorkSession) {
+            const xpGained = workDuration;
+            awardXP(userId, xpGained);
+
+            toast.success(
+              `+${xpGained} XP gained for completing a work session.`,
+              {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+              },
+            );
+
+            if ("Notification" in window) {
+              if (Notification.permission === "granted") {
+                new Notification("Pomodoro Complete!", {
+                  body: `Great job! You finished your work session: "${
+                    title || "Session"
+                  }". Time for a break!`,
+                  icon: "/android-chrome-512x512.png",
+                });
+              } else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then((permission) => {
+                  if (permission === "granted") {
+                    new Notification("Pomodoro Complete!", {
+                      body: `Great job! You finished your work session: "${
+                        title || "Session"
+                      }". Time for a break!`,
+                      icon: "/android-chrome-512x512.png",
+                    });
+                  }
+                });
+              }
+            }
+          } else {
+            if ("Notification" in window) {
+              if (Notification.permission === "granted") {
+                new Notification("Break Complete!", {
+                  body: `Break finished. Session complete.`,
+                  icon: "/android-chrome-512x512.png",
+                });
+              } else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then((permission) => {
+                  if (permission === "granted") {
+                    new Notification("Break Complete!", {
+                      body: `Break finished. Session complete.`,
+                      icon: "/android-chrome-512x512.png",
+                    });
+                  }
+                });
+              }
+            }
+          }
+
+          clearInterval(interval);
+        } else {
+          const remainingSeconds = Math.ceil(remainingMs / 1000);
+          const remainingMinutes = Math.floor(remainingSeconds / 60);
+          const secondsLeft = remainingSeconds % 60;
+          setMinutes(remainingMinutes);
+          setSeconds(secondsLeft);
+
+          document.title = `Life Mastery - ${String(remainingMinutes).padStart(
+            2,
+            "0",
+          )}:${String(secondsLeft).padStart(2, "0")}`;
+        }
+      }, 1000);
+    } else {
+      releaseWakeLock();
+      setEndTime(null);
+      if (!isAlarmRinging) {
+        document.title = "Life Mastery | Unlock Your True Potential";
+      }
+    }
+
+    return () => {
+      clearInterval(interval);
+      releaseWakeLock();
+    };
+  }, [
+    isRunning,
+    endTime,
+    isWorkSession,
+    breakDuration,
+    workDuration,
+    saveSessionToLocalStorage,
+    title,
+    setIsRunning,
+    awardXP,
+    userId,
+    minutes,
+    seconds,
+    isAlarmRinging,
+  ]);
+
   useEffect(() => {
     if (musicRef.current) {
       // Mute music during break unless user unmutes
@@ -326,12 +408,29 @@ useEffect(() => {
     }
   }, [isRunning, selectedTrack, isMuted, musicVolume, isWorkSession]);
 
-  // If break starts, auto-mute unless user unmutes
   useEffect(() => {
     if (!isWorkSession) {
       setIsMuted(true);
     }
   }, [isWorkSession]);
+
+  useEffect(() => {
+    let titleInterval;
+    if (isAlarmRinging) {
+      const baseTitle = "Life Mastery | Unlock Your True Potential";
+      let showAlt = true;
+      titleInterval = setInterval(() => {
+        document.title = showAlt
+          ? "⏰ Pomodoro Complete! Click to stop"
+          : baseTitle;
+        showAlt = !showAlt;
+      }, 1000);
+    }
+
+    return () => {
+      if (titleInterval) clearInterval(titleInterval);
+    };
+  }, [isAlarmRinging]);
 
   const startTimer = () => {
     setIsRunning(true);
@@ -347,6 +446,7 @@ useEffect(() => {
     setIsRunning(false);
     localStorage.setItem("pomodoroStatus", "stopped");
     setEndTime(null);
+    stopAlarm();
 
     if (typeof chrome !== "undefined" && chrome.runtime) {
       chrome.runtime.sendMessage({ action: "stopPomodoro" }, (response) => {
@@ -364,6 +464,8 @@ useEffect(() => {
     setIsDurationUpdated(false);
     setEndTime(null);
     localStorage.setItem("pomodoroStatus", "stopped");
+    stopAlarm();
+    setPendingSessionType(null);
   };
 
   const setDurations = () => {
@@ -371,6 +473,8 @@ useEffect(() => {
     setSeconds(0);
     setIsDurationUpdated(false);
     setEndTime(null);
+    stopAlarm();
+    setPendingSessionType(null);
   };
 
   const handleWorkDurationChange = (e) => {
@@ -387,16 +491,11 @@ useEffect(() => {
     setIsMaximized(!isMaximized);
   };
 
-  // Music volume slider handler
   const handleMusicVolumeChange = (e) => {
     setMusicVolume(Number(e.target.value));
   };
 
-  // UI: Show muted state during break
-  const showMuted =
-    !isWorkSession && isMuted
-      ? true
-      : isMuted;
+  const showMuted = !isWorkSession && isMuted ? true : isMuted;
 
   return (
     <>
@@ -406,8 +505,33 @@ useEffect(() => {
       {/* Music audio element - only rendered once, always playing */}
       <audio ref={musicRef} src={selectedTrack} loop />
 
+      {/* Alarm Overlay */}
+      {isAlarmRinging && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-70">
+          <div
+            className={`w-[90%] max-w-lg rounded-xl p-6 text-center shadow-2xl ${
+              theme === "dark"
+                ? "bg-gray-800 text-white"
+                : "bg-white text-gray-900"
+            }`}
+          >
+            <h2 className="text-3xl font-bold mb-3">⏰ Session Complete</h2>
+            <p className="mb-4 text-lg">
+              You completed a work session. Start your break when ready.
+            </p>
+            <div className="flex justify-center">
+              <button
+                onClick={proceedToNextSession}
+                className="rounded-lg bg-teal-500 px-6 py-3 font-semibold text-white hover:bg-teal-600"
+              >
+                Start Break
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isMaximized ? (
-        // Modal View
         <div
           className={`fixed inset-0 z-50 flex items-center justify-center ${
             theme === "dark"
@@ -416,13 +540,13 @@ useEffect(() => {
           }`}
         >
           <div
+            style={isRunning ? animatedBorderStyleMaximized : {}}
             className={`relative w-full max-w-4xl p-8 rounded-lg shadow-2xl ${
               theme === "dark"
                 ? "bg-gray-800 text-white"
                 : "bg-white text-gray-800"
             }`}
           >
-            {/* Minimize Button */}
             <button
               className={`absolute top-4 right-4 ${
                 theme === "dark"
@@ -433,7 +557,6 @@ useEffect(() => {
             >
               <FaWindowMinimize />
             </button>
-            {/* Timer Display */}
             <h3
               className={`text-4xl font-semibold mb-2 text-center mt-3 ${
                 theme === "dark" ? "text-gray-200" : "text-gray-600"
@@ -465,7 +588,6 @@ useEffect(() => {
               </div>
             </div>
 
-            {/* Attractive Work and Break Duration Inputs */}
             <div className="flex justify-center items-center gap-8 mb-6">
               <div className="flex flex-col items-center">
                 <label
@@ -511,9 +633,39 @@ useEffect(() => {
               </div>
             </div>
 
-            {/* Music Controls */}
             <div className="flex items-center justify-center gap-4 mb-6">
-              <FaMusic className="text-teal-500 text-2xl" />
+              <div className="relative">
+                <FaMusic className="text-teal-500 text-2xl inline-block mr-2" />
+                <button
+                  type="button"
+                  aria-label="Sound info"
+                  onClick={() => setIsSoundTooltipOpen((prev) => !prev)}
+                  onMouseEnter={() => setIsSoundTooltipOpen(true)}
+                  onMouseLeave={() => setIsSoundTooltipOpen(false)}
+                  className="ml-1 w-7 h-7 text-sm font-bold rounded-full bg-white/20 border border-white/30 text-white backdrop-blur-sm hover:bg-white/30 transition"
+                >
+                  ?
+                </button>
+                {isSoundTooltipOpen && (
+                  <div
+                    onMouseEnter={() => setIsSoundTooltipOpen(true)}
+                    onMouseLeave={() => setIsSoundTooltipOpen(false)}
+                    className="absolute top-full right-0 mt-2 w-80 p-4 rounded-2xl border border-white/25 bg-white/20 text-xs text-white shadow-xl backdrop-blur-xl"
+                    style={{ zIndex: 1001 }}
+                  >
+                    <p className="font-semibold mb-2">
+                      Optimize Your Focus and Concentration
+                    </p>
+                    <p>
+                      These soundscapes use Brainwave Entrainment to sync your
+                      mind with frequencies tied to deep concentration. Use
+                      Binaural Beats to reduce distractions and enter a flow
+                      state faster during your Pomodoro sessions.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <select
                 value={selectedTrack}
                 onChange={(e) => setSelectedTrack(e.target.value)}
@@ -529,14 +681,15 @@ useEffect(() => {
                   </option>
                 ))}
               </select>
+
               <button
                 onClick={() => setIsMuted(!isMuted)}
                 className={`p-3 rounded-full text-xl shadow ${
                   showMuted
                     ? "bg-gray-700 text-teal-400"
                     : theme === "dark"
-                    ? "bg-gray-700 text-teal-400 hover:bg-teal-500 hover:text-white"
-                    : "bg-gray-200 text-teal-600 hover:bg-teal-500 hover:text-white"
+                      ? "bg-gray-700 text-teal-400 hover:bg-teal-500 hover:text-white"
+                      : "bg-gray-200 text-teal-600 hover:bg-teal-500 hover:text-white"
                 } transition`}
                 aria-label={showMuted ? "Unmute music" : "Mute music"}
               >
@@ -554,7 +707,6 @@ useEffect(() => {
               />
             </div>
 
-            {/* Start, Pause, and Reset/Set Buttons */}
             <div className="flex justify-center gap-4 mb-4">
               <button
                 onClick={startTimer}
@@ -591,7 +743,6 @@ useEffect(() => {
               {isDurationUpdated ? "Set" : "Reset"}
             </button>
 
-            {/* View Log Button */}
             <button
               onClick={toggleLogModal}
               className={`px-6 py-2 rounded-full w-full mt-4 text-lg font-semibold shadow ${
@@ -609,13 +760,13 @@ useEffect(() => {
         <Draggable nodeRef={nodeRef} handle=".drag-handle">
           <div
             ref={nodeRef}
+            style={isRunning ? animatedBorderStyle : {}}
             className={`pomodoro-widget fixed bottom-10 right-10 z-50 shadow-2xl rounded-lg p-6 w-64 max-w-xs ${
               theme === "dark"
                 ? "bg-gray-800 text-white"
                 : "bg-white text-gray-800"
             }`}
           >
-            {/* Drag handle */}
             <div
               className={`drag-handle cursor-move absolute top-2 left-2 text-white ${
                 theme === "dark" ? "bg-teal-500" : "bg-teal-500"
@@ -623,8 +774,6 @@ useEffect(() => {
             >
               <FaGripLines />
             </div>
-
-            {/* Maximize Button */}
             <button
               className={`absolute top-2 right-2 ${
                 theme === "dark"
@@ -636,7 +785,6 @@ useEffect(() => {
               <FaExpandAlt />
             </button>
 
-            {/* Timer Display */}
             <h3
               className={`text-2xl font-semibold mb-2 text-center mt-3 ${
                 theme === "dark" ? "text-gray-200" : "text-gray-600"
@@ -666,15 +814,14 @@ useEffect(() => {
                 {String(minutes).padStart(2, "0")} :{" "}
                 {String(seconds).padStart(2, "0")}
               </div>
-              {/* Mute/Unmute button beside timer */}
               <button
                 onClick={() => setIsMuted(!isMuted)}
                 className={`ml-3 p-2 rounded-full absolute right-0 top-1/2 transform -translate-y-1/2 ${
                   showMuted
                     ? "bg-gray-700 text-teal-400"
                     : theme === "dark"
-                    ? "bg-gray-700 text-teal-400"
-                    : "bg-gray-200 text-teal-600"
+                      ? "bg-gray-700 text-teal-400"
+                      : "bg-gray-200 text-teal-600"
                 } hover:bg-teal-500 hover:text-white transition`}
                 aria-label={showMuted ? "Unmute music" : "Mute music"}
               >
@@ -682,7 +829,6 @@ useEffect(() => {
               </button>
             </div>
 
-            {/* Start, Pause, and Reset/Set Buttons */}
             <div className="flex justify-center gap-4 mb-4">
               <button
                 onClick={startTimer}
@@ -755,7 +901,6 @@ useEffect(() => {
                 : "bg-white text-gray-800"
             }`}
           >
-            {/* Close Button */}
             <button
               className={`absolute top-1 right-4 ${
                 theme === "dark"
@@ -817,6 +962,7 @@ useEffect(() => {
           </div>
         </div>
       )}
+
       {/* Timeline Modal */}
       {isTimelineModalOpen && (
         <PomodoroTimeline

@@ -11,7 +11,6 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import Dashboard from "./components/Dashboard";
 import JournalList from "./components/JournalList";
-import Challenges from "./components/Challenges/Challenges";
 import CommunityPage from "./components/CommunityPage";
 import "./App.css"; // Import your CSS file
 import Footer from "./components/Footer";
@@ -34,6 +33,7 @@ import DemoModeBanner from "./components/demoModeBanner"; // Import your demo mo
 import NotesPage from "./pages/NotesPage";
 //import { useInactivityReminder } from './hooks/useInactivityReminder';
 import { messaging, getToken } from "./firebase/firebase";
+import Schulte from "./components/Schulte";
 
 const PomodoroWrapper = ({
   initialTitle,
@@ -90,7 +90,6 @@ const AppContent = ({
           element={<Dashboard triggerPomodoro={triggerPomodoro} />}
         />
         <Route path="/journal-list" element={<JournalList />} />
-        <Route path="/challenges" element={<Challenges />} />
         <Route path="/community" element={<CommunityPage />} />
         <Route path="/whiteboard" element={<WhiteBoard />} />
         <Route path="/whiteboard-gallery" element={<WhiteboardGallery />} />
@@ -99,6 +98,7 @@ const AppContent = ({
         <Route path="/recipes" element={<Recipes />} />
         <Route path="/recipes/share/:id" element={<RecipeSharePage />} />
         <Route path="/notes" element={<NotesPage />} />
+        <Route path="/schulte" element={<Schulte />} />
       </Routes>
       {location.pathname !== "/notes" && <Footer />}
     </>
@@ -119,7 +119,7 @@ const App = () => {
       try {
         const token = await getToken(messaging, {
           vapidKey:
-            "BOJBldxR1c4Lm6O3rsFYTFnRO1NMtyqPNdKC7isnBWxImFWu4d8b-4PDhKF5RS_81eGRGqXYcMNjT8_EdH8p2RU",
+            process.env.VAPID_KEY,
         });
         return token;
 

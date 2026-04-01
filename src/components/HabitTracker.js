@@ -213,13 +213,7 @@ const HabitTracker = ({ onTriggerPomodoro }) => {
         /* ... */
       });
 
-      // --- Notification logic ---
-      // Notify on completion
-      await sendNotification(
-        currentUser.uid,
-        `You completed your habit: '${habit.name}'.`,
-        "habit"
-      );
+     
 
       // Calculate streak after update
       const streak = calculateStreak(newDates);
