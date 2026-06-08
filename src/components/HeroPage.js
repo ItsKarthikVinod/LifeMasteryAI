@@ -451,7 +451,7 @@ const FeatureCard = ({
           <div className="absolute inset-0 flex items-center justify-center z-[200] bg-white/70 rounded-xl pointer-events-none select-none">
             <svg
               className="animate-spin h-8 w-8 text-blue-400"
-              xmlns="http://www.w3.org/2000/svg"
+              xmlns="https://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
             >
@@ -913,7 +913,7 @@ const Hero = () => {
       {/* Floating Decorative Elements */}
       <div className="absolute inset-0 top-16 left-10 animate__animated animate__fadeIn animate__delay-1s z-0 hidden sm:block">
         <svg
-          xmlns="http://www.w3.org/2000/svg"
+          xmlns="https://www.w3.org/2000/svg"
           width="100"
           height="100"
           viewBox="0 0 100 100"

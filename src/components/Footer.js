@@ -31,7 +31,7 @@ const Footer = () => {
           {/* YouTube Link */}
           <div>
             <a
-              href="http://www.youtube.com/@LifeMastery-o9y"
+              href="https://www.youtube.com/@LifeMastery-o9y"
               target="_blank"
               rel="noopener noreferrer"
               className={`inline-flex items-center justify-center p-2 rounded-full transition duration-200 ${isDark ? "hover:bg-gray-800" : "hover:bg-gray-200"}`}
@@ -39,7 +39,7 @@ const Footer = () => {
             >
               {/* Custom YouTube SVG Icon */}
               <svg
-                xmlns="http://www.w3.org/2000/svg"
+                xmlns="https://www.w3.org/2000/svg"
                 width="32"
                 height="32"
                 viewBox="0 0 48 48"

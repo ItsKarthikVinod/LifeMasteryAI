@@ -97,7 +97,7 @@ const Navbar = () => {
           <img
             src={Logo}
             alt="Life Mastery Logo"
-            className="w-14 h-14 transform hover:scale-110 transition duration-300"
+            className="transform hover:scale-110 transition duration-300 sm:size-14 md:size-10 size-9"
           />
 
           {/* Website Name and AI Badge */}
@@ -125,7 +125,7 @@ const Navbar = () => {
         </div>
 
         {/* Desktop Nav */}
-        <div className="hidden md:flex space-x-8 items-center">
+        <div className="hidden md:flex space-x-8 items-center ">
           <Link
             to="/"
             className="text-2xl hover:text-gray-300 transition-all duration-300 transform hover:scale-105"
@@ -274,6 +274,11 @@ const Navbar = () => {
 
         {/* Mobile Hamburger Menu */}
         <div className="md:hidden flex items-center">
+          {userLoggedIn && (
+            <div className="text-gray-500 mr-7 text-xs">
+              <NotificationBell />
+            </div>
+          )}
           <button
             onClick={toggleMenu}
             className="text-white hover:text-teal-400 focus:outline-none"
@@ -281,11 +286,11 @@ const Navbar = () => {
             type="button"
           >
             <svg
-              className="w-6 h-6"
+              className=" w-8 h-8"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+              xmlns="https://www.w3.org/2000/svg"
             >
               <path
                 strokeLinecap="round"
@@ -295,11 +300,6 @@ const Navbar = () => {
               ></path>
             </svg>
           </button>
-          {userLoggedIn && (
-            <div className="text-gray-500 text-xs">
-              <NotificationBell />
-            </div>
-          )}
         </div>
       </div>
 
