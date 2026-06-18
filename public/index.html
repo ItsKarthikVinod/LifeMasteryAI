@@ -1,59 +1,160 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    
-    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="author"
-      content="Karthik Vinod"
-    />
-    <meta name="description" content="Achieve personal growth and productivity with Life Mastery. Features include habit tracker, goal tracker, Pomodoro timer, AI assistant, and more. Developed by Karthik Vinod 😇 " />
-    <meta property="og:title" content="Life Mastery | Unlock Your Potential" />
-<meta property="og:description" content="Track your goals, habits, journals, and more with Life Mastery. The ultimate tool for personal development and productivity." />
-<meta property="og:image" content="https://lifemastery.karthikvinod.com/static/media/LifeMasteryLogo.b17f229477015849317b.png" />
-<meta property="og:url" content="https://lifemastery.karthikvinod.com/" />
-<meta property="og:site_name" content="LifeMastery" />
-<meta property="og:type" content="website" />
-<meta name="robots" content="index, follow">
-<meta name="keywords" content="habit tracker, goal tracker, pomodoro timer, productivity, personal development, self improvement, AI assistant, journal, Life Mastery" />
-<meta name="application-name" content="Life Mastery" />
-<meta name="copyright" content="Karthik Vinod" />
-<meta name="language" content="en" />
-<meta name="google-site-verification" content="AACBA4HpoomJtODHq-UOr_W2XrQVKJlQ8ZwdTFALiF0" />
-<meta name="rating" content="General" />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <!--
-      This website was made by Karthik Vinod.
-    -->
-    <link rel="manifest" href="/manifest.json" />
-    <link
-  rel="stylesheet"
-  href="https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css"
-/>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "LifeMastery",
-  "url": "https://lifemastery.karthikvinod.com/",
-  "author": {
-    "@type": "Person",
-    "name": "Karthik Vinod"
-  }
-}
-</script>
-<!-- Legacy SDK v2 that handles prompt automatically -->
 
-    
-    
-    <title>Life Mastery | Unlock Your True Potential</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#2e3a59" />
+    <meta name="author" content="Karthik Vinod" />
+    <meta
+      name="description"
+      content="Achieve personal growth and productivity with Life Mastery. Features include habit tracker, goal tracker, Pomodoro timer, AI assistant, and more. Developed by Karthik Vinod 😇 "
+    />
+
+    <!-- PWA Meta Tags for Installation -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="LifeMastery" />
+    <meta name="apple-mobile-web-app-status-bar" content="black-translucent" />
+
+    <!-- Apple Touch Icons for different devices -->
+    <link
+      rel="apple-touch-icon"
+      href="/android-chrome-180x180.png"
+      sizes="180x180"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="/android-chrome-152x152.png"
+      sizes="152x152"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="/android-chrome-144x144.png"
+      sizes="144x144"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="/android-chrome-128x128.png"
+      sizes="128x128"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="/android-chrome-96x96.png"
+      sizes="96x96"
+    />
+
+    <!-- Microsoft/Windows tiles -->
+    <meta name="msapplication-TileColor" content="#2e3a59" />
+    <meta
+      name="msapplication-TileImage"
+      content="/android-chrome-144x144.png"
+    />
+    <meta
+      name="msapplication-square150x150logo"
+      content="/android-chrome-150x150.png"
+    />
+    <meta
+      name="msapplication-wide310x150logo"
+      content="/android-chrome-310x150.png"
+    />
+    <meta
+      name="msapplication-square310x310logo"
+      content="/android-chrome-310x310.png"
+    />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Life Mastery | Unlock Your Potential" />
+    <meta
+      property="og:description"
+      content="Track your goals, habits, journals, and more with Life Mastery. The ultimate tool for personal development and productivity."
+    />
+    <meta
+      property="og:image"
+      content="https://lifemastery.karthikvinod.com/android-chrome-512x512.png"
+    />
+    <meta property="og:url" content="https://lifemastery.karthikvinod.com/" />
+    <meta property="og:site_name" content="LifeMastery" />
+    <meta property="og:type" content="website" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="LifeMastery - Unlock Your True Potential"
+    />
+    <meta
+      name="twitter:description"
+      content="Track goals, habits, journals and more. The ultimate personal development tool."
+    />
+    <meta
+      name="twitter:image"
+      content="https://lifemastery.karthikvinod.com/android-chrome-512x512.png"
+    />
+
+    <!-- General Meta Tags -->
+    <meta name="robots" content="index, follow" />
+    <meta
+      name="keywords"
+      content="habit tracker, goal tracker, pomodoro timer, productivity, personal development, self improvement, AI assistant, journal, Life Mastery"
+    />
+    <meta name="application-name" content="LifeMastery" />
+    <meta name="copyright" content="Karthik Vinod" />
+    <meta name="language" content="en" />
+    <meta
+      name="google-site-verification"
+      content="AACBA4HpoomJtODHq-UOr_W2XrQVKJlQ8ZwdTFALiF0"
+    />
+    <meta name="rating" content="General" />
+
+    <!-- Manifest and icons -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico" />
+
+    <!-- Preconnect to external resources for better performance -->
+    <link rel="preconnect" href="https://www.gstatic.com" />
+    <link rel="preconnect" href="https://firebaseapp.com" />
+    <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+
+    <!-- Timeline CSS -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css"
+    />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "LifeMastery",
+        "url": "https://lifemastery.karthikvinod.com/",
+        "description": "Track your goals, habits, journals, and more with LifeMastery",
+        "author": {
+          "@type": "Person",
+          "name": "Karthik Vinod"
+        },
+        "applicationCategory": "ProductivityApplication"
+      }
+    </script>
+
+    <title>LifeMastery | Unlock Your True Potential</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-    
+    <main id="root"></main>
   </body>
 </html>

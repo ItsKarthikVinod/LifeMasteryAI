@@ -1,38 +1,151 @@
-
-
 {
   "short_name": "LifeMastery",
   "name": "LifeMastery – Unlock Your True Potential",
+  "description": "Track your goals, habits, journals, and more with LifeMastery. The ultimate tool for personal development and productivity.",
+  "scope": "/",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#2e3a59",
+  "background_color": "#ffffff",
+  "categories": ["productivity", "lifestyle"],
   "icons": [
     {
-      "src": "/android-chrome-512x512.png",
-      "sizes": "512x512",
+      "src": "/android-chrome-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-168x168.png",
+      "sizes": "168x168",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-180x180.png",
+      "sizes": "180x180",
       "type": "image/png",
-      "density": "4.0"
+      "purpose": "any"
     },
     {
       "src": "/android-chrome-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "density": "4.0"
+      "purpose": "any"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/android-chrome-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/android-chrome-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "screenshots": [
     {
-      "src": "/screenshot-desktop.png",
+      "src": "/screenshot-desktop-wide.png",
       "sizes": "1280x800",
       "type": "image/png",
-      "form_factor": "wide"
+      "form_factor": "wide",
+      "label": "LifeMastery Dashboard"
     },
     {
-      "src": "/screenshot-mobile.png",
-      "sizes": "1170x2532",
+      "src": "/screenshot-desktop-wide-2.png",
+      "sizes": "1280x800",
       "type": "image/png",
-      "form_factor": "narrow"
+      "form_factor": "wide",
+      "label": "Habit Tracking"
+    },
+    {
+      "src": "/screenshot-mobile-narrow.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "LifeMastery on Mobile"
+    },
+    {
+      "src": "/screenshot-mobile-narrow-2.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Goal Tracking"
     }
   ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#2e3a59",
-  "background_color": "#ffffff"
+  "shortcuts": [
+    {
+      "name": "Quick Journal Entry",
+      "short_name": "Journal",
+      "description": "Quickly create a new journal entry",
+      "url": "/journal-list?action=new",
+      "icons": [
+        {
+          "src": "/shortcut-journal-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Quick Todo",
+      "short_name": "Todo",
+      "description": "Quickly add a new todo item",
+      "url": "/dashboard?action=newtodo",
+      "icons": [
+        {
+          "src": "/shortcut-todo-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View your LifeMastery dashboard",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/shortcut-dashboard-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "prefer_related_applications": false
 }

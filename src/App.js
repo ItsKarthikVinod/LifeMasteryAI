@@ -34,6 +34,9 @@ import NotesPage from "./pages/NotesPage";
 //import { useInactivityReminder } from './hooks/useInactivityReminder';
 import { messaging, getToken } from "./firebase/firebase";
 import Schulte from "./components/Schulte";
+import useServiceWorkerUpdate from "./hooks/useServiceWorkerUpdate";
+import { initDB } from "./utils/offlineStorage";
+import { toast } from "react-toastify";
 
 const PomodoroWrapper = ({
   initialTitle,
@@ -118,8 +121,7 @@ const App = () => {
     async function requestFCMToken() {
       try {
         const token = await getToken(messaging, {
-          vapidKey:
-            process.env.VAPID_KEY,
+          vapidKey: process.env.VAPID_KEY,
         });
         return token;
 
@@ -213,6 +215,118 @@ const App = () => {
       setInitialMinutes(parseInt(storedMinutes, 10));
     }
   }, []);
+
+  // ==================== PWA INITIALIZATION ====================
+
+  // Initialize offline database
+  useEffect(() => {
+    initDB()
+      .then(() => console.log("[App] IndexedDB initialized"))
+      .catch((error) =>
+        console.error("[App] IndexedDB initialization failed:", error),
+      );
+  }, []);
+
+  // Register service worker and handle updates
+  useEffect(() => {
+    const registerServiceWorker = async () => {
+      if (!("serviceWorker" in navigator)) {
+        console.log("[PWA] Service Workers not supported in this browser");
+        return;
+      }
+
+      try {
+        const registration = await navigator.serviceWorker.register(
+          "/service-worker.js",
+          {
+            scope: "/",
+            updateViaCache: "none", // Always check for new SW
+          },
+        );
+
+        console.log(
+          "[PWA] Service Worker registered successfully:",
+          registration,
+        );
+
+        // Check for updates after 1 minute, then periodically
+        setTimeout(() => {
+          registration
+            .update()
+            .catch((error) =>
+              console.error("[PWA] Error checking for SW updates:", error),
+            );
+        }, 60000);
+      } catch (error) {
+        console.error("[PWA] Service Worker registration failed:", error);
+      }
+    };
+
+    // Register on app load
+    registerServiceWorker();
+  }, []);
+
+  // Handle service worker updates with user notification
+  useServiceWorkerUpdate((updateInfo) => {
+    console.log("[PWA] New service worker version available");
+
+    // Show update notification using toast
+    toast.info(
+      ({ closeToast }) => (
+        <div>
+          <p>A new version of LifeMastery is available!</p>
+          <button
+            onClick={() => {
+              updateInfo.skipWaiting();
+              closeToast();
+            }}
+            style={{
+              marginTop: "10px",
+              padding: "8px 16px",
+              backgroundColor: "#2e3a59",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "14px",
+            }}
+          >
+            Update Now
+          </button>
+        </div>
+      ),
+      {
+        autoClose: false,
+        closeButton: true,
+        position: "bottom-right",
+      },
+    );
+  });
+
+  // Listen for notifications from service worker
+  useEffect(() => {
+    const handleSWMessage = (event) => {
+      const { type, notification } = event.data;
+
+      if (type === "NOTIFICATION_CLICKED") {
+        console.log("[PWA] Notification clicked:", notification);
+        // Handle notification click (e.g., navigate to relevant page)
+      }
+    };
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.addEventListener("message", handleSWMessage);
+    }
+
+    return () => {
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.removeEventListener("message", handleSWMessage);
+      }
+    };
+  }, []);
+
+  // ==================== END PWA INITIALIZATION ====================
+
   const triggerPomodoro = (title) => {
     setPomodoroTitle(title);
     setIsPomodoroRunning(true); // Start the Pomodoro session
