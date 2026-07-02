@@ -526,7 +526,7 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
                           ? "bg-gray-800 border-gray-700 text-gray-200"
                           : "bg-white border-gray-300 text-gray-800"
                       }  ${
-                        isOverdue(subGoal.dueDate)
+                        isOverdue(subGoal.dueDate) && !subGoal.completed
                           ? theme === "dark"
                             ? "border-2 border-red-500 text-white"
                             : "border-2 border-red-500 text-red-600"
@@ -555,7 +555,7 @@ const GoalTracker = ({ toggleCalendarModal, onTriggerPomodoro }) => {
                               show={showEditDatepicker}
                               setShow={setShowEditDatepicker}
                               value={
-                                editingDueDate ? new Date(editingDueDate) : null
+                                editingDueDate ? new Date(editingDueDate) : new Date()
                               }
                               onChange={handleEditDatepickerChange}
                             />
